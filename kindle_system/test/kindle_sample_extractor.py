@@ -10,6 +10,9 @@ Kindle for PC のローカルキャッシュXML（KindleSyncMetadataCache.xml）
     python kindle_sample_extractor.py --test                    (内蔵テスト実行)
 """
 
+
+# テスト
+
 import xml.etree.ElementTree as ET
 import os
 import sys
