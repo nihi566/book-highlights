@@ -130,16 +130,6 @@ def save_price_history(data: dict) -> None:
         conn.commit()
 
 
-def get_recently_checked_asins() -> set:
-    """過去24時間以内に価格取得が完了している paid_asin のリストを取得する。"""
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT paid_asin 
-            FROM price_history 
-            WHERE datetime(timestamp) >= datetime('now', '-24 hours', 'localtime')
-        """)
-        return {row[0] for row in cursor.fetchall()}
 
 # ─── メインロジック ──────────────────────────────────────────────────────────
 
@@ -165,11 +155,6 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     if limit and limit > 0:
         samples = samples[:limit]
         print(f"  [!] 処理件数を {limit} 件に制限して実行します。")
-    
-    # レジューム機能：最近取得したASINを取得
-    recently_checked = get_recently_checked_asins()
-    if recently_checked:
-        print(f"  [Info] 過去24時間以内に取得済みの本編が {len(recently_checked)} 件あります。これらはスキップされます。")
 
     print("-" * 60)
     
@@ -181,14 +166,11 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         print(f"\n[{i}/{len(samples)}] {title}")
         print(f"  Sample ASIN : {sample_asin}")
         
-        # 2. DB を確認
+        # 2. DB から本編 ASIN を確認（キャッシュとして利用するが、スクレイピングは毎回実行）
         paid_asin = get_paid_asin(sample_asin)
-        
+
         if paid_asin:
             print(f"  [✓] DB から本編 ASIN を取得しました: {paid_asin}")
-            if paid_asin in recently_checked:
-                print(f"  [Skip] 最近取得済みのため、Amazonへのアクセスをスキップします。")
-                continue
         else:
             print("  [2/4] 本編 ASIN 解決中...")
             try:

@@ -397,18 +397,72 @@ async def crawl_price_info(
             result["campaign_text"] = campaign_text
             print(f"  -> キャンペーン: {campaign_text if campaign_text else '（なし）'}")
 
-            # ── Kindle Unlimited判定 ──────────────────────────────────
+            # ── Kindle Unlimited判定（高精度・ボタン限定スキャン） ────
             print("  [4/4] Kindle Unlimited判定中...")
             try:
-                text_content = ""
-                for sel in ["#buybox", "#combinedBuyBox", "#rightCol"]:
-                    if await page.locator(sel).count() > 0:
-                        text_content += await page.locator(sel).first.inner_text() + "\n"
-                
-                text_lower = text_content.lower()
-                if "kindle unlimited" in text_lower or "読み放題" in text_lower:
+                is_unlimited = False
+
+                # ── 判定1（最高精度）: #tmmSwatches の Kindle版タブ内部のみ確認 ──
+                # DOM調査で確認済みの構造:
+                #   #tmmSwatches > a#a-autoid-N-announce (Kindle版タブ)
+                #     └── i.a-icon-kindle-unlimited  ← KU対象本のみここに存在
+                # 広告バナー等のアイコンはこのスコープ外のためヒットしない。
+                tmm = page.locator("#tmmSwatches")
+                if await tmm.count() > 0:
+                    ku_in_tab = await tmm.locator("i.a-icon-kindle-unlimited").count()
+                    if ku_in_tab > 0:
+                        is_unlimited = True
+                        if debug:
+                            print(f"  [KU] #tmmSwatches 内のKindle版タブでアイコン検出 ({ku_in_tab}件)")
+
+                # ── 判定2（フォールバック1）: .slot-price 内のアイコン確認 ──
+                # #tmmSwatches が存在しないUIパターンへの対応
+                if not is_unlimited:
+                    slot_prices = page.locator(".slot-price")
+                    if await slot_prices.count() > 0:
+                        ku_in_slot = await slot_prices.locator("i.a-icon-kindle-unlimited").count()
+                        if ku_in_slot > 0:
+                            is_unlimited = True
+                            if debug:
+                                print(f"  [KU] .slot-price 内でアイコン検出 ({ku_in_slot}件)")
+
+                # ── 判定3（フォールバック2）: aria-label 限定テキスト検索 ──
+                # aria-label="Kindle Unlimitedで" は価格ボタン内部の <i> にのみ付与される
+                if not is_unlimited:
+                    ku_aria = page.locator("[aria-label='Kindle Unlimitedで']")
+                    if await ku_aria.count() > 0:
+                        is_unlimited = True
+                        if debug:
+                            print(f"  [KU] aria-label='Kindle Unlimitedで' で検出")
+
+                if is_unlimited:
                     result["is_unlimited"] = 1
                     print("  -> Unlimited: 対象 (✅)")
+
+                    # ── KU 安全弁: 価格・ポイントを強制リセット ──────────
+                    # KU対象本は ¥0 で読めるため sell_price / point_value は 0 が正しい。
+                    # extract_points() が「¥624 (6pt)」を誤って624ptと数値化することがある。
+                    # → 元の値を campaign_text に退避してから 0 にリセットする。
+                    original_price  = result["sell_price"]
+                    original_points = result["point_value"]
+
+                    if original_price or original_points:
+                        price_note_parts = []
+                        if original_price:
+                            price_note_parts.append(f"通常価格: ¥{original_price:,}")
+                        if original_points:
+                            price_note_parts.append(f"{original_points}pt")
+                        price_note = " ".join(price_note_parts)
+                        existing = result["campaign_text"]
+                        result["campaign_text"] = (
+                            f"{existing} | {price_note}" if existing else price_note
+                        )
+                        if debug:
+                            print(f"  [KU] 通常購入価格を campaign_text に退避: {price_note!r}")
+
+                    result["sell_price"]  = 0
+                    result["point_value"] = 0
+                    print("  -> KU安全弁適用: 価格=¥0, ポイント=0pt")
                 else:
                     print("  -> Unlimited: 対象外")
             except Exception as e:
