@@ -43,6 +43,7 @@ from src.crawler import crawl_price_info
 # データベースのパス設定
 DB_DIR = os.path.join(BASE_DIR, "data")
 DB_PATH = os.path.join(DB_DIR, "kindle_monitor.db")
+SESSION_FILE = os.path.join(DB_DIR, "session_start.txt")  # レジューム用セッションファイル
 
 
 # ─── データベース処理 ────────────────────────────────────────────────────────
@@ -130,6 +131,49 @@ def save_price_history(data: dict) -> None:
         conn.commit()
 
 
+# ─── セッション管理（レジューム機能） ────────────────────────────────────────
+
+def get_or_create_session_start() -> str:
+    """
+    セッション開始時刻を返す。
+    - セッションファイルが存在する場合: 前回クラッシュした実行を再開しているため、
+      そのタイムスタンプを再利用する（= 以降に処理された本はスキップ対象）。
+    - 存在しない場合: 新規セッションとしてファイルを作成する。
+    """
+    os.makedirs(DB_DIR, exist_ok=True)
+    if os.path.exists(SESSION_FILE):
+        with open(SESSION_FILE, "r", encoding="utf-8") as f:
+            session_start = f.read().strip()
+        print(f"  [Resume] セッションファイルを検出しました。")
+        print(f"  [Resume] セッション開始時刻: {session_start}")
+        return session_start
+    else:
+        session_start = datetime.now().isoformat()
+        with open(SESSION_FILE, "w", encoding="utf-8") as f:
+            f.write(session_start)
+        return session_start
+
+
+def clear_session() -> None:
+    """全処理完了後にセッションファイルを削除する。次回は新規セッションとして実行される。"""
+    if os.path.exists(SESSION_FILE):
+        os.remove(SESSION_FILE)
+
+
+def get_session_processed_asins(session_start: str) -> set:
+    """
+    セッション開始時刻以降に price_history へ記録された paid_asin のセットを返す。
+    = 今回のセッションで既に処理が完了した本のリスト。
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT DISTINCT paid_asin
+            FROM price_history
+            WHERE timestamp >= ?
+        """, (session_start,))
+        return {row[0] for row in cursor.fetchall()}
+
 
 # ─── メインロジック ──────────────────────────────────────────────────────────
 
@@ -138,10 +182,18 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     print("=" * 60)
     print("  Kindle システム統合処理開始")
     print("=" * 60)
-    
+
     init_db()
     print("  [✓] データベース初期化完了")
-    
+
+    # ── セッション管理: レジューム判定 ──────────────────────────────
+    session_start = get_or_create_session_start()
+    session_processed = get_session_processed_asins(session_start)
+    if session_processed:
+        print(f"  [Resume] このセッションで処理済みの本: {len(session_processed)} 件 → スキップします。")
+    else:
+        print(f"  [新規セッション] 全件フルスクレイピングを開始します。")
+
     # 1. XML からサンプル本を取得
     print("  [1/4] XML パース中...")
     try:
@@ -149,9 +201,9 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     except Exception as e:
         print(f"  [Error] XML パースに失敗しました: {e}")
         return
-        
+
     print(f"  [✓] サンプル本を {len(samples)} 件取得しました。")
-    
+
     if limit and limit > 0:
         samples = samples[:limit]
         print(f"  [!] 処理件数を {limit} 件に制限して実行します。")
@@ -165,10 +217,14 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         
         print(f"\n[{i}/{len(samples)}] {title}")
         print(f"  Sample ASIN : {sample_asin}")
-        
-        # 2. DB から本編 ASIN を確認（キャッシュとして利用するが、スクレイピングは毎回実行）
-        paid_asin = get_paid_asin(sample_asin)
 
+        # ── レジューム判定: 今回のセッションで既に処理済みか確認 ──
+        paid_asin = get_paid_asin(sample_asin)
+        if paid_asin and paid_asin in session_processed:
+            print(f"  [Resume-Skip] 既に処理済みのためスキップします（ASIN: {paid_asin}）")
+            continue
+
+        # 2. DB から本編 ASIN を確認（キャッシュとして利用するが、スクレイピングは毎回実行）
         if paid_asin:
             print(f"  [✓] DB から本編 ASIN を取得しました: {paid_asin}")
         else:
@@ -213,6 +269,10 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     print("\n" + "=" * 60)
     print("  全処理が完了しました。")
     print("=" * 60)
+
+    # 全処理完了: セッションファイルを削除し、次回は新規セッションとして実行されるようにする
+    clear_session()
+    print("  [✓] セッションをクリアしました。次回実行時は全件処理されます。")
 
 
 def run_tests():
