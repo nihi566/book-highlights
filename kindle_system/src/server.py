@@ -119,16 +119,19 @@ def _regen_report():
     except Exception as e:
         job.emit(f"[Report] エラー: {e}")
 
-def do_run_only():
+def do_run_only(start_val=None):
     job.start()
     try:
         job.emit("=== 今すぐ更新 ===")
-        _run_proc([sys.executable, "-X", "utf8", MAIN_PY])
+        cmd = [sys.executable, "-X", "utf8", MAIN_PY]
+        if start_val:
+            cmd += ["--start", str(start_val)]
+        _run_proc(cmd)
         _regen_report()
     finally:
         job.finish()
 
-def do_sync_and_run():
+def do_sync_and_run(start_val=None):
     job.start()
     try:
         kindle = next((p for p in KINDLE_CANDIDATES if os.path.exists(p)), None)
@@ -175,7 +178,10 @@ def do_sync_and_run():
 
         job.emit("")
         job.emit("=== main.py を実行します ===")
-        _run_proc([sys.executable, "-X", "utf8", MAIN_PY])
+        cmd = [sys.executable, "-X", "utf8", MAIN_PY]
+        if start_val:
+            cmd += ["--start", str(start_val)]
+        _run_proc(cmd)
         _regen_report()
     finally:
         job.finish()
@@ -249,7 +255,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404); self.end_headers()
 
     def do_POST(self):
-        path = urlparse(self.path).path
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        
+        # クエリパラメータから start を取得
+        from urllib.parse import parse_qs
+        query_params = parse_qs(parsed_url.query)
+        start_val = query_params.get("start", [None])[0]
 
         # 停止は実行中でなくてもOK（エラーにしない）
         if path == "/api/stop":
@@ -264,10 +276,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": False, "message": "すでに実行中です。"}, 409)
             return
         if path == "/api/run":
-            threading.Thread(target=do_run_only,     daemon=True).start()
+            threading.Thread(target=do_run_only, args=(start_val,), daemon=True).start()
             self.send_json({"ok": True})
         elif path == "/api/sync-run":
-            threading.Thread(target=do_sync_and_run, daemon=True).start()
+            threading.Thread(target=do_sync_and_run, args=(start_val,), daemon=True).start()
             self.send_json({"ok": True})
         else:
             self.send_response(404); self.end_headers()

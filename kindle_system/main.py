@@ -177,7 +177,7 @@ def get_session_processed_asins(session_start: str) -> set:
 
 # ─── メインロジック ──────────────────────────────────────────────────────────
 
-async def run_integration(xml_path: str = None, limit: int = None, is_test: bool = False) -> None:
+async def run_integration(xml_path: str = None, limit: int = None, is_test: bool = False, start: int = None) -> None:
     """統合フローの実行"""
     print("=" * 60)
     print("  Kindle システム統合処理開始")
@@ -208,6 +208,20 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         samples = samples[:limit]
         print(f"  [!] 処理件数を {limit} 件に制限して実行します。")
 
+    # 起動時のユーザー入力プロンプト (引数 start が指定されている場合はそれを優先しプロンプトをスキップ)
+    manual_start = start
+    if manual_start is None:
+        try:
+            print(f"[Start] 開始するインデックス番号を入力してください (1 ~ {len(samples)}) [Enterで通常開始]: ", end="", flush=True)
+            user_input = input().strip()
+            if user_input:
+                manual_start = int(user_input)
+                if manual_start < 1 or manual_start > len(samples):
+                    manual_start = None
+        except Exception:
+            # 数値以外の入力や EOFError 等は安全に通常開始へフォールバック
+            manual_start = None
+
     print("-" * 60)
     
     # 各サンプルについて処理
@@ -217,6 +231,11 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         
         print(f"\n[{i}/{len(samples)}] {title}")
         print(f"  Sample ASIN : {sample_asin}")
+
+        # ── 手動開始位置によるスキップ ──
+        if manual_start and i < manual_start:
+            print(f"  [Manual-Skip] 指定位置（{manual_start}冊目）より前の処理をスキップします")
+            continue
 
         # ── レジューム判定: 今回のセッションで既に処理済みか確認 ──
         paid_asin = get_paid_asin(sample_asin)
@@ -329,6 +348,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kindle モニターシステム")
     parser.add_argument("--xml", help="対象の XML ファイルパス (省略時はデフォルト)", default=None)
     parser.add_argument("--limit", type=int, help="処理する最大件数", default=None)
+    parser.add_argument("--start", type=int, help="開始するインデックス番号", default=None)
     parser.add_argument("--test", action="store_true", help="内蔵テストを実行する")
     args = parser.parse_args()
     
@@ -342,4 +362,4 @@ if __name__ == "__main__":
             print(f"エラー: XML ファイルが見つかりません: {xml_path}")
             sys.exit(1)
             
-        asyncio.run(run_integration(xml_path=xml_path, limit=args.limit))
+        asyncio.run(run_integration(xml_path=xml_path, limit=args.limit, start=args.start))

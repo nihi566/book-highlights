@@ -428,6 +428,39 @@ def generate_report():
         }}
         .btn-stop.visible {{ display: inline-flex; }}
 
+        .start-index-wrapper {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0.75rem;
+            padding: 0.2rem 0.8rem;
+            height: 38px;
+            box-sizing: border-box;
+        }}
+        .start-index-label {{
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }}
+        .start-index-input {{
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            width: 80px;
+            outline: none;
+            text-align: center;
+        }}
+        .start-index-input::placeholder {{
+            color: rgba(255,255,255,0.25);
+            font-weight: 400;
+            font-size: 0.85rem;
+        }}
+
         /* ソート・フィルタUI */
         .controls-wrapper {{
             display: flex;
@@ -473,6 +506,10 @@ def generate_report():
 
         <!-- コントロールパネル -->
         <div class="control-panel" id="controlPanel">
+            <div class="start-index-wrapper">
+                <span class="start-index-label">開始位置:</span>
+                <input type="number" id="startInput" class="start-index-input" min="1" max="{total_books}" placeholder="通常開始">
+            </div>
             <button class="btn btn-run" id="btnRun" onclick="apiAction('run')">
                 ▶ 今すぐ更新（実行のみ）
             </button>
@@ -602,7 +639,15 @@ function startSSE() {{
 
 async function apiAction(endpoint) {{
     try {{
-        const res  = await fetch(SERVER + '/api/' + endpoint, {{method:'POST'}});
+        let url = SERVER + '/api/' + endpoint;
+        if (endpoint === 'run' || endpoint === 'sync-run') {{
+            const startInput = document.getElementById('startInput');
+            const startVal = startInput ? startInput.value.trim() : '';
+            if (startVal) {{
+                url += '?start=' + encodeURIComponent(startVal);
+            }}
+        }}
+        const res  = await fetch(url, {{method:'POST'}});
         const data = await res.json();
         if (data.ok) {{ setRunning(true); startSSE(); }}
         else alert(data.message);
