@@ -84,6 +84,10 @@ def init_db() -> None:
             cursor.execute("ALTER TABLE price_history ADD COLUMN is_unlimited INTEGER DEFAULT 0")
         except sqlite3.OperationalError:
             pass
+        try:
+            cursor.execute("ALTER TABLE book_mappings ADD COLUMN is_purchased INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
             
         conn.commit()
 
@@ -95,6 +99,14 @@ def get_paid_asin(sample_asin: str) -> str:
         cursor.execute("SELECT paid_asin FROM book_mappings WHERE sample_asin = ?", (sample_asin,))
         row = cursor.fetchone()
         return row[0] if row and row[0] else None
+
+
+def get_purchased_asins() -> set:
+    """購入済み（is_purchased=1）の paid_asin の集合を返す。"""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT paid_asin FROM book_mappings WHERE is_purchased = 1")
+        return {row[0] for row in cursor.fetchall() if row[0]}
 
 
 def save_mapping(sample_asin: str, paid_asin: str, title: str) -> None:
@@ -223,6 +235,11 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
             manual_start = None
 
     print("-" * 60)
+
+    # 購入済み ASIN をループ前に一括取得
+    purchased_asins = get_purchased_asins()
+    if purchased_asins:
+        print(f"  [購入済み] {len(purchased_asins)} 件は購入済みのためクロールをスキップします。")
     
     # 各サンプルについて処理
     for i, book in enumerate(samples, 1):
@@ -237,8 +254,13 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
             print(f"  [Manual-Skip] 指定位置（{manual_start}冊目）より前の処理をスキップします")
             continue
 
-        # ── レジューム判定: 今回のセッションで既に処理済みか確認 ──
+        # ── 購入済みスキップ ──
         paid_asin = get_paid_asin(sample_asin)
+        if paid_asin and paid_asin in purchased_asins:
+            print(f"  [Purchased-Skip] 購入済みのため確認をスキップします（ASIN: {paid_asin}）")
+            continue
+
+        # ── レジューム判定: 今回のセッションで既に処理済みか確認 ──
         if paid_asin and paid_asin in session_processed:
             print(f"  [Resume-Skip] 既に処理済みのためスキップします（ASIN: {paid_asin}）")
             continue

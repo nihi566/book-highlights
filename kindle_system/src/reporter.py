@@ -43,7 +43,8 @@ def generate_report():
             l.actual_price, 
             l.campaign_text, 
             l.timestamp,
-            l.is_unlimited
+            l.is_unlimited,
+            COALESCE(m.is_purchased, 0) as is_purchased
         FROM book_mappings m
         JOIN latest_prices l ON m.paid_asin = l.paid_asin
         ORDER BY l.actual_price ASC
@@ -77,7 +78,9 @@ def generate_report():
         if sell_price > 0:
             discount_rate = (point_value / sell_price) * 100
             
-        is_campaign = bool(campaign)
+        is_unlimited = row["is_unlimited"] or 0
+        is_purchased = row["is_purchased"] or 0
+        is_campaign = bool(campaign) and not (is_unlimited == 1)
         if is_campaign:
             campaign_count += 1
             
@@ -89,22 +92,36 @@ def generate_report():
             updated_at = timestamp_str[:16].replace("T", " ") if timestamp_str else ""
 
         # CSSクラスやバッジの設定
-        row_class = "campaign-target" if is_campaign else ""
+        row_classes = []
+        if is_campaign: row_classes.append("campaign-target")
+        if is_purchased: row_classes.append("purchased-row")
+        row_class = " ".join(row_classes)
         badge_html = '<span class="badge campaign">🎁 キャンペーン対象</span>' if is_campaign else ''
         discount_badge = f'<span class="badge discount">🔥 {int(discount_rate)}% OFF</span>' if discount_rate >= 20.0 else ''
         
-        is_unlimited = row["is_unlimited"] or 0
         unlimited_badge = '<span class="badge unlimited">📖 Unlimited対象</span>' if is_unlimited == 1 else ''
+        purchased_badge = '<span class="badge purchased">✅ 購入済み</span>' if is_purchased == 1 else ''
         
         amazon_url = f"https://www.amazon.co.jp/dp/{asin}"
         ts_sort = timestamp_str if timestamp_str else "1970-01-01T00:00:00"
         is_campaign_val = 1 if is_campaign else 0
         
+        # 購入済みトグルボタン
+        toggle_checked = "checked" if is_purchased == 1 else ""
+        toggle_label   = "購入済み" if is_purchased == 1 else "未購入"
+        purchase_toggle = f'''<label class="purchase-toggle" title="購入済みマークをトグル">
+                    <input type="checkbox" class="purchase-cb" {toggle_checked}
+                           data-asin="{asin}"
+                           onchange="togglePurchased(this)">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    <span class="toggle-label">{toggle_label}</span>
+                </label>'''
+        
         table_rows_html += f'''
-        <tr class="{row_class}" data-discount="{discount_rate}" data-updated="{ts_sort}" data-price="{actual_price}" data-unlimited="{is_unlimited}" data-campaign="{is_campaign_val}">
+        <tr class="{row_class}" data-discount="{discount_rate}" data-updated="{ts_sort}" data-price="{actual_price}" data-unlimited="{is_unlimited}" data-campaign="{is_campaign_val}" data-purchased="{is_purchased}" data-asin="{asin}">
             <td class="col-title">
                 <a href="{amazon_url}" target="_blank">{title}</a>
-                {unlimited_badge} {badge_html} {discount_badge}
+                {unlimited_badge} {badge_html} {discount_badge} {purchased_badge}
                 <div class="campaign-text">
                     <span style="display:inline-block; margin-right:8px; color:var(--text-muted); opacity:0.8;">🕒 更新: {updated_at}</span>
                     {campaign}
@@ -113,6 +130,7 @@ def generate_report():
             <td class="col-price">¥{sell_price:,}</td>
             <td class="col-point">{point_value:,} pt ({int(discount_rate)}%)</td>
             <td class="col-actual">¥{actual_price:,}</td>
+            <td class="col-purchase">{purchase_toggle}</td>
         </tr>
         '''
 
@@ -495,6 +513,68 @@ def generate_report():
             border-color: #38bdf8;
             color: #38bdf8;
         }}
+
+        /* 購入済み行スタイル */
+        tr.purchased-row {{
+            opacity: 0.45;
+        }}
+        tr.purchased-row td {{
+            text-decoration: none;
+        }}
+        tr.purchased-row .col-title a {{
+            color: var(--text-muted);
+        }}
+        .badge.purchased {{
+            background: rgba(16,185,129,0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16,185,129,0.3);
+        }}
+
+        /* 購入済みトグル */
+        .col-purchase {{
+            width: 120px;
+            vertical-align: middle;
+            text-align: center;
+        }}
+        .purchase-toggle {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }}
+        .purchase-cb {{ display: none; }}
+        .toggle-track {{
+            position: relative;
+            width: 36px; height: 20px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 9999px;
+            transition: background 0.25s;
+            flex-shrink: 0;
+        }}
+        .purchase-cb:checked ~ .toggle-track {{
+            background: rgba(16,185,129,0.6);
+        }}
+        .toggle-thumb {{
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 16px; height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.25s;
+        }}
+        .purchase-cb:checked ~ .toggle-track .toggle-thumb {{
+            transform: translateX(16px);
+        }}
+        .toggle-label {{
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            min-width: 38px;
+        }}
+        .purchase-cb:checked ~ .toggle-label,
+        .purchase-toggle:has(.purchase-cb:checked) .toggle-label {{
+            color: #6ee7b7;
+        }}
     </style>
 </head>
 <body>
@@ -552,6 +632,8 @@ def generate_report():
                 <button class="btn-sort active" id="filterAll" onclick="filterTable('all')">すべて</button>
                 <button class="btn-sort" id="filterCampaign" onclick="filterTable('campaign')">🎁 キャンペーン対象</button>
                 <button class="btn-sort" id="filterUnlimited" onclick="filterTable('unlimited')">📖 Unlimited対象</button>
+                <button class="btn-sort" id="filterPurchased" onclick="filterTable('purchased')">✅ 購入済みのみ</button>
+                <button class="btn-sort" id="filterUnpurchased" onclick="filterTable('unpurchased')">🛒 未購入のみ</button>
             </div>
         </div>
 
@@ -563,10 +645,11 @@ def generate_report():
                         <th>販売価格</th>
                         <th>還元ポイント</th>
                         <th>実質価格</th>
+                        <th>購入済み</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {table_rows_html if total_books > 0 else '<tr><td colspan="4"><div class="empty-state">データがありません。監視システムを実行してください。</div></td></tr>'}
+                    {table_rows_html if total_books > 0 else '<tr><td colspan="5"><div class="empty-state">データがありません。監視システムを実行してください。</div></td></tr>'}
                 </tbody>
             </table>
         </div>
@@ -715,6 +798,57 @@ function filterTable(mode) {{
         rows.forEach(row => {{
             row.style.display = (row.dataset.unlimited === '1') ? '' : 'none';
         }});
+    }} else if (mode === 'purchased') {{
+        document.getElementById('filterPurchased').classList.add('active');
+        rows.forEach(row => {{
+            row.style.display = (row.dataset.purchased === '1') ? '' : 'none';
+        }});
+    }} else if (mode === 'unpurchased') {{
+        document.getElementById('filterUnpurchased').classList.add('active');
+        rows.forEach(row => {{
+            row.style.display = (row.dataset.purchased === '1') ? 'none' : '';
+        }});
+    }}
+}}
+
+async function togglePurchased(cb) {{
+    const asin   = cb.dataset.asin;
+    const status = cb.checked ? 1 : 0;
+    const label  = cb.closest('.purchase-toggle').querySelector('.toggle-label');
+    const row    = cb.closest('tr');
+    try {{
+        const res  = await fetch(`${{SERVER}}/api/purchase?asin=${{encodeURIComponent(asin)}}&status=${{status}}`, {{method:'POST'}});
+        const data = await res.json();
+        if (data.ok) {{
+            row.dataset.purchased = status;
+            if (status === 1) {{
+                row.classList.add('purchased-row');
+                label.textContent = '購入済み';
+                label.style.color = '#6ee7b7';
+                // 購入済みバッジを追加（なければ）
+                const titleCell = row.querySelector('.col-title');
+                if (!titleCell.querySelector('.badge.purchased')) {{
+                    const badge = document.createElement('span');
+                    badge.className = 'badge purchased';
+                    badge.textContent = '✅ 購入済み';
+                    titleCell.querySelector('a').after(badge);
+                }}
+            }} else {{
+                row.classList.remove('purchased-row');
+                label.textContent = '未購入';
+                label.style.color = '';
+                // 購入済みバッジを削除
+                const badge = row.querySelector('.badge.purchased');
+                if (badge) badge.remove();
+            }}
+        }} else {{
+            // 失敗したら元に戻す
+            cb.checked = !cb.checked;
+            alert('サーバーへの保存に失敗しました。サーバーが起動中か確認してください。');
+        }}
+    }} catch(e) {{
+        cb.checked = !cb.checked;
+        alert('サーバーに接続できません。');
     }}
 }}
 

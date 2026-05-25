@@ -8,7 +8,7 @@ Kindle Pulse ローカル管理サーバー。
     python C:\\dev\\kindle_system\\src\\server.py
 """
 
-import os, sys, json, time, threading, subprocess, queue
+import os, sys, json, time, threading, subprocess, queue, sqlite3
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
@@ -26,6 +26,8 @@ KINDLE_CANDIDATES = [
     r"C:\Program Files (x86)\Amazon\Kindle\Kindle.exe",
     os.path.join(os.environ.get("LOCALAPPDATA",""), "Amazon","Kindle","Kindle.exe"),
 ]
+
+DB_PATH = os.path.join(BASE_DIR, "data", "kindle_monitor.db")
 
 # ─── ジョブ管理 ──────────────────────────────────────────────────────────────
 
@@ -186,6 +188,22 @@ def do_sync_and_run(start_val=None):
     finally:
         job.finish()
 
+# ─── 購入済みDB操作 ────────────────────────────────────────────────
+
+def set_purchased(paid_asin: str, status: int) -> bool:
+    """購入済みDBUPDATE。対象が見つからない場合は False。"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE book_mappings SET is_purchased = ? WHERE paid_asin = ?",
+                (status, paid_asin)
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+    except Exception:
+        return False
+
 # ─── HTTPハンドラー ───────────────────────────────────────────────────────────
 
 class Handler(BaseHTTPRequestHandler):
@@ -258,10 +276,26 @@ class Handler(BaseHTTPRequestHandler):
         parsed_url = urlparse(self.path)
         path = parsed_url.path
         
-        # クエリパラメータから start を取得
+        # クエリパラメータから start / asin / status を取得
         from urllib.parse import parse_qs
         query_params = parse_qs(parsed_url.query)
         start_val = query_params.get("start", [None])[0]
+
+        # ── 購入済みトグル（実行中にかかわらず常に有効） ──
+        if path == "/api/purchase":
+            asin   = query_params.get("asin",   [None])[0]
+            status = query_params.get("status", ["1"])[0]
+            if not asin:
+                self.send_json({"ok": False, "message": "asin パラメータが必要です。"}, 400)
+                return
+            try:
+                status_int = int(status)
+            except ValueError:
+                self.send_json({"ok": False, "message": "status は 0 または 1 です。"}, 400)
+                return
+            ok = set_purchased(asin, status_int)
+            self.send_json({"ok": ok, "asin": asin, "is_purchased": status_int})
+            return
 
         # 停止は実行中でなくてもOK（エラーにしない）
         if path == "/api/stop":
