@@ -575,6 +575,81 @@ def generate_report():
         .purchase-toggle:has(.purchase-cb:checked) .toggle-label {{
             color: #6ee7b7;
         }}
+
+        /* 開始位置入力 */
+        .start-index-wrapper {{
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0.75rem;
+            padding: 0.2rem 0.8rem;
+            height: 38px;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }}
+        .start-index-wrapper.error {{
+            border-color: rgba(239,68,68,0.7);
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+            animation: shake 0.3s ease;
+        }}
+        @keyframes shake {{
+            0%,100% {{ transform: translateX(0); }}
+            25%  {{ transform: translateX(-6px); }}
+            75%  {{ transform: translateX(6px); }}
+        }}
+        .start-index-label {{
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }}
+        .start-index-input {{
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            width: 90px;
+            outline: none;
+            text-align: center;
+        }}
+        .start-index-input::placeholder {{
+            color: rgba(255,255,255,0.25);
+            font-weight: 400;
+            font-size: 0.85rem;
+        }}
+        .start-index-error {{
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(239,68,68,0.9);
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.3rem 0.75rem;
+            border-radius: 0.4rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }}
+        .start-index-error::after {{
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(239,68,68,0.9);
+        }}
+        .start-index-error.visible {{
+            opacity: 1;
+        }}
     </style>
 </head>
 <body>
@@ -586,9 +661,10 @@ def generate_report():
 
         <!-- コントロールパネル -->
         <div class="control-panel" id="controlPanel">
-            <div class="start-index-wrapper">
+            <div class="start-index-wrapper" id="startWrapper">
                 <span class="start-index-label">開始位置:</span>
-                <input type="number" id="startInput" class="start-index-input" min="1" max="{total_books}" placeholder="通常開始">
+                <input type="number" id="startInput" class="start-index-input" min="1" max="{total_books}" placeholder="1 ~ {total_books}">
+                <span class="start-index-error" id="startError">★ 入力必須です</span>
             </div>
             <button class="btn btn-run" id="btnRun" onclick="apiAction('run')">
                 ▶ 今すぐ更新（実行のみ）
@@ -721,16 +797,45 @@ function startSSE() {{
 }}
 
 async function apiAction(endpoint) {{
-    try {{
-        let url = SERVER + '/api/' + endpoint;
-        if (endpoint === 'run' || endpoint === 'sync-run') {{
-            const startInput = document.getElementById('startInput');
-            const startVal = startInput ? startInput.value.trim() : '';
-            if (startVal) {{
-                url += '?start=' + encodeURIComponent(startVal);
-            }}
+    // 開始位置未入力のバリデーション
+    if (endpoint === 'run' || endpoint === 'sync-run') {{
+        const startInput = document.getElementById('startInput');
+        const startError = document.getElementById('startError');
+        const startWrapper = document.getElementById('startWrapper');
+        const startVal = startInput ? startInput.value.trim() : '';
+
+        if (!startVal) {{
+            // エラー表示
+            if (startError) startError.classList.add('visible');
+            if (startWrapper) startWrapper.classList.add('error');
+            startInput && startInput.focus();
+            // 2秒後にエラーを消去
+            setTimeout(() => {{
+                if (startError) startError.classList.remove('visible');
+                if (startWrapper) startWrapper.classList.remove('error');
+            }}, 2000);
+            return;
         }}
-        const res  = await fetch(url, {{method:'POST'}});
+
+        // エラーリセット
+        if (startError) startError.classList.remove('visible');
+        if (startWrapper) startWrapper.classList.remove('error');
+
+        try {{
+            const url = SERVER + '/api/' + endpoint + '?start=' + encodeURIComponent(startVal);
+            const res  = await fetch(url, {{method:'POST'}});
+            const data = await res.json();
+            if (data.ok) {{ setRunning(true); startSSE(); }}
+            else alert(data.message);
+        }} catch(e) {{
+            hint.style.display = 'block';
+        }}
+        return;
+    }}
+
+    // run/sync-run 以外のエンドポイント
+    try {{
+        const res  = await fetch(SERVER + '/api/' + endpoint, {{method:'POST'}});
         const data = await res.json();
         if (data.ok) {{ setRunning(true); startSSE(); }}
         else alert(data.message);
