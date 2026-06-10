@@ -17,6 +17,7 @@ BOOKS = [
 ]
 
 
+
 # 調査対象セレクタ（候補）
 CANDIDATE_SELECTORS = [
     "a[id*='-announce']",
