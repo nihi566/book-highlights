@@ -16,6 +16,7 @@ BOOKS = [
     {"asin": "B00DKWM6YO", "title": "桶川ストーカー殺人事件（非KU）", "expect": "対象外"},
 ]
 
+
 # 調査対象セレクタ（候補）
 CANDIDATE_SELECTORS = [
     "a[id*='-announce']",
