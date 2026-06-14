@@ -9,6 +9,7 @@ class BookMapping(SQLModel, table=True):
     title: Optional[str] = Field(default=None)
     created_at: Optional[str] = Field(default=None)
     is_purchased: int = Field(default=0)
+    is_wanted: int = Field(default=0)
 
 
 class PriceHistory(SQLModel, table=True):

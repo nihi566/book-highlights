@@ -58,6 +58,10 @@
   --badge-discount-text:  #b45309;
   --badge-discount-border:rgba(217, 119, 6, 0.22);
 
+  --badge-wanted-bg:    rgba(234, 88, 12, 0.08);
+  --badge-wanted-text:  #c2410c;
+  --badge-wanted-border:rgba(234, 88, 12, 0.22);
+
   /* その他 */
   --radius:    1rem;
   --radius-sm: 0.6rem;
@@ -701,6 +705,48 @@ tr.purchased-row .book-link { text-decoration: line-through; }
   background: var(--badge-discount-bg);
   color: var(--badge-discount-text);
   border-color: var(--badge-discount-border);
+}
+
+.badge.wanted {
+  background: var(--badge-wanted-bg);
+  color: var(--badge-wanted-text);
+  border-color: var(--badge-wanted-border);
+}
+
+/* 欲しい本行ハイライト */
+tr.wanted-row td {
+  background: rgba(234, 88, 12, 0.03);
+}
+
+/* 欲しい本ボタン */
+.col-th-want { width: 90px; text-align: center; }
+.col-want    { text-align: center; }
+
+.btn-want {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  padding: 0.28rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btn-want:hover {
+  border-color: #ea580c;
+  color: #ea580c;
+  background: rgba(234, 88, 12, 0.06);
+}
+
+.btn-want.active {
+  background: rgba(234, 88, 12, 0.10);
+  border-color: #ea580c;
+  color: #ea580c;
+  font-weight: 700;
 }
 
 /* キャンペーン本文 */

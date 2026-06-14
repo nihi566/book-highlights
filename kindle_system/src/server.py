@@ -161,7 +161,7 @@ async def do_run_only(start_val=None):
 
 
 
-# ─── 購入済みDB操作 ────────────────────────────────────────────────
+# ─── 購入済み / 欲しい本 DB操作 ──────────────────────────────────────────────
 
 def set_purchased(paid_asin: str, status: int) -> bool:
     """購入済みDBUPDATE。対象が見つからない場合は False。"""
@@ -173,6 +173,23 @@ def set_purchased(paid_asin: str, status: int) -> bool:
                 return False
             for book in books:
                 book.is_purchased = status
+                session.add(book)
+            session.commit()
+            return True
+    except Exception:
+        return False
+
+
+def set_wanted(paid_asin: str, status: int) -> bool:
+    """欲しい本フラグをDBUPDATE。対象が見つからない場合は False。"""
+    try:
+        with get_session() as session:
+            statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
+            books = session.exec(statement).all()
+            if not books:
+                return False
+            for book in books:
+                book.is_wanted = status
                 session.add(book)
             session.commit()
             return True
@@ -214,7 +231,8 @@ async def get_books():
         l.campaign_text, 
         l.timestamp,
         l.is_unlimited,
-        COALESCE(m.is_purchased, 0) as is_purchased
+        COALESCE(m.is_purchased, 0) as is_purchased,
+        COALESCE(m.is_wanted,   0) as is_wanted
     FROM book_mappings m
     JOIN latest_prices l ON m.paid_asin = l.paid_asin
     ORDER BY l.actual_price ASC
@@ -315,6 +333,15 @@ async def stop_job():
         return {"ok": True}
     else:
         return {"ok": False, "message": "実行中のジョブがありません。"}
+
+
+@app.post("/api/want")
+async def want(asin: str = Query(...), status: int = Query(1)):
+    """書籍の「欲しい」ステータスをトグルする"""
+    if not asin:
+        raise HTTPException(status_code=400, detail="asin パラメータが必要です。")
+    ok = await asyncio.to_thread(set_wanted, asin, status)
+    return {"ok": ok, "asin": asin, "is_wanted": status}
 
 
 @app.post("/api/purchase")

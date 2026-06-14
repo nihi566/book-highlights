@@ -7,6 +7,7 @@ const SORT_OPTIONS = [
 ];
 
 const FILTER_OPTIONS = [
+  { key: 'wanted',     label: '欲しい本'   },
   { key: 'unlimited',  label: 'Unlimited' },
   { key: 'campaign',   label: 'キャンペーン' },
   { key: 'unpurchased',label: '未購入'    },

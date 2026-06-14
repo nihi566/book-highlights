@@ -45,6 +45,24 @@ export function useBooks() {
     }
   }, []);
 
+  const toggleWant = useCallback(async (asin, currentStatus) => {
+    const nextStatus = currentStatus === 1 ? 0 : 1;
+    // 楽観的更新
+    setBooks((prev) => prev.map((b) => (b.asin === asin ? { ...b, is_wanted: nextStatus } : b)));
+    try {
+      const res = await fetch(`/api/want?asin=${encodeURIComponent(asin)}&status=${nextStatus}`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        // ロールバック
+        setBooks((prev) => prev.map((b) => (b.asin === asin ? { ...b, is_wanted: currentStatus } : b)));
+      }
+    } catch {
+      setBooks((prev) => prev.map((b) => (b.asin === asin ? { ...b, is_wanted: currentStatus } : b)));
+    }
+  }, []);
+
   const toggleFilter = useCallback((mode) => {
     setFilterMode((prev) => (prev === mode ? 'all' : mode));
   }, []);
@@ -60,6 +78,8 @@ export function useBooks() {
       result = result.filter((b) => b.is_purchased === 1);
     } else if (filterMode === 'unpurchased') {
       result = result.filter((b) => b.is_purchased === 0);
+    } else if (filterMode === 'wanted') {
+      result = result.filter((b) => b.is_wanted === 1);
     }
 
     if (sortMode === 'discount') {
@@ -90,5 +110,6 @@ export function useBooks() {
     processedBooks,
     loadData,
     togglePurchase,
+    toggleWant,
   };
 }

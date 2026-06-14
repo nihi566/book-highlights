@@ -27,6 +27,7 @@ export default function App() {
     processedBooks,
     loadData,
     togglePurchase,
+    toggleWant,
   } = useBooks();
 
   const { running, sseLogs, checkStatus, startJob, stopJob, closeSSE } = useJob(loadData);
@@ -98,6 +99,7 @@ export default function App() {
         books={processedBooks}
         loading={loading}
         onTogglePurchase={togglePurchase}
+        onToggleWant={toggleWant}
         onOpenHistory={openHistory}
       />
 

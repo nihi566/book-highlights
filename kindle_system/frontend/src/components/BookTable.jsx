@@ -19,6 +19,18 @@ function DiscountBadge({ rate }) {
   return <span className="badge discount">{rate}% 還元</span>;
 }
 
+function WantToggle({ asin, isWanted, onToggle }) {
+  return (
+    <button
+      className={`btn-want ${isWanted === 1 ? 'active' : ''}`}
+      onClick={() => onToggle(asin, isWanted)}
+      title={isWanted === 1 ? '欲しい本から外す' : '欲しい本に追加'}
+    >
+      {isWanted === 1 ? '★ 欲しい' : '☆ 欲しい'}
+    </button>
+  );
+}
+
 function PurchaseToggle({ asin, isPurchased, onToggle }) {
   return (
     <label className="purchase-toggle" htmlFor={`purchase-cb-${asin}`}>
@@ -39,7 +51,7 @@ function PurchaseToggle({ asin, isPurchased, onToggle }) {
   );
 }
 
-export default function BookTable({ books, loading, onTogglePurchase, onOpenHistory }) {
+export default function BookTable({ books, loading, onTogglePurchase, onToggleWant, onOpenHistory }) {
   if (loading) {
     return (
       <div className="table-container">
@@ -72,6 +84,7 @@ export default function BookTable({ books, loading, onTogglePurchase, onOpenHist
             <th className="col-th-price">販売価格</th>
             <th className="col-th-point">還元 PT</th>
             <th className="col-th-actual">実質価格</th>
+            <th className="col-th-want">欲しい本</th>
             <th className="col-th-purchase">購入</th>
             <th className="col-th-history">推移</th>
           </tr>
@@ -89,7 +102,8 @@ export default function BookTable({ books, loading, onTogglePurchase, onOpenHist
                 key={book.asin}
                 className={[
                   book.is_purchased === 1 ? 'purchased-row' : '',
-                  isCampaign ? 'campaign-target' : '',
+                  book.is_wanted === 1    ? 'wanted-row'    : '',
+                  isCampaign              ? 'campaign-target': '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -107,6 +121,7 @@ export default function BookTable({ books, loading, onTogglePurchase, onOpenHist
 
                   <div className="badge-row">
                     {book.is_unlimited === 1 && <span className="badge unlimited">Unlimited</span>}
+                    {book.is_wanted    === 1 && <span className="badge wanted">欲しい</span>}
                     {isCampaign && <span className="badge campaign">キャンペーン</span>}
                     <DiscountBadge rate={discountRate} />
                     {book.is_purchased === 1 && <span className="badge purchased">購入済み</span>}
@@ -138,6 +153,15 @@ export default function BookTable({ books, loading, onTogglePurchase, onOpenHist
                 </td>
                 <td className="col-actual">
                   <PriceCell price={book.actual_price} />
+                </td>
+
+                {/* 欲しい本トグル */}
+                <td className="col-want">
+                  <WantToggle
+                    asin={book.asin}
+                    isWanted={book.is_wanted}
+                    onToggle={onToggleWant}
+                  />
                 </td>
 
                 {/* 購入トグル */}
