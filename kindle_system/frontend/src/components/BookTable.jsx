@@ -39,7 +39,7 @@ function PurchaseToggle({ asin, isPurchased, onToggle }) {
   );
 }
 
-export default function BookTable({ books, loading, onTogglePurchase }) {
+export default function BookTable({ books, loading, onTogglePurchase, onOpenHistory }) {
   if (loading) {
     return (
       <div className="table-container">
@@ -73,6 +73,7 @@ export default function BookTable({ books, loading, onTogglePurchase }) {
             <th className="col-th-point">還元 PT</th>
             <th className="col-th-actual">実質価格</th>
             <th className="col-th-purchase">購入</th>
+            <th className="col-th-history">推移</th>
           </tr>
         </thead>
         <tbody>
@@ -146,6 +147,17 @@ export default function BookTable({ books, loading, onTogglePurchase }) {
                     isPurchased={book.is_purchased}
                     onToggle={onTogglePurchase}
                   />
+                </td>
+
+                {/* 価格推移ボタン */}
+                <td className="col-history">
+                  <button
+                    className="btn-history"
+                    onClick={() => onOpenHistory(book.asin, book.title || 'タイトル不明')}
+                    title="価格推移を表示"
+                  >
+                    推移
+                  </button>
                 </td>
               </tr>
             );

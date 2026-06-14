@@ -1,29 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
 
-import Header       from './components/Header.jsx';
-import ControlPanel from './components/ControlPanel.jsx';
-import TerminalLog  from './components/TerminalLog.jsx';
-import SummaryCards from './components/SummaryCards.jsx';
-import FilterToolbar from './components/FilterToolbar.jsx';
-import BookTable    from './components/BookTable.jsx';
+import Header          from './components/Header.jsx';
+import ControlPanel    from './components/ControlPanel.jsx';
+import TerminalLog     from './components/TerminalLog.jsx';
+import SummaryCards    from './components/SummaryCards.jsx';
+import FilterToolbar   from './components/FilterToolbar.jsx';
+import BookTable       from './components/BookTable.jsx';
+import PriceHistoryModal from './components/PriceHistoryModal.jsx';
 
 import { useBooks } from './hooks/useBooks.js';
 import { useJob }   from './hooks/useJob.js';
 
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
-
-  // テーマ適用
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark-theme');
-    } else {
-      root.classList.remove('dark-theme');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+  const [historyAsin,  setHistoryAsin]  = useState(null);
+  const [historyTitle, setHistoryTitle] = useState('');
 
   const {
     books,
@@ -57,14 +48,20 @@ export default function App() {
     if (result?.error) alert(result.error);
   };
 
+  const openHistory = (asin, title) => {
+    setHistoryAsin(asin);
+    setHistoryTitle(title);
+  };
+
+  const closeHistory = () => {
+    setHistoryAsin(null);
+    setHistoryTitle('');
+  };
+
   return (
     <div className="container">
       {/* ヘッダー */}
-      <Header
-        bookCount={books.length}
-        theme={theme}
-        onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-      />
+      <Header bookCount={books.length} />
 
       {/* サーバー未接続の警告 */}
       {serverError && (
@@ -101,7 +98,17 @@ export default function App() {
         books={processedBooks}
         loading={loading}
         onTogglePurchase={togglePurchase}
+        onOpenHistory={openHistory}
       />
+
+      {/* 価格推移モーダル */}
+      {historyAsin && (
+        <PriceHistoryModal
+          asin={historyAsin}
+          title={historyTitle}
+          onClose={closeHistory}
+        />
+      )}
     </div>
   );
 }

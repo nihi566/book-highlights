@@ -229,6 +229,25 @@ async def get_books():
     return books
 
 
+
+@app.get("/api/books/{asin}/history")
+async def get_book_history(asin: str):
+    """指定 ASIN の価格履歴を全件取得して返す"""
+    query = """
+    SELECT sell_price, point_value, actual_price, campaign_text, timestamp, is_unlimited
+    FROM price_history
+    WHERE paid_asin = :asin
+    ORDER BY timestamp ASC
+    """
+    def fetch():
+        with get_session() as session:
+            result = session.exec(text(query), params={"asin": asin}).mappings().all()
+            return [dict(row) for row in result]
+
+    history = await asyncio.to_thread(fetch)
+    return history
+
+
 @app.get("/api/status")
 async def get_status():
     """現在のジョブ状態を取得する"""

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 
 const LINE_CLASSES = {
   book:  /^\[Worker-\d+\]\[\d+\/\d+\]/,
@@ -19,13 +19,6 @@ function classifyLine(text) {
 
 export default function TerminalLog({ logs, visible }) {
   const terminalRef = useRef(null);
-
-  // 新しいログが追加されたら自動スクロール
-  useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-    }
-  }, [logs]);
 
   if (!visible) return null;
 
