@@ -320,9 +320,20 @@ async def crawl_price_info(
     asin: str,
     headless: bool = True,
     debug: bool = False,
+    browser_profile: Optional[Dict[str, Any]] = None,
+    worker_id: int = 0,
+    ban_coordinator=None,
 ) -> Dict[str, Any]:
     """
     指定 ASIN の Amazon.co.jp 商品ページから価格情報を取得して返す。
+
+    Args:
+        asin:             本編 ASIN
+        headless:         True でヘッドレス実行
+        debug:            True で詳細ログを出力
+        browser_profile:  フィンガープリント設定 dict（None の場合はデフォルト値を使用）
+        worker_id:        ログ表示用のワーカーID
+        ban_coordinator:  BanCoordinator インスタンス（None の場合はBAN検知なし）
 
     Returns:
         {
@@ -335,7 +346,21 @@ async def crawl_price_info(
     """
     from playwright.async_api import async_playwright
 
+    # プロファイルが指定されていない場合はデフォルト値を使用
+    profile = browser_profile or {
+        "user_agent": USER_AGENT,
+        "viewport": {"width": 1280, "height": 800},
+        "locale": "ja-JP",
+        "timezone_id": "Asia/Tokyo",
+        "extra_headers": {
+            "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Upgrade-Insecure-Requests": "1",
+        },
+    }
+
     url = AMAZON_BASE.format(asin=asin)
+    prefix = f"[Worker-{worker_id}]" if worker_id else ""
     result: Dict[str, Any] = {
         "asin":          asin,
         "sell_price":    None,
@@ -345,7 +370,7 @@ async def crawl_price_info(
         "is_unlimited":  0,
     }
 
-    print(f"\nアクセス中: {url}")
+    print(f"\n{prefix}アクセス中: {url}")
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
@@ -357,16 +382,12 @@ async def crawl_price_info(
             ],
         )
         context = await browser.new_context(
-            user_agent=USER_AGENT,
-            viewport={"width": 1280, "height": 800},
-            locale="ja-JP",
-            timezone_id="Asia/Tokyo",
+            user_agent=profile["user_agent"],
+            viewport=profile["viewport"],
+            locale=profile.get("locale", "ja-JP"),
+            timezone_id=profile.get("timezone_id", "Asia/Tokyo"),
         )
-        await context.set_extra_http_headers({
-            "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Upgrade-Insecure-Requests": "1",
-        })
+        await context.set_extra_http_headers(profile.get("extra_headers", {}))
 
         page = await context.new_page()
         await apply_stealth(page)
@@ -377,46 +398,50 @@ async def crawl_price_info(
 
             if debug:
                 title = await page.title()
-                print(f"  ページタイトル: {title}")
+                print(f"  {prefix}ページタイトル: {title}")
 
-            # ── 価格取得 ──────────────────────────────────────────────
-            print("  [1/3] 販売価格を取得中...")
+            # ── BAN 検知 ──────────────────────────────────────────
+            if ban_coordinator is not None:
+                try:
+                    from src.anti_ban import check_ban_signals
+                except ImportError:
+                    from anti_ban import check_ban_signals
+                signal = await check_ban_signals(page, worker_id=worker_id, debug=debug)
+                if signal != "ok":
+                    await ban_coordinator.report_ban(signal, worker_id=worker_id)
+                    return result
+
+            # ── 価格取得 ──────────────────────────────────────────
+            print(f"  {prefix}[1/3] 販売価格を取得中...")
             sell_price = await extract_sell_price(page, debug)
             result["sell_price"] = sell_price
-            print(f"  -> 販売価格: {f'¥{sell_price:,}' if sell_price else '取得不可'}")
+            print(f"  {prefix}-> 販売価格: {f'¥{sell_price:,}' if sell_price else '取得不可'}")
 
             # ── ポイント取得 ──────────────────────────────────────────
-            print("  [2/3] ポイント還元を取得中...")
+            print(f"  {prefix}[2/3] ポイント還元を取得中...")
             point_value = await extract_points(page, debug)
             result["point_value"] = point_value
-            print(f"  -> ポイント: {point_value} pt")
+            print(f"  {prefix}-> ポイント: {point_value} pt")
 
             # ── キャンペーン情報取得 ──────────────────────────────────
-            print("  [3/4] キャンペーン情報を取得中...")
+            print(f"  {prefix}[3/4] キャンペーン情報を取得中...")
             campaign_text = await extract_campaign(page, debug)
             result["campaign_text"] = campaign_text
-            print(f"  -> キャンペーン: {campaign_text if campaign_text else '（なし）'}")
+            print(f"  {prefix}-> キャンペーン: {campaign_text if campaign_text else '（なし）'}")
 
-            # ── Kindle Unlimited判定（高精度・ボタン限定スキャン） ────
-            print("  [4/4] Kindle Unlimited判定中...")
+            # ── Kindle Unlimited判定（高精度・ボタン限定スキャン） ──────────
+            print(f"  {prefix}[4/4] Kindle Unlimited判定中...")
             try:
                 is_unlimited = False
 
-                # ── 判定1（最高精度）: #tmmSwatches の Kindle版タブ内部のみ確認 ──
-                # DOM調査で確認済みの構造:
-                #   #tmmSwatches > a#a-autoid-N-announce (Kindle版タブ)
-                #     └── i.a-icon-kindle-unlimited  ← KU対象本のみここに存在
-                # 広告バナー等のアイコンはこのスコープ外のためヒットしない。
                 tmm = page.locator("#tmmSwatches")
                 if await tmm.count() > 0:
                     ku_in_tab = await tmm.locator("i.a-icon-kindle-unlimited").count()
                     if ku_in_tab > 0:
                         is_unlimited = True
                         if debug:
-                            print(f"  [KU] #tmmSwatches 内のKindle版タブでアイコン検出 ({ku_in_tab}件)")
+                            print(f"  {prefix}[KU] #tmmSwatches 内のKindle版タブでアイコン検出 ({ku_in_tab}件)")
 
-                # ── 判定2（フォールバック1）: .slot-price 内のアイコン確認 ──
-                # #tmmSwatches が存在しないUIパターンへの対応
                 if not is_unlimited:
                     slot_prices = page.locator(".slot-price")
                     if await slot_prices.count() > 0:
@@ -424,7 +449,7 @@ async def crawl_price_info(
                         if ku_in_slot > 0:
                             is_unlimited = True
                             if debug:
-                                print(f"  [KU] .slot-price 内でアイコン検出 ({ku_in_slot}件)")
+                                print(f"  {prefix}[KU] .slot-price 内でアイコン検出 ({ku_in_slot}件)")
 
                 # ── 判定3（フォールバック2）: aria-label 限定テキスト検索 ──
                 # aria-label="Kindle Unlimitedで" は価格ボタン内部の <i> にのみ付与される
@@ -433,16 +458,12 @@ async def crawl_price_info(
                     if await ku_aria.count() > 0:
                         is_unlimited = True
                         if debug:
-                            print(f"  [KU] aria-label='Kindle Unlimitedで' で検出")
+                            print(f"  {prefix}[KU] aria-label='Kindle Unlimitedで' で検出")
 
                 if is_unlimited:
                     result["is_unlimited"] = 1
-                    print("  -> Unlimited: 対象 (✅)")
+                    print(f"  {prefix}-> Unlimited: 対象")
 
-                    # ── KU 安全弁: 価格・ポイントを強制リセット ──────────
-                    # KU対象本は ¥0 で読めるため sell_price / point_value は 0 が正しい。
-                    # extract_points() が「¥624 (6pt)」を誤って624ptと数値化することがある。
-                    # → 元の値を campaign_text に退避してから 0 にリセットする。
                     original_price  = result["sell_price"]
                     original_points = result["point_value"]
 
@@ -458,15 +479,15 @@ async def crawl_price_info(
                             f"{existing} | {price_note}" if existing else price_note
                         )
                         if debug:
-                            print(f"  [KU] 通常購入価格を campaign_text に退避: {price_note!r}")
+                            print(f"  {prefix}[KU] 通常購入価格を campaign_text に退避: {price_note!r}")
 
                     result["sell_price"]  = 0
                     result["point_value"] = 0
-                    print("  -> KU安全弁適用: 価格=¥0, ポイント=0pt")
+                    print(f"  {prefix}-> KU安全弁適用: 価格=¥0, ポイント=0pt")
                 else:
-                    print("  -> Unlimited: 対象外")
+                    print(f"  {prefix}-> Unlimited: 対象外")
             except Exception as e:
-                print(f"  -> Unlimited判定エラー: {e}")
+                print(f"  {prefix}-> Unlimited判定エラー: {e}")
 
         except Exception as e:
             print(f"  ページアクセスエラー: {e}")

@@ -16,7 +16,7 @@ import random
 import sys
 import io
 import argparse
-from typing import Optional
+from typing import Optional, Dict, Any
 
 # Windows CP932 環境での文字化け防止
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
@@ -269,22 +269,46 @@ async def resolve_sample_to_paid(
     sample_asin: str,
     headless: bool = True,
     debug: bool = False,
+    browser_profile: Optional[Dict[str, Any]] = None,
+    worker_id: int = 0,
+    ban_coordinator=None,
 ) -> Optional[str]:
     """
     サンプル ASIN → 有料本編 ASIN を解決して返す。
 
     Args:
-        sample_asin: Kindle サンプル本の ASIN（例: "B0GGY819NL"）
-        headless:    True でヘッドレス実行（デフォルト）
-        debug:       True で詳細ログを出力
+        sample_asin:      Kindle サンプル本の ASIN（例: "B0GGY819NL"）
+        headless:         True でヘッドレス実行（デフォルト）
+        debug:            True で詳細ログを出力
+        browser_profile:  フィンガープリント設定 dict（None の場合はデフォルト値を使用）
+        worker_id:        ログ表示用のワーカーID
+        ban_coordinator:  BanCoordinator インスタンス（None の場合はBAN検知なし）
 
     Returns:
         有料本編の ASIN 文字列、解決できなかった場合は None
     """
     from playwright.async_api import async_playwright
 
+    # プロファイルが指定されていない場合はデフォルト値を使用
+    profile = browser_profile or {
+        "user_agent": USER_AGENT,
+        "viewport": {"width": 1280, "height": 800},
+        "locale": "ja-JP",
+        "timezone_id": "Asia/Tokyo",
+        "extra_headers": {
+            "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-User": "?1",
+            "Sec-Fetch-Dest": "document",
+            "Upgrade-Insecure-Requests": "1",
+        },
+    }
+
     url = AMAZON_BASE.format(asin=sample_asin)
-    print(f"\nアクセス中: {url}")
+    prefix = f"[Worker-{worker_id}]" if worker_id else ""
+    print(f"\n{prefix}アクセス中: {url}")
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
@@ -296,22 +320,13 @@ async def resolve_sample_to_paid(
             ],
         )
         context = await browser.new_context(
-            user_agent=USER_AGENT,
-            viewport={"width": 1280, "height": 800},
-            locale="ja-JP",
-            timezone_id="Asia/Tokyo",
+            user_agent=profile["user_agent"],
+            viewport=profile["viewport"],
+            locale=profile.get("locale", "ja-JP"),
+            timezone_id=profile.get("timezone_id", "Asia/Tokyo"),
         )
 
-        # HTTP 認証ヘッダーを付与（通常ブラウザ相当）
-        await context.set_extra_http_headers({
-            "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-User": "?1",
-            "Sec-Fetch-Dest": "document",
-            "Upgrade-Insecure-Requests": "1",
-        })
+        await context.set_extra_http_headers(profile.get("extra_headers", {}))
 
         page = await context.new_page()
         await apply_stealth(page)
@@ -321,44 +336,55 @@ async def resolve_sample_to_paid(
             await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
             await random_delay(1.5, 3.0)
 
+            # ── BAN 検知 ──────────────────────────────────────────
+            if ban_coordinator is not None:
+                try:
+                    from src.anti_ban import check_ban_signals
+                except ImportError:
+                    from anti_ban import check_ban_signals
+                signal = await check_ban_signals(page, worker_id=worker_id, debug=debug)
+                if signal != "ok":
+                    await ban_coordinator.report_ban(signal, worker_id=worker_id)
+                    return None
+
             # タイトル確認（デバッグ用）
             if debug:
                 title = await page.title()
-                print(f"  ページタイトル: {title}")
+                print(f"  {prefix}ページタイトル: {title}")
 
             # ── ルートA ──────────────────────────────────────────
-            print("  [1/3] ルートA: canonical タグを確認...")
+            print(f"  {prefix}[1/3] ルートA: canonical タグを確認...")
             asin = await route_a_canonical(page, sample_asin, debug)
             if asin:
                 if asin == sample_asin:
-                    print(f"  -> ルートA: サンプルと本編が同一ページ (ASIN={asin}) -> 本編 ASIN として採用")
+                    print(f"  {prefix}-> ルートA: サンプルと本編が同一ページ (ASIN={asin}) -> 本編 ASIN として採用")
                 else:
-                    print(f"  -> ルートA で解決: {asin}")
+                    print(f"  {prefix}-> ルートA で解決: {asin}")
                 return asin
             else:
-                print("  -> ルートA: 本編 ASIN を取得できず、ルートB へ")
+                print(f"  {prefix}-> ルートA: 本編 ASIN を取得できず、ルートB へ")
 
             # ── ルートB ──────────────────────────────────────────
-            print("  [2/3] ルートB: エディション切り替えリンクを確認...")
+            print(f"  {prefix}[2/3] ルートB: エディション切り替えリンクを確認...")
             asin = await route_b_edition_links(page, sample_asin, debug)
             if asin:
-                print(f"  -> ルートB で解決: {asin}")
+                print(f"  {prefix}-> ルートB で解決: {asin}")
                 return asin
             else:
-                print("  -> ルートB: 本編 ASIN を取得できず、ルートC へ")
+                print(f"  {prefix}-> ルートB: 本編 ASIN を取得できず、ルートC へ")
 
             # ── ルートC (フォールバック) ──────────────────────────
-            print("  [3/3] ルートC: ページソース全体から ASIN を推定...")
+            print(f"  {prefix}[3/3] ルートC: ページソース全体から ASIN を推定...")
             asin = await route_c_page_source(page, sample_asin, debug)
             if asin:
-                print(f"  -> ルートC で解決: {asin}")
+                print(f"  {prefix}-> ルートC で解決: {asin}")
                 return asin
 
-            print("  -> 全ルートで解決できませんでした")
+            print(f"  {prefix}-> 全ルートで解決できませんでした")
             return None
 
         except Exception as e:
-            print(f"  ページアクセスエラー: {e}")
+            print(f"  {prefix}ページアクセスエラー: {e}")
             return None
         finally:
             await browser.close()

@@ -1,0 +1,661 @@
+:root {
+  /* ライト（ホワイト）モードの配色システム */
+  --bg-color: #f8fafc;
+  --surface-color: rgba(255, 255, 255, 0.8);
+  --border-color: rgba(148, 163, 184, 0.12);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --accent: #0284c7;
+  --accent-light: rgba(2, 132, 199, 0.08);
+  --danger: #ef4444;
+  --success: #10b981;
+  --highlight: rgba(239, 68, 68, 0.05);
+  
+  --terminal-bg: #0f172a;
+  --terminal-text: #e2e8f0;
+  
+  --card-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.1), 0 8px 10px -6px rgba(148, 163, 184, 0.1);
+  --glass-effect: saturate(180%) blur(16px);
+  
+  /* ボタンとバッジ */
+  --badge-campaign-bg: rgba(239, 68, 68, 0.08);
+  --badge-campaign-text: #dc2626;
+  --badge-campaign-border: rgba(239, 68, 68, 0.2);
+  
+  --badge-unlimited-bg: rgba(16, 185, 129, 0.08);
+  --badge-unlimited-text: #059669;
+  --badge-unlimited-border: rgba(16, 185, 129, 0.2);
+
+  --badge-purchased-bg: rgba(16, 185, 129, 0.08);
+  --badge-purchased-text: #059669;
+  --badge-purchased-border: rgba(16, 185, 129, 0.2);
+
+  --badge-discount-bg: rgba(249, 115, 22, 0.08);
+  --badge-discount-text: #ea580c;
+  --badge-discount-border: rgba(249, 115, 22, 0.2);
+
+  --btn-bg: rgba(148, 163, 184, 0.06);
+  --btn-border: rgba(148, 163, 184, 0.15);
+  --btn-hover: rgba(148, 163, 184, 0.12);
+}
+
+/* ダークモード用のクラス */
+.dark-theme {
+  --bg-color: #0f172a;
+  --surface-color: rgba(30, 41, 59, 0.7);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent-light: rgba(56, 189, 248, 0.15);
+  --danger: #f87171;
+  --success: #34d399;
+  --highlight: rgba(239, 68, 68, 0.12);
+  
+  --terminal-bg: #020617;
+  --terminal-text: #94a3b8;
+  
+  --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  
+  /* ボタンとバッジ (ダーク) */
+  --badge-campaign-bg: rgba(239, 68, 68, 0.15);
+  --badge-campaign-text: #fca5a5;
+  --badge-campaign-border: rgba(239, 68, 68, 0.3);
+  
+  --badge-unlimited-bg: rgba(16, 185, 129, 0.15);
+  --badge-unlimited-text: #34d399;
+  --badge-unlimited-border: rgba(16, 185, 129, 0.3);
+
+  --badge-purchased-bg: rgba(16, 185, 129, 0.15);
+  --badge-purchased-text: #6ee7b7;
+  --badge-purchased-border: rgba(16, 185, 129, 0.3);
+
+  --badge-discount-bg: rgba(249, 115, 22, 0.15);
+  --badge-discount-text: #fdba74;
+  --badge-discount-border: rgba(249, 115, 22, 0.3);
+
+  --btn-bg: rgba(255, 255, 255, 0.03);
+  --btn-border: rgba(255, 255, 255, 0.08);
+  --btn-hover: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  margin: 0;
+  padding: 2rem 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-color);
+  background-image: 
+    radial-gradient(at 0% 0%, var(--accent-light) 0px, transparent 55%),
+    radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 55%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease, background-image 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ヘッダー */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.025em;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.timestamp {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* テーマ切り替えボタン */
+.theme-toggle-btn {
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: var(--text-main);
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.theme-toggle-btn:hover {
+  background: var(--btn-hover);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0);
+}
+
+/* サマリーグリッド */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.card {
+  background: var(--surface-color);
+  backdrop-filter: var(--glass-effect);
+  -webkit-backdrop-filter: var(--glass-effect);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.card-title {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.card-value.highlight-red { color: var(--danger); }
+.card-value.highlight-green { color: var(--success); }
+
+/* コントロールパネル */
+.control-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.start-index-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0.2rem 0.8rem;
+  height: 42px;
+  box-sizing: border-box;
+  box-shadow: var(--card-shadow);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.start-index-wrapper.error {
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%  { transform: translateX(-6px); }
+  75%  { transform: translateX(6px); }
+}
+
+.start-index-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.start-index-input {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  width: 90px;
+  outline: none;
+  text-align: center;
+}
+
+.start-index-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.4;
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.start-index-error {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.4rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.start-index-error.visible {
+  opacity: 1;
+}
+
+.start-index-error::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(239, 68, 68, 0.9);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  height: 42px;
+  border: none;
+  border-radius: 0.75rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: var(--card-shadow);
+}
+
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-sync {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+.btn-run {
+  background: linear-gradient(135deg, #0ea5e9, var(--accent));
+  color: #fff;
+}
+
+.btn-stop {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  box-shadow: none;
+}
+
+.dark-theme .btn-stop {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* ターミナルログ出力 */
+.terminal-wrap {
+  position: relative;
+  margin-bottom: 2rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+}
+
+.terminal {
+  background: var(--terminal-bg);
+  padding: 1.2rem 1.5rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.82rem;
+  color: var(--terminal-text);
+  height: 40vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.term-counter {
+  position: absolute;
+  top: 0.75rem;
+  right: 1.2rem;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.terminal p {
+  margin: 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ログ色のハイライト */
+.log-book   { color: #ffffff; font-weight: 700; margin-top: 0.8rem !important; }
+.log-ok     { color: #4ade80; }
+.log-error  { color: #f87171; }
+.log-url    { color: #64748b; }
+.log-sleep  { color: #818cf8; }
+.log-step   { color: #7dd3fc; }
+.log-done   { color: #4ade80; font-weight: 700; margin-top: 0.5rem !important; }
+
+/* ローディングスピナー */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ツールバー */
+.controls-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.2rem;
+  align-items: center;
+}
+
+.sort-panel, .filter-panel {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.sort-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-sort {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.btn-sort:hover {
+  background: var(--btn-hover);
+}
+
+.btn-sort.active {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* データテーブル */
+.table-container {
+  background: var(--surface-color);
+  backdrop-filter: var(--glass-effect);
+  -webkit-backdrop-filter: var(--glass-effect);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 3rem;
+  transition: background-color 0.3s ease;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th, td {
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+th {
+  background: rgba(0, 0, 0, 0.02);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.dark-theme th {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr {
+  transition: background-color 0.2s ease;
+}
+
+tr:hover {
+  background: rgba(148, 163, 184, 0.04);
+}
+
+.dark-theme tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+tr.campaign-target td {
+  background: var(--highlight);
+}
+
+/* 購入済み行 */
+tr.purchased-row {
+  opacity: 0.5;
+}
+
+tr.purchased-row .col-title a {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+a {
+  color: var(--text-main);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+.col-price, .col-actual {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.col-actual {
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
+.campaign-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+/* バッジ */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.badge.campaign {
+  background: var(--badge-campaign-bg);
+  color: var(--badge-campaign-text);
+  border-color: var(--badge-campaign-border);
+}
+
+.badge.unlimited {
+  background: var(--badge-unlimited-bg);
+  color: var(--badge-unlimited-text);
+  border-color: var(--badge-unlimited-border);
+}
+
+.badge.discount {
+  background: var(--badge-discount-bg);
+  color: var(--badge-discount-text);
+  border-color: var(--badge-discount-border);
+}
+
+.badge.purchased {
+  background: var(--badge-purchased-bg);
+  color: var(--badge-purchased-text);
+  border-color: var(--badge-purchased-border);
+}
+
+/* 購入済みトグルスイッチ */
+.col-purchase {
+  width: 120px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.purchase-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.purchase-cb {
+  display: none;
+}
+
+.toggle-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dark-theme .toggle-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.purchase-cb:checked ~ .toggle-track {
+  background: #10b981;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.purchase-cb:checked ~ .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
+
+.toggle-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  min-width: 42px;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.purchase-cb:checked ~ .toggle-label {
+  color: var(--success);
+}
+
+/* 空の状態 */
+.empty-state {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* サーバー警告 */
+.server-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+}
