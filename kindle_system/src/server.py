@@ -15,7 +15,7 @@ import asyncio
 import subprocess
 from fastapi import FastAPI, Response, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import select, text
 import uvicorn
@@ -362,6 +362,20 @@ DIST_DIR = os.path.join(BASE_DIR, "frontend", "dist")
 if os.path.exists(DIST_DIR):
     # React ビルド成果物のマウント
     app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
+    
+    @app.get("/favicon.png")
+    async def get_favicon():
+        favicon_path = os.path.join(DIST_DIR, "favicon.png")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path)
+        raise HTTPException(status_code=404)
+    
+    @app.get("/favicon.svg")
+    async def get_favicon_svg():
+        favicon_path = os.path.join(DIST_DIR, "favicon.svg")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path, media_type="image/svg+xml")
+        raise HTTPException(status_code=404)
     
     @app.get("/", response_class=HTMLResponse)
     @app.get("/index.html", response_class=HTMLResponse)
