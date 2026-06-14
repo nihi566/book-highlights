@@ -244,87 +244,105 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     print(f"  [OK] 実処理対象: {len(work_items)} 件（並列数: {workers}）")
     print("-" * 60)
 
-    # ── 並列処理セマフォ ─────────────────────────────────────────────
-    semaphore = asyncio.Semaphore(workers)
+    # ── キューの作成とタスク投入 ─────────────────────────────────────
+    queue = asyncio.Queue()
+    for item in work_items:
+        queue.put_nowait(item)
 
     async def process_book(i: int, book: dict, worker_id: int) -> None:
-        """1冊分の処理ワーカー関数"""
+        """1冊分の処理関数（セマフォ不要）"""
         sample_asin = book["asin"]
         title       = book["title"]
         profile     = get_profile(worker_id)
 
-        # ワーカー起動オフセット（同時アクセスの波を平滑化）
-        if workers > 1:
-            offset = random.uniform(0.0, 2.0 * (worker_id % workers))
-            await asyncio.sleep(offset)
+        print(f"\n[Worker-{worker_id}][{i}/{len(samples)}] {title}")
+        print(f"  Sample ASIN : {sample_asin}")
+        print(f"  Profile     : {profile['id']}")
 
-        async with semaphore:
-            print(f"\n[Worker-{worker_id}][{i}/{len(samples)}] {title}")
-            print(f"  Sample ASIN : {sample_asin}")
-            print(f"  Profile     : {profile['id']}")
+        # BAN 発生中は解除を待つ
+        if ban_coordinator:
+            await ban_coordinator.wait_if_banned(worker_id=worker_id)
 
-            # BAN 発生中は解除を待つ
-            if ban_coordinator:
-                await ban_coordinator.wait_if_banned(worker_id=worker_id)
-
-            # 2. 本編 ASIN の解決
-            paid_asin = get_paid_asin(sample_asin)
-            if paid_asin:
-                print(f"  [OK] DB から本編 ASIN を取得しました: {paid_asin}")
-            else:
-                print(f"  [2/4] 本編 ASIN 解決中...")
-                try:
-                    paid_asin = await resolve_sample_to_paid(
-                        sample_asin,
-                        headless=True,
-                        browser_profile=profile,
-                        worker_id=worker_id,
-                        ban_coordinator=ban_coordinator,
-                    )
-                    if paid_asin:
-                        print(f"  [OK] 本編 ASIN 解決成功: {paid_asin}")
-                        save_mapping(sample_asin, paid_asin, title)
-                    else:
-                        print("  [✗] 本編 ASIN を解決できませんでした。スキップします。")
-                        return
-                except Exception as e:
-                    print(f"  [Error] ASIN 解決中にエラー発生: {e}")
-                    return
-
-            # BAN 待機チェック（resolve 後）
-            if ban_coordinator:
-                await ban_coordinator.wait_if_banned(worker_id=worker_id)
-
-            # 3. 価格情報をクロール
-            print(f"  [3/4] 価格情報をクロール中 (ASIN: {paid_asin})...")
+        # 2. 本編 ASIN の解決
+        paid_asin = get_paid_asin(sample_asin)
+        if paid_asin:
+            print(f"  [OK] DB から本編 ASIN を取得しました: {paid_asin}")
+        else:
+            print(f"  [2/4] 本編 ASIN 解決中...")
             try:
-                price_data = await crawl_price_info(
-                    paid_asin,
+                paid_asin = await resolve_sample_to_paid(
+                    sample_asin,
                     headless=True,
                     browser_profile=profile,
                     worker_id=worker_id,
                     ban_coordinator=ban_coordinator,
                 )
-                print(f"  [OK] クロール成功: 価格=¥{price_data.get('sell_price')}, ポイント={price_data.get('point_value')}pt")
-
-                # 4. DB に保存
-                save_price_history(price_data)
-                print("  [4/4] データベースに保存しました。")
-
+                if paid_asin:
+                    print(f"  [OK] 本編 ASIN 解決成功: {paid_asin}")
+                    save_mapping(sample_asin, paid_asin, title)
+                else:
+                    print("  [✗] 本編 ASIN を解決できませんでした。スキップします。")
+                    return
             except Exception as e:
-                print(f"  [Error] クロール中にエラー発生: {e}")
+                print(f"  [Error] ASIN 解決中にエラー発生: {e}")
+                return
 
-            # ワーカー間ディレイ（Amazon アクセス回避）
-            delay = random.uniform(1.5, 3.5) if workers > 1 else random.uniform(2.0, 5.0)
-            print(f"  [Sleep] アクセス回避のため {delay:.1f} 秒待機します...")
-            await asyncio.sleep(delay)
+        # BAN 待機チェック（resolve 後）
+        if ban_coordinator:
+            await ban_coordinator.wait_if_banned(worker_id=worker_id)
+
+        # 3. 価格情報をクロール
+        print(f"  [3/4] 価格情報をクロール中 (ASIN: {paid_asin})...")
+        try:
+            price_data = await crawl_price_info(
+                paid_asin,
+                headless=True,
+                browser_profile=profile,
+                worker_id=worker_id,
+                ban_coordinator=ban_coordinator,
+            )
+            print(f"  [OK] クロール成功: 価格=¥{price_data.get('sell_price')}, ポイント={price_data.get('point_value')}pt")
+
+            # 4. DB に保存
+            save_price_history(price_data)
+            print("  [4/4] データベースに保存しました。")
+
+        except Exception as e:
+            print(f"  [Error] クロール中にエラー発生: {e}")
+
+        # ワーカー間ディレイ（Amazon アクセス回避）
+        delay = random.uniform(1.5, 3.5) if workers > 1 else random.uniform(2.0, 5.0)
+        print(f"  [Sleep] アクセス回避のため {delay:.1f} 秒待機します...")
+        await asyncio.sleep(delay)
+
+    async def worker(worker_id: int) -> None:
+        """常駐ワーカータスク"""
+        # 初回の起動ズレ（同時ブラウザ起動の負荷軽減）
+        if workers > 1:
+            initial_delay = 2.5 * (worker_id - 1)
+            print(f"  [Worker-{worker_id}] 起動遅延として {initial_delay:.1f} 秒待機します...")
+            await asyncio.sleep(initial_delay)
+
+        while True:
+            try:
+                item = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            
+            i, book = item
+            try:
+                await process_book(i, book, worker_id)
+            except Exception as e:
+                print(f"  [Worker-{worker_id}][Error] 処理エラーが発生しました: {e}")
+            finally:
+                queue.task_done()
 
     # ── 全ワーカーを並列起動 ─────────────────────────────────────────
-    tasks = [
-        process_book(i, book, worker_id=(idx % workers) + 1)
-        for idx, (i, book) in enumerate(work_items)
+    worker_tasks = [
+        asyncio.create_task(worker(w_id))
+        for w_id in range(1, workers + 1)
     ]
-    await asyncio.gather(*tasks)
+    await asyncio.gather(*worker_tasks)
 
     print("\n" + "=" * 60)
     print("  全処理が完了しました。")
