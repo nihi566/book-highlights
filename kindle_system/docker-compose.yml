@@ -1,0 +1,19 @@
+services:
+  kindle-system:
+    build: .
+    container_name: kindle-system
+    ports:
+      - "8765:8765"
+    volumes:
+      # SQLite DB とセッションファイルの永続化
+      - ./data:/app/data
+      # Kindle キャッシュXML のマウント（読み取り専用）
+      # .env ファイルで KINDLE_CACHE_DIR を設定してください
+      - ${KINDLE_CACHE_DIR}:/kindle_cache:ro
+    environment:
+      # コンテナ内でのKindle XMLパス
+      - KINDLE_XML_PATH=/kindle_cache/KindleSyncMetadataCache.xml
+      # Python の文字化け防止
+      - PYTHONUNBUFFERED=1
+      - PYTHONUTF8=1
+    restart: unless-stopped

@@ -1,0 +1,29 @@
+# Node.js
+frontend/node_modules
+node_modules
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+
+# データベース（ボリュームマウントで管理するため除外）
+data/kindle_monitor.db
+data/session_start.txt
+
+# Git
+.git
+.gitignore
+
+# エディタ
+.vscode
+.idea
+
+# 環境変数ファイル（秘匿情報を含む可能性があるため除外）
+.env
+
+# フロントエンドビルド成果物（Dockerfile内でビルドするため不要）
+frontend/dist

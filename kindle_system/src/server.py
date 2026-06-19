@@ -25,9 +25,14 @@ sys.path.insert(0, BASE_DIR)
 PORT     = 8765
 MAIN_PY  = os.path.join(BASE_DIR, "main.py")
 REPORT   = os.path.join(BASE_DIR, "kindle_sales_report.html")
-XML_PATH = os.path.join(
-    os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local"),
-    "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml"
+# 環境変数 KINDLE_XML_PATH が設定されている場合はそれを優先する（Docker環境向け）
+# 設定されていない場合は Windows のデフォルトパスを使用する
+XML_PATH = os.environ.get(
+    "KINDLE_XML_PATH",
+    os.path.join(
+        os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local"),
+        "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml"
+    )
 )
 KINDLE_CANDIDATES = [
     os.path.join(os.environ.get("LOCALAPPDATA",""), "Amazon","Kindle","application","Kindle.exe"),
@@ -405,6 +410,6 @@ if __name__ == "__main__":
     print("=" * 50)
     try:
         # uvicornで起動
-        uvicorn.run(app, host="localhost", port=PORT, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
     except KeyboardInterrupt:
         print("\n停止しました。")
