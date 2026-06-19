@@ -11,7 +11,9 @@ export function useJob(onJobDone) {
   const startSSE = useCallback(() => {
     if (sseRef.current) sseRef.current.close();
 
-    const sse = new EventSource('/api/events');
+    // SSE のみクローラーコンテナに直接接続（VITE_CRAWLER_URL で設定）
+    const crawlerBase = import.meta.env.VITE_CRAWLER_URL || '';
+    const sse = new EventSource(`${crawlerBase}/api/events`);
     sseRef.current = sse;
 
     sse.onmessage = (e) => {

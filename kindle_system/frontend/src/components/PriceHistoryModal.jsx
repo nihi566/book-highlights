@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const SERVER = 'http://localhost:8765';
+
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -119,7 +119,7 @@ export default function PriceHistoryModal({ asin, title, onClose }) {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch(`${SERVER}/api/books/${asin}/history`)
+    fetch(`/api/books/${asin}/history`)
       .then((r) => r.json())
       .then((data) => {
         setHistory(data);

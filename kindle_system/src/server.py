@@ -22,7 +22,7 @@ import uvicorn
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-PORT     = 8765
+PORT     = int(os.environ.get("CRAWLER_PORT", "8001"))
 MAIN_PY  = os.path.join(BASE_DIR, "main.py")
 REPORT   = os.path.join(BASE_DIR, "kindle_sales_report.html")
 # 環境変数 KINDLE_XML_PATH が設定されている場合はそれを優先する（Docker環境向け）

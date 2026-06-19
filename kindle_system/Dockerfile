@@ -4,42 +4,70 @@
 FROM node:20-slim AS frontend-builder
 
 WORKDIR /frontend
-
-# 依存関係のインストール（キャッシュ活用のため package.json を先にコピー）
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-
-# ソースをコピーしてビルド
 COPY frontend/ ./
 RUN npm run build
 
 # ─────────────────────────────────────────────────────────────
-# Stage 2: バックエンド（Playwright 対応イメージ）
+# Stage 2: Laravel (PHP-FPM + Nginx)
 # ─────────────────────────────────────────────────────────────
-FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy AS app
+FROM php:8.4-fpm AS app
 
-WORKDIR /app
+# 必要な PHP 拡張と Nginx をインストール
+RUN apt-get update && apt-get install -y \
+    nginx \
+    libsqlite3-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    curl \
+    && docker-php-ext-install pdo pdo_sqlite zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Python 依存関係のインストール
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Composer のインストール
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Playwright ブラウザのインストール（Chromium のみ）
-RUN playwright install chromium
+WORKDIR /var/www/html
 
-# アプリケーションコードをコピー
-COPY main.py ./
-COPY src/ ./src/
-COPY test/ ./test/
+# Composer 依存関係のインストール（キャッシュ活用）
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# フロントエンドのビルド成果物をコピー
-COPY --from=frontend-builder /frontend/dist ./frontend/dist
+# Laravel アプリケーションコードをコピー
+COPY backend/ ./
 
-# データディレクトリを作成（ボリュームマウント先）
+# スクリプトを実行（アプリキーの生成など）
+RUN php artisan key:generate --force
+
+# React ビルド成果物を Laravel の public/ にコピー
+COPY --from=frontend-builder /frontend/dist/assets ./public/assets
+COPY --from=frontend-builder /frontend/dist/index.html ./public/index.html
+RUN test -f /frontend/dist/favicon.png && cp /frontend/dist/favicon.png ./public/favicon.png || true
+RUN test -f /frontend/dist/favicon.svg && cp /frontend/dist/favicon.svg ./public/favicon.svg || true
+
+# Nginx 設定
+COPY nginx/default.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+# ディレクトリ権限
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# SQLite データディレクトリ（ボリュームマウント先）
 RUN mkdir -p /app/data
 
-# ポート公開
-EXPOSE 8765
+# 起動スクリプト
+COPY <<'EOF' /start.sh
+#!/bin/sh
+# PHP-FPM をバックグラウンドで起動
+php-fpm -D
+# Nginx をフォアグラウンドで起動
+nginx -g "daemon off;"
+EOF
+RUN chmod +x /start.sh
 
-# 起動コマンド
-CMD ["python", "-u", "src/server.py"]
+EXPOSE 80
+
+CMD ["/start.sh"]
