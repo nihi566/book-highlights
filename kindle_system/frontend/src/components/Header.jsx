@@ -4,6 +4,7 @@ export default function Header({ bookCount }) {
   return (
     <header className="app-header">
       <div className="header-brand">
+        <div className="header-logo">KP</div>
         <div>
           <h1>Kindle Pulse</h1>
           <p className="header-sub">Kindle 価格モニタリングシステム</p>

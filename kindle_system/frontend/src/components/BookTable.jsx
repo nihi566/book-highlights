@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 function cleanCampaignText(raw = '') {
   return raw
@@ -51,7 +51,41 @@ function PurchaseToggle({ asin, isPurchased, onToggle }) {
   );
 }
 
-export default function BookTable({ books, loading, onTogglePurchase, onToggleWant, onOpenHistory }) {
+export default function BookTable({
+  books,
+  loading,
+  onTogglePurchase,
+  onToggleWant,
+  onOpenHistory,
+  hasMore,
+  onLoadMore,
+}) {
+  const observerRef = useRef(null);
+
+  useEffect(() => {
+    if (!hasMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    const currentTarget = observerRef.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, loading, onLoadMore]);
+
   if (loading) {
     return (
       <div className="table-container">
@@ -188,6 +222,14 @@ export default function BookTable({ books, loading, onTogglePurchase, onToggleWa
           })}
         </tbody>
       </table>
+      {hasMore && (
+        <div ref={observerRef} className="loading-more">
+          <div className="loading-dots">
+            <span /><span /><span />
+          </div>
+          <p>さらに読み込み中...</p>
+        </div>
+      )}
     </div>
   );
 }

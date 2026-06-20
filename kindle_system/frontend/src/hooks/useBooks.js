@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 /**
  * 書籍データの取得・ソート・フィルタを管理するカスタムフック
@@ -9,6 +9,12 @@ export function useBooks() {
   const [serverError, setServerError] = useState(false);
   const [sortMode, setSortMode] = useState('updated');
   const [filterMode, setFilterMode] = useState('all');
+  const [visibleCount, setVisibleCount] = useState(50);
+
+  // フィルタやソートが変更されたら、表示件数を初期件数（50件）にリセットする
+  useEffect(() => {
+    setVisibleCount(50);
+  }, [filterMode, sortMode]);
 
   const loadData = useCallback(async () => {
     try {
@@ -99,6 +105,13 @@ export function useBooks() {
     return result;
   })();
 
+  const displayedBooks = processedBooks.slice(0, visibleCount);
+  const hasMore = processedBooks.length > visibleCount;
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => prev + 50);
+  }, []);
+
   return {
     books,
     loading,
@@ -108,6 +121,9 @@ export function useBooks() {
     filterMode,
     toggleFilter,
     processedBooks,
+    displayedBooks,
+    hasMore,
+    loadMore,
     loadData,
     togglePurchase,
     toggleWant,

@@ -67,6 +67,7 @@ php-fpm -D
 nginx -g "daemon off;"
 EOF
 RUN chmod +x /start.sh
+RUN sed -i 's/\r$//' /start.sh
 
 EXPOSE 80
 

@@ -25,6 +25,9 @@ export default function App() {
     filterMode,
     toggleFilter,
     processedBooks,
+    displayedBooks,
+    hasMore,
+    loadMore,
     loadData,
     togglePurchase,
     toggleWant,
@@ -96,11 +99,13 @@ export default function App() {
 
       {/* 書籍テーブル */}
       <BookTable
-        books={processedBooks}
+        books={displayedBooks}
         loading={loading}
         onTogglePurchase={togglePurchase}
         onToggleWant={toggleWant}
         onOpenHistory={openHistory}
+        hasMore={hasMore}
+        onLoadMore={loadMore}
       />
 
       {/* 価格推移モーダル */}
