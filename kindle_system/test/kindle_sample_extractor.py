@@ -26,9 +26,14 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # ─── 定数 ──────────────────────────────────────────────────────────────────────
-DEFAULT_CACHE_PATH = os.path.join(
-    os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local"),
-    "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml"
+# 環境変数 KINDLE_XML_PATH が設定されている場合はそれを優先する（Docker環境向け）
+# 設定されていない場合は Windows のデフォルトパスを使用する
+DEFAULT_CACHE_PATH = os.environ.get(
+    "KINDLE_XML_PATH",
+    os.path.join(
+        os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local"),
+        "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml"
+    )
 )
 
 # ─── コア処理 ──────────────────────────────────────────────────────────────────

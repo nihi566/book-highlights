@@ -2,3 +2,4 @@ data/kindle_monitor.db
 *.html
 __pycache__/
 .vscode/
+.env

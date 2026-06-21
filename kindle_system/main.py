@@ -12,12 +12,12 @@ SQLite データベースに結果を保存するシステム司令塔。
 
 import os
 import sys
-import sqlite3
 import asyncio
 import random
 import argparse
 from datetime import datetime
 import io
+from sqlmodel import select
 
 # Windows CP932 環境での文字化け防止
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
@@ -39,10 +39,12 @@ MOCK_XML = kindle_sample_extractor.MOCK_XML
 
 from src.resolver import resolve_sample_to_paid
 from src.crawler import crawl_price_info
+from src.anti_ban import BanCoordinator, get_profile
+from src.database import init_db_orm, get_session
+from src.models import BookMapping, PriceHistory
 
 # データベースのパス設定
 DB_DIR = os.path.join(BASE_DIR, "data")
-DB_PATH = os.path.join(DB_DIR, "kindle_monitor.db")
 SESSION_FILE = os.path.join(DB_DIR, "session_start.txt")  # レジューム用セッションファイル
 
 
@@ -50,63 +52,46 @@ SESSION_FILE = os.path.join(DB_DIR, "session_start.txt")  # レジューム用�
 
 def init_db() -> None:
     """データベースと必要なテーブルを初期化する。"""
-    os.makedirs(DB_DIR, exist_ok=True)
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        
-        # book_mappings テーブル (ASIN マッピング用)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS book_mappings (
-                sample_asin TEXT PRIMARY KEY,
-                paid_asin TEXT,
-                title TEXT,
-                created_at TEXT
-            )
-        """)
-        
-        # price_history テーブル (価格履歴用)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS price_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                paid_asin TEXT,
-                sell_price INTEGER,
-                point_value INTEGER,
-                actual_price INTEGER,
-                campaign_text TEXT,
-                timestamp TEXT,
-                FOREIGN KEY (paid_asin) REFERENCES book_mappings(paid_asin)
-            )
-        """)
-        
-        # 既存DBへのカラム追加（エラーなら無視）
-        try:
-            cursor.execute("ALTER TABLE price_history ADD COLUMN is_unlimited INTEGER DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass
-            
-        conn.commit()
+    init_db_orm()
 
 
 def get_paid_asin(sample_asin: str) -> str:
     """DB に保存済みの本編 ASIN を取得する。なければ None。"""
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT paid_asin FROM book_mappings WHERE sample_asin = ?", (sample_asin,))
-        row = cursor.fetchone()
-        return row[0] if row and row[0] else None
+    with get_session() as session:
+        statement = select(BookMapping).where(BookMapping.sample_asin == sample_asin)
+        book = session.exec(statement).first()
+        return book.paid_asin if book and book.paid_asin else None
+
+
+def get_purchased_asins() -> set:
+    """購入済み（is_purchased=1）の paid_asin の集合を返す。"""
+    with get_session() as session:
+        statement = select(BookMapping).where(BookMapping.is_purchased == 1)
+        books = session.exec(statement).all()
+        return {b.paid_asin for b in books if b.paid_asin}
 
 
 def save_mapping(sample_asin: str, paid_asin: str, title: str) -> None:
     """サンプル ASIN と 本編 ASIN の対応を DB に保存する。"""
     now = datetime.now().isoformat()
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR REPLACE INTO book_mappings (sample_asin, paid_asin, title, created_at)
-            VALUES (?, ?, ?, ?)
-        """, (sample_asin, paid_asin, title, now))
-        conn.commit()
+    with get_session() as session:
+        statement = select(BookMapping).where(BookMapping.sample_asin == sample_asin)
+        book = session.exec(statement).first()
+        if book:
+            book.paid_asin = paid_asin
+            book.title = title
+            book.created_at = now
+            session.add(book)
+        else:
+            new_book = BookMapping(
+                sample_asin=sample_asin,
+                paid_asin=paid_asin,
+                title=title,
+                created_at=now,
+                is_purchased=0
+            )
+            session.add(new_book)
+        session.commit()
 
 
 def save_price_history(data: dict) -> None:
@@ -122,13 +107,18 @@ def save_price_history(data: dict) -> None:
     if sell_price is not None:
         actual_price = sell_price - point_value
         
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO price_history (paid_asin, sell_price, point_value, actual_price, campaign_text, timestamp, is_unlimited)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (data["asin"], sell_price, point_value, actual_price, campaign_text, now, is_unlimited))
-        conn.commit()
+    with get_session() as session:
+        new_history = PriceHistory(
+            paid_asin=data["asin"],
+            sell_price=sell_price,
+            point_value=point_value,
+            actual_price=actual_price,
+            campaign_text=campaign_text,
+            timestamp=now,
+            is_unlimited=is_unlimited
+        )
+        session.add(new_history)
+        session.commit()
 
 
 # ─── セッション管理（レジューム機能） ────────────────────────────────────────
@@ -165,26 +155,22 @@ def get_session_processed_asins(session_start: str) -> set:
     セッション開始時刻以降に price_history へ記録された paid_asin のセットを返す。
     = 今回のセッションで既に処理が完了した本のリスト。
     """
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT DISTINCT paid_asin
-            FROM price_history
-            WHERE timestamp >= ?
-        """, (session_start,))
-        return {row[0] for row in cursor.fetchall()}
+    with get_session() as session:
+        statement = select(PriceHistory.paid_asin).where(PriceHistory.timestamp >= session_start).distinct()
+        results = session.exec(statement).all()
+        return set(results)
 
 
 # ─── メインロジック ──────────────────────────────────────────────────────────
 
-async def run_integration(xml_path: str = None, limit: int = None, is_test: bool = False, start: int = None) -> None:
+async def run_integration(xml_path: str = None, limit: int = None, is_test: bool = False, start: int = None, workers: int = 1) -> None:
     """統合フローの実行"""
     print("=" * 60)
-    print("  Kindle システム統合処理開始")
+    print(f"  Kindle システム統合処理開始（並列数: {workers}）")
     print("=" * 60)
 
     init_db()
-    print("  [✓] データベース初期化完了")
+    print("  [OK] データベース初期化完了")
 
     # ── セッション管理: レジューム判定 ──────────────────────────────
     session_start = get_or_create_session_start()
@@ -202,7 +188,7 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         print(f"  [Error] XML パースに失敗しました: {e}")
         return
 
-    print(f"  [✓] サンプル本を {len(samples)} 件取得しました。")
+    print(f"  [OK] サンプル本を {len(samples)} 件取得しました。")
 
     if limit and limit > 0:
         samples = samples[:limit]
@@ -223,75 +209,150 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
             manual_start = None
 
     print("-" * 60)
-    
-    # 各サンプルについて処理
+
+    # 購入済み ASIN をループ前に一括取得
+    purchased_asins = get_purchased_asins()
+    if purchased_asins:
+        print(f"  [購入済み] {len(purchased_asins)} 件は購入済みのためクロールをスキップします。")
+
+    # BAN コーディネーター（並列数が2以上の場合に有効）
+    ban_coordinator = BanCoordinator() if workers > 1 else None
+
+    # ── スキップを事前適用してワークリストを作成 ─────────────────────
+    work_items = []  # (i, book) のリスト
     for i, book in enumerate(samples, 1):
         sample_asin = book["asin"]
-        title = book["title"]
-        
-        print(f"\n[{i}/{len(samples)}] {title}")
-        print(f"  Sample ASIN : {sample_asin}")
 
-        # ── 手動開始位置によるスキップ ──
+        # 手動開始位置スキップ
         if manual_start and i < manual_start:
             print(f"  [Manual-Skip] 指定位置（{manual_start}冊目）より前の処理をスキップします")
             continue
 
-        # ── レジューム判定: 今回のセッションで既に処理済みか確認 ──
+        # 購入済みスキップ
         paid_asin = get_paid_asin(sample_asin)
+        if paid_asin and paid_asin in purchased_asins:
+            print(f"  [Purchased-Skip] 購入済みのため確認をスキップします（ASIN: {paid_asin}）")
+            continue
+
+        # レジューム判定スキップ
         if paid_asin and paid_asin in session_processed:
             print(f"  [Resume-Skip] 既に処理済みのためスキップします（ASIN: {paid_asin}）")
             continue
 
-        # 2. DB から本編 ASIN を確認（キャッシュとして利用するが、スクレイピングは毎回実行）
+        work_items.append((i, book))
+
+    print(f"  [OK] 実処理対象: {len(work_items)} 件（並列数: {workers}）")
+    print("-" * 60)
+
+    # ── キューの作成とタスク投入 ─────────────────────────────────────
+    queue = asyncio.Queue()
+    for item in work_items:
+        queue.put_nowait(item)
+
+    async def process_book(i: int, book: dict, worker_id: int) -> None:
+        """1冊分の処理関数（セマフォ不要）"""
+        sample_asin = book["asin"]
+        title       = book["title"]
+        profile     = get_profile(worker_id)
+
+        print(f"\n[Worker-{worker_id}][{i}/{len(samples)}] {title}")
+        print(f"  Sample ASIN : {sample_asin}")
+        print(f"  Profile     : {profile['id']}")
+
+        # BAN 発生中は解除を待つ
+        if ban_coordinator:
+            await ban_coordinator.wait_if_banned(worker_id=worker_id)
+
+        # 2. 本編 ASIN の解決
+        paid_asin = get_paid_asin(sample_asin)
         if paid_asin:
-            print(f"  [✓] DB から本編 ASIN を取得しました: {paid_asin}")
+            print(f"  [OK] DB から本編 ASIN を取得しました: {paid_asin}")
         else:
-            print("  [2/4] 本編 ASIN 解決中...")
+            print(f"  [2/4] 本編 ASIN 解決中...")
             try:
-                # resolver.py 呼び出し
-                paid_asin = await resolve_sample_to_paid(sample_asin, headless=True)
+                paid_asin = await resolve_sample_to_paid(
+                    sample_asin,
+                    headless=True,
+                    browser_profile=profile,
+                    worker_id=worker_id,
+                    ban_coordinator=ban_coordinator,
+                )
                 if paid_asin:
-                    print(f"  [✓] 本編 ASIN 解決成功: {paid_asin}")
+                    print(f"  [OK] 本編 ASIN 解決成功: {paid_asin}")
                     save_mapping(sample_asin, paid_asin, title)
                 else:
                     print("  [✗] 本編 ASIN を解決できませんでした。スキップします。")
-                    continue
+                    return
             except Exception as e:
                 print(f"  [Error] ASIN 解決中にエラー発生: {e}")
-                continue
-                
+                return
+
+        # BAN 待機チェック（resolve 後）
+        if ban_coordinator:
+            await ban_coordinator.wait_if_banned(worker_id=worker_id)
+
         # 3. 価格情報をクロール
         print(f"  [3/4] 価格情報をクロール中 (ASIN: {paid_asin})...")
         try:
-            # crawler.py 呼び出し
-            price_data = await crawl_price_info(paid_asin, headless=True)
-            print(f"  [✓] クロール成功: 価格=¥{price_data.get('sell_price')}, ポイント={price_data.get('point_value')}pt")
-            
+            price_data = await crawl_price_info(
+                paid_asin,
+                headless=True,
+                browser_profile=profile,
+                worker_id=worker_id,
+                ban_coordinator=ban_coordinator,
+            )
+            print(f"  [OK] クロール成功: 価格=¥{price_data.get('sell_price')}, ポイント={price_data.get('point_value')}pt")
+
             # 4. DB に保存
             save_price_history(price_data)
             print("  [4/4] データベースに保存しました。")
-            
-            # 5. レポートを即座に更新 (途中で強制停止されても最新状態を残すため)
-            from src.reporter import generate_report
-            generate_report()
-            
+
         except Exception as e:
             print(f"  [Error] クロール中にエラー発生: {e}")
+
+        # ワーカー間ディレイ（Amazon アクセス回避）
+        delay = random.uniform(1.5, 3.5) if workers > 1 else random.uniform(2.0, 5.0)
+        print(f"  [Sleep] アクセス回避のため {delay:.1f} 秒待機します...")
+        await asyncio.sleep(delay)
+
+    async def worker(worker_id: int) -> None:
+        """常駐ワーカータスク"""
+        # 初回の起動ズレ（同時ブラウザ起動の負荷軽減）
+        if workers > 1:
+            initial_delay = 2.5 * (worker_id - 1)
+            print(f"  [Worker-{worker_id}] 起動遅延として {initial_delay:.1f} 秒待機します...")
+            await asyncio.sleep(initial_delay)
+
+        while True:
+            try:
+                item = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
             
-        # ディレイ (最後の要素以外)
-        if i < len(samples):
-            delay = random.uniform(2.0, 5.0)
-            print(f"  [Sleep] Amazon アクセス回避のため {delay:.1f} 秒待機します...")
-            await asyncio.sleep(delay)
-    
+            i, book = item
+            try:
+                await process_book(i, book, worker_id)
+            except Exception as e:
+                print(f"  [Worker-{worker_id}][Error] 処理エラーが発生しました: {e}")
+            finally:
+                queue.task_done()
+
+    # ── 全ワーカーを並列起動 ─────────────────────────────────────────
+    worker_tasks = [
+        asyncio.create_task(worker(w_id))
+        for w_id in range(1, workers + 1)
+    ]
+    await asyncio.gather(*worker_tasks)
+
     print("\n" + "=" * 60)
     print("  全処理が完了しました。")
     print("=" * 60)
 
     # 全処理完了: セッションファイルを削除し、次回は新規セッションとして実行されるようにする
     clear_session()
-    print("  [✓] セッションをクリアしました。次回実行時は全件処理されます。")
+    print("  [OK] セッションをクリアしました。次回実行時は全件処理されます。")
+
+
 
 
 def run_tests():
@@ -327,12 +388,10 @@ def run_tests():
         asyncio.run(run_integration(xml_path=tmp_path, is_test=True))
         
         # DB が正しく作成され、データが入っているか検証
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM book_mappings")
-            mappings_count = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM price_history")
-            history_count = cursor.fetchone()[0]
+        from sqlmodel import select, func
+        with get_session() as session:
+            mappings_count = session.exec(select(func.count()).select_from(BookMapping)).one()
+            history_count = session.exec(select(func.count()).select_from(PriceHistory)).one()
             
             print(f"\n[検証結果] マッピング件数: {mappings_count}, 履歴件数: {history_count}")
             if mappings_count > 0 and history_count > 0:
@@ -350,6 +409,8 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, help="処理する最大件数", default=None)
     parser.add_argument("--start", type=int, help="開始するインデックス番号", default=None)
     parser.add_argument("--test", action="store_true", help="内蔵テストを実行する")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="並列ブラウザ数（デフォルト: 1、推奨: 2〜3）")
     args = parser.parse_args()
     
     if args.test:
@@ -361,5 +422,9 @@ if __name__ == "__main__":
         if not os.path.exists(xml_path):
             print(f"エラー: XML ファイルが見つかりません: {xml_path}")
             sys.exit(1)
-            
-        asyncio.run(run_integration(xml_path=xml_path, limit=args.limit, start=args.start))
+
+        workers = max(1, min(args.workers, 5))  # 1以上5以下にクランプ
+        if workers != args.workers:
+            print(f"[注意] --workers は 1、5 の範囲にクランプされました: {args.workers} → {workers}")
+
+        asyncio.run(run_integration(xml_path=xml_path, limit=args.limit, start=args.start, workers=workers))

@@ -1,24 +1,38 @@
 """
 server.py
 ---------
-Kindle Pulse ローカル管理サーバー。
+Kindle Pulse ローカル管理サーバー（FastAPI + SQLModel版）。
 ブラウザから http://localhost:8765 でレポート閲覧 + ボタン操作が可能になる。
 
 起動方法:
     python C:\\dev\\kindle_system\\src\\server.py
 """
 
-import os, sys, json, time, threading, subprocess, queue
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse
+import os
+import sys
+import time
+import asyncio
+import subprocess
+from fastapi import FastAPI, Response, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from sqlmodel import select, text
+import uvicorn
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PORT     = 8765
+sys.path.insert(0, BASE_DIR)
+PORT     = int(os.environ.get("CRAWLER_PORT", "8001"))
 MAIN_PY  = os.path.join(BASE_DIR, "main.py")
 REPORT   = os.path.join(BASE_DIR, "kindle_sales_report.html")
-XML_PATH = os.path.join(
-    os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local"),
-    "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml"
+# 環境変数 KINDLE_XML_PATH が設定されている場合はそれを優先する（Docker環境向け）
+# 設定されていない場合は Windows のデフォルトパスを使用する
+XML_PATH = os.environ.get(
+    "KINDLE_XML_PATH",
+    os.path.join(
+        os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local"),
+        "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml"
+    )
 )
 KINDLE_CANDIDATES = [
     os.path.join(os.environ.get("LOCALAPPDATA",""), "Amazon","Kindle","application","Kindle.exe"),
@@ -27,273 +41,375 @@ KINDLE_CANDIDATES = [
     os.path.join(os.environ.get("LOCALAPPDATA",""), "Amazon","Kindle","Kindle.exe"),
 ]
 
-# ─── ジョブ管理 ──────────────────────────────────────────────────────────────
+# SQLModel の依存関係
+from src.database import get_session
+from src.models import BookMapping, PriceHistory
+
+# ─── ジョブ管理（非同期版） ──────────────────────────────────────────────────
 
 class JobManager:
     def __init__(self):
-        self._lock = threading.Lock()
-        self.running   = False
+        self.running = False
         self.lines: list[str] = []
-        self._subs: list[queue.Queue] = []
-        self.current_proc = None   # 実行中のサブプロセス
+        self._subs: list[asyncio.Queue] = []
+        self.current_proc = None   # 実行中の非同期サブプロセス
+        self.current_task = None   # バックグラウンド実行中の asyncio.Task
         self.stopped = False       # 停止フラグ
 
     def start(self):
-        with self._lock:
-            self.running = True
-            self.stopped = False
-            self.lines   = []
-            self._subs   = []
+        self.running = True
+        self.stopped = False
+        self.lines = []
+        self._subs = []
 
     def emit(self, line: str):
-        with self._lock:
-            self.lines.append(line)
-            for q in self._subs:
-                q.put(line)
+        self.lines.append(line)
+        for q in self._subs:
+            q.put_nowait(line)
 
-    def subscribe(self) -> queue.Queue:
-        q: queue.Queue = queue.Queue()
-        with self._lock:
-            for l in self.lines:
-                q.put(l)
-            if not self.running:
-                q.put(None)
-            else:
-                self._subs.append(q)
+    def subscribe(self) -> asyncio.Queue:
+        q = asyncio.Queue()
+        for l in self.lines:
+            q.put_nowait(l)
+        if not self.running:
+            q.put_nowait(None)
+        else:
+            self._subs.append(q)
         return q
 
     def stop(self):
-        """実行中のサブプロセスを強制終了する。"""
-        with self._lock:
-            self.stopped = True
-            proc = self.current_proc
-        if proc and proc.poll() is None:
+        """実行中の処理とサブプロセスを強制終了する。"""
+        self.stopped = True
+        
+        # サブプロセスの強制終了
+        proc = self.current_proc
+        if proc and proc.returncode is None:
             try:
                 proc.kill()
             except Exception:
                 pass
+        
+        # バックグラウンド非同期タスクのキャンセル
+        task = self.current_task
+        if task and not task.done():
+            task.cancel()
+            
         self.emit("[停止] ユーザーによって処理が中断されました。")
 
     def finish(self):
-        with self._lock:
-            self.running = False
-            self.current_proc = None
-            for q in self._subs:
-                q.put(None)
-            self._subs = []
+        self.running = False
+        self.current_proc = None
+        self.current_task = None
+        for q in self._subs:
+            q.put_nowait(None)
+        self._subs = []
 
 job = JobManager()
 
-# ─── ジョブ処理 ──────────────────────────────────────────────────────────────
+# ─── ジョブ処理（非同期） ────────────────────────────────────────────────────
 
-def _run_proc(cmd: list):
+async def _run_proc(cmd: list):
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
-    proc = subprocess.Popen(
-        [cmd[0], "-u"] + cmd[1:],   # -u = 標準出力バッファなし
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, encoding="utf-8", errors="replace",
+    
+    # 非同期サブプロセス起動
+    proc = await asyncio.create_subprocess_exec(
+        cmd[0], *cmd[1:],
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
         env=env,
     )
-    with job._lock:
-        job.current_proc = proc
-    for line in proc.stdout:
-        if job.stopped:
-            break
-        job.emit(line.rstrip())
-    proc.wait()
-    with job._lock:
+    job.current_proc = proc
+    
+    try:
+        # stdout から非同期で1行ずつ読み込む
+        while True:
+            line_bytes = await proc.stdout.readline()
+            if not line_bytes:
+                break
+            line = line_bytes.decode("utf-8", errors="replace").rstrip()
+            if job.stopped:
+                break
+            job.emit(line)
+    except asyncio.CancelledError:
+        # タスクがキャンセルされた場合にサブプロセスを確実に kill する
+        if proc.returncode is None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        raise
+    finally:
+        await proc.wait()
         job.current_proc = None
+
     if not job.stopped:
         job.emit(f"[完了] 終了コード: {proc.returncode}")
 
-def _regen_report():
-    try:
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            "reporter", os.path.join(BASE_DIR, "src", "reporter.py"))
-        mod  = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        mod.generate_report()
-        job.emit("[Report] レポートを更新しました。ページをリロードしてください。")
-    except Exception as e:
-        job.emit(f"[Report] エラー: {e}")
 
-def do_run_only(start_val=None):
+async def do_run_only(start_val=None):
     job.start()
     try:
         job.emit("=== 今すぐ更新 ===")
-        cmd = [sys.executable, "-X", "utf8", MAIN_PY]
+        cmd = [sys.executable, "-u", "-X", "utf8", MAIN_PY, "--workers", "2"]
         if start_val:
             cmd += ["--start", str(start_val)]
-        _run_proc(cmd)
-        _regen_report()
+        await _run_proc(cmd)
+    except asyncio.CancelledError:
+        # キャンセル時は finish で適切に処理される
+        pass
+    except Exception as e:
+        job.emit(f"[エラー] {e}")
     finally:
         job.finish()
 
-def do_sync_and_run(start_val=None):
-    job.start()
+
+
+
+# ─── 購入済み / 欲しい本 DB操作 ──────────────────────────────────────────────
+
+def set_purchased(paid_asin: str, status: int) -> bool:
+    """購入済みDBUPDATE。対象が見つからない場合は False。"""
     try:
-        kindle = next((p for p in KINDLE_CANDIDATES if os.path.exists(p)), None)
-        if not kindle:
-            job.emit("[エラー] Kindle for PC が見つかりません。")
-            job.emit(f"  検索パス: {KINDLE_CANDIDATES}")
-            job.emit("  手動で同期後、「今すぐ更新」を使ってください。")
-            return
+        with get_session() as session:
+            statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
+            books = session.exec(statement).all()
+            if not books:
+                return False
+            for book in books:
+                book.is_purchased = status
+                session.add(book)
+            session.commit()
+            return True
+    except Exception:
+        return False
 
-        initial_mtime = os.path.getmtime(XML_PATH) if os.path.exists(XML_PATH) else 0
-        job.emit("=== Kindle同期モード ===")
-        job.emit(f"[✓] Kindleを起動します: {kindle}")
 
-        # Kindle をバックグラウンドで起動（すでに起動中でも問題ない）
-        subprocess.Popen([kindle], creationflags=subprocess.DETACHED_PROCESS)
+def set_wanted(paid_asin: str, status: int) -> bool:
+    """欲しい本フラグをDBUPDATE。対象が見つからない場合は False。"""
+    try:
+        with get_session() as session:
+            statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
+            books = session.exec(statement).all()
+            if not books:
+                return False
+            for book in books:
+                book.is_wanted = status
+                session.add(book)
+            session.commit()
+            return True
+    except Exception:
+        return False
 
-        job.emit("XMLファイルの更新を待機中... (最大5分)")
-        job.emit("  Kindleが起動したら、ライブラリの同期が完了するまでお待ちください。")
+# ─── FastAPI アプリケーション ────────────────────────────────────────────────
 
-        start   = time.time()
-        detected = False
-        last_log = 0
+app = FastAPI(title="Kindle Pulse Server")
 
-        while time.time() - start < 300:
-            if job.stopped:
-                break
-            time.sleep(2)
-            mtime = os.path.getmtime(XML_PATH) if os.path.exists(XML_PATH) else 0
-            if mtime > initial_mtime:
-                job.emit("[✓] XMLファイルの更新を検知しました！同期完了。")
-                detected = True
-                break
-            elapsed = int(time.time() - start)
-            if elapsed - last_log >= 15:
-                last_log = elapsed
-                job.emit(f"  待機中... ({elapsed}秒経過)")
+# CORS 設定（既存のフロントエンドが別オリジンからアクセスする可能性を考慮）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-        if job.stopped:
-            return
+@app.get("/api/books")
+async def get_books():
+    """最新の書籍リストと価格履歴を取得して返却する"""
+    query = """
+    WITH latest_prices AS (
+        SELECT p1.paid_asin, p1.sell_price, p1.point_value, p1.actual_price, p1.campaign_text, p1.timestamp, p1.is_unlimited
+        FROM price_history p1
+        INNER JOIN (
+            SELECT paid_asin, MAX(timestamp) as max_ts
+            FROM price_history
+            GROUP BY paid_asin
+        ) p2 ON p1.paid_asin = p2.paid_asin AND p1.timestamp = p2.max_ts
+    )
+    SELECT 
+        m.title, 
+        l.paid_asin as asin, 
+        l.sell_price, 
+        l.point_value, 
+        l.actual_price, 
+        l.campaign_text, 
+        l.timestamp,
+        l.is_unlimited,
+        COALESCE(m.is_purchased, 0) as is_purchased,
+        COALESCE(m.is_wanted,   0) as is_wanted
+    FROM book_mappings m
+    JOIN latest_prices l ON m.paid_asin = l.paid_asin
+    ORDER BY l.actual_price ASC
+    """
+    
+    def fetch_data():
+        with get_session() as session:
+            result = session.exec(text(query)).mappings().all()
+            return [dict(row) for row in result]
+            
+    books = await asyncio.to_thread(fetch_data)
+    return books
 
-        if not detected:
-            job.emit("[タイムアウト] 5分以内にXMLの更新が検知されませんでした。")
-            return
 
-        job.emit("")
-        job.emit("=== main.py を実行します ===")
-        cmd = [sys.executable, "-X", "utf8", MAIN_PY]
-        if start_val:
-            cmd += ["--start", str(start_val)]
-        _run_proc(cmd)
-        _regen_report()
-    finally:
-        job.finish()
 
-# ─── HTTPハンドラー ───────────────────────────────────────────────────────────
+@app.get("/api/books/{asin}/history")
+async def get_book_history(asin: str):
+    """指定 ASIN の価格履歴を全件取得して返す"""
+    query = """
+    SELECT sell_price, point_value, actual_price, campaign_text, timestamp, is_unlimited
+    FROM price_history
+    WHERE paid_asin = :asin
+    ORDER BY timestamp ASC
+    """
+    def fetch():
+        with get_session() as session:
+            result = session.exec(text(query), params={"asin": asin}).mappings().all()
+            return [dict(row) for row in result]
 
-class Handler(BaseHTTPRequestHandler):
-    def log_message(self, *_): pass  # アクセスログ無効
+    history = await asyncio.to_thread(fetch)
+    return history
 
-    def _cors(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
 
-    def send_json(self, data, status=200):
-        body = json.dumps(data, ensure_ascii=False).encode()
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self._cors()
-        self.end_headers()
-        self.wfile.write(body)
+@app.get("/api/status")
+async def get_status():
+    """現在のジョブ状態を取得する"""
+    return {"running": job.running, "count": len(job.lines)}
 
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.end_headers()
 
-    def do_GET(self):
-        path = urlparse(self.path).path
-        if path in ("/", "/index.html"):
-            if os.path.exists(REPORT):
-                with open(REPORT, "r", encoding="utf-8") as f:
-                    body = f.read().encode("utf-8")
-            else:
-                body = "<p>reporter.py を実行してレポートを生成してください。</p>".encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+@app.get("/api/events")
+async def get_events():
+    """SSE (Server-Sent Events) で進捗ログをストリーミング配信する"""
+    q = job.subscribe()
 
-        elif path == "/api/status":
-            self.send_json({"running": job.running, "count": len(job.lines)})
+    async def event_generator():
+        try:
+            while True:
+                try:
+                    # 25秒タイムアウトで待機し、タイムアウト時は ping を送信
+                    line = await asyncio.wait_for(q.get(), timeout=25.0)
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+                    continue
 
-        elif path == "/api/events":
-            q = job.subscribe()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/event-stream")
-            self.send_header("Cache-Control",  "no-cache")
-            self.send_header("Connection",      "keep-alive")
-            self._cors()
-            self.end_headers()
-            try:
-                while True:
-                    try:
-                        line = q.get(timeout=25)
-                    except queue.Empty:
-                        self.wfile.write(b": ping\n\n")
-                        self.wfile.flush()
-                        continue
-                    if line is None:
-                        self.wfile.write(b"event: done\ndata: done\n\n")
-                        self.wfile.flush()
-                        break
-                    escaped = line.replace("\n", "\\n").replace("\r", "")
-                    self.wfile.write(f"data: {escaped}\n\n".encode("utf-8"))
-                    self.wfile.flush()
-            except (BrokenPipeError, ConnectionResetError):
-                pass
+                if line is None:
+                    # 完了通知
+                    yield "event: done\ndata: done\n\n"
+                    break
+
+                escaped = line.replace("\n", "\\n").replace("\r", "")
+                yield f"data: {escaped}\n\n"
+        except asyncio.CancelledError:
+            # クライアント切断時
+            pass
+        finally:
+            # 切断または終了時に購読を解除
+            if q in job._subs:
+                job._subs.remove(q)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
+
+
+@app.post("/api/run")
+async def run_job(start: str = Query(None)):
+    """クロール処理のみを開始する"""
+    if job.running:
+        raise HTTPException(status_code=409, detail="すでに実行中です。")
+    
+    # asyncio.create_task を使用してバックグラウンドタスクとして非同期に回す
+    job.current_task = asyncio.create_task(do_run_only(start))
+    return {"ok": True}
+
+
+
+
+@app.post("/api/stop")
+async def stop_job():
+    """実行中のジョブを停止する"""
+    if job.running:
+        job.stop()
+        return {"ok": True}
+    else:
+        return {"ok": False, "message": "実行中のジョブがありません。"}
+
+
+@app.post("/api/want")
+async def want(asin: str = Query(...), status: int = Query(1)):
+    """書籍の「欲しい」ステータスをトグルする"""
+    if not asin:
+        raise HTTPException(status_code=400, detail="asin パラメータが必要です。")
+    ok = await asyncio.to_thread(set_wanted, asin, status)
+    return {"ok": ok, "asin": asin, "is_wanted": status}
+
+
+@app.post("/api/purchase")
+async def purchase(asin: str = Query(...), status: int = Query(1)):
+    """書籍の購入ステータスをトグルする"""
+    if not asin:
+        raise HTTPException(status_code=400, detail="asin パラメータが必要です。")
+    
+    # スレッドプール上で同期DB操作を実行
+    ok = await asyncio.to_thread(set_purchased, asin, status)
+    return {"ok": ok, "asin": asin, "is_purchased": status}
+
+
+# ─── React フロントエンドのマウントと配信 ─────────────────────────────────────
+
+DIST_DIR = os.path.join(BASE_DIR, "frontend", "dist")
+
+if os.path.exists(DIST_DIR):
+    # React ビルド成果物のマウント
+    app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
+    
+    @app.get("/favicon.png")
+    async def get_favicon():
+        favicon_path = os.path.join(DIST_DIR, "favicon.png")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path)
+        raise HTTPException(status_code=404)
+    
+    @app.get("/favicon.svg")
+    async def get_favicon_svg():
+        favicon_path = os.path.join(DIST_DIR, "favicon.svg")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path, media_type="image/svg+xml")
+        raise HTTPException(status_code=404)
+    
+    @app.get("/", response_class=HTMLResponse)
+    @app.get("/index.html", response_class=HTMLResponse)
+    async def get_index():
+        with open(os.path.join(DIST_DIR, "index.html"), "r", encoding="utf-8") as f:
+            body = f.read()
+        return HTMLResponse(content=body)
+else:
+    # React がまだビルドされていない場合は、従来の kindle_sales_report.html を表示する
+    @app.get("/", response_class=HTMLResponse)
+    @app.get("/index.html", response_class=HTMLResponse)
+    async def get_index():
+        if os.path.exists(REPORT):
+            with open(REPORT, "r", encoding="utf-8") as f:
+                body = f.read()
+            return HTMLResponse(content=body)
         else:
-            self.send_response(404); self.end_headers()
-
-    def do_POST(self):
-        parsed_url = urlparse(self.path)
-        path = parsed_url.path
-        
-        # クエリパラメータから start を取得
-        from urllib.parse import parse_qs
-        query_params = parse_qs(parsed_url.query)
-        start_val = query_params.get("start", [None])[0]
-
-        # 停止は実行中でなくてもOK（エラーにしない）
-        if path == "/api/stop":
-            if job.running:
-                job.stop()
-                self.send_json({"ok": True})
-            else:
-                self.send_json({"ok": False, "message": "実行中のジョブがありません。"})
-            return
-
-        if job.running:
-            self.send_json({"ok": False, "message": "すでに実行中です。"}, 409)
-            return
-        if path == "/api/run":
-            threading.Thread(target=do_run_only, args=(start_val,), daemon=True).start()
-            self.send_json({"ok": True})
-        elif path == "/api/sync-run":
-            threading.Thread(target=do_sync_and_run, args=(start_val,), daemon=True).start()
-            self.send_json({"ok": True})
-        else:
-            self.send_response(404); self.end_headers()
+            return HTMLResponse(content="<p>React のビルドまたは reporter.py の実行を行ってください。</p>", status_code=200)
 
 # ─── エントリポイント ─────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    from http.server import ThreadingHTTPServer
     print("=" * 50)
-    print(f"  Kindle Pulse サーバー起動")
+    print(f"  Kindle Pulse サーバー起動 (FastAPI + SQLModel)")
     print(f"  → http://localhost:{PORT}")
     print(f"  停止: Ctrl+C")
     print("=" * 50)
     try:
-        ThreadingHTTPServer(("localhost", PORT), Handler).serve_forever()
+        # uvicornで起動
+        uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
     except KeyboardInterrupt:
         print("\n停止しました。")
