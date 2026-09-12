@@ -1,36 +1,14 @@
 services:
-  # ─── Laravel API サーバー + React 配信 ─────────────────────────
-  laravel:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: kindle-laravel
-    ports:
-      - "8765:80"
-    volumes:
-      # SQLite DB の永続化（Laravel と crawler が共有）
-      - ./data:/app/data
-    environment:
-      - DB_CONNECTION=sqlite
-      - DB_DATABASE=/app/data/kindle_monitor.db
-      - CRAWLER_URL=http://crawler:8001
-      - APP_ENV=production
-      - APP_DEBUG=false
-      - LOG_CHANNEL=stderr
-    depends_on:
-      - crawler
-    restart: unless-stopped
-
-  # ─── Python クローラー (Playwright + SSE) ──────────────────────
+  # ─── Python クローラー (Playwright + SSE) + フロントエンド配信 ──────
   crawler:
     build:
       context: .
-      dockerfile: Dockerfile.crawler
+      dockerfile: Dockerfile
     container_name: kindle-crawler
     ports:
       - "8001:8001"
     volumes:
-      # SQLite DB の永続化（Laravel と共有）
+      # SQLite DB の永続化
       - ./data:/app/data
       # Kindle キャッシュXML のマウント（読み取り専用）
       - ${KINDLE_CACHE_DIR}:/kindle_cache:ro
