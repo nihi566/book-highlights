@@ -30,7 +30,15 @@ from src.repository import get_wanted_books
 
 
 def _format_price(book: dict) -> str:
-    """actual_price があればそれを整形して返し、無ければ「価格情報なし」を返す（R5 対策）。"""
+    """
+    actual_price があればそれを整形して返し、無ければ「価格情報なし」を返す（R5 対策）。
+
+    is_unlimited の本は src/crawler.py の KU 安全弁により sell_price/actual_price が
+    常に 0 で保存される（本来の価格は campaign_text に退避されている）ため、
+    ここで ¥0 と誤表示しないよう先に判定する。
+    """
+    if book.get("is_unlimited"):
+        return "Kindle Unlimited 対象"
     actual_price = book.get("actual_price")
     if actual_price is None:
         return "価格情報なし"

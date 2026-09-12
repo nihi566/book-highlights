@@ -11,10 +11,15 @@ if exist ".env" (
     )
 )
 
-echo クロール情報を更新中...
-python main.py
+rem 読みたい本(is_wanted=1)の価格を更新する。main.pyはKindleサンプル本用の別系統
+rem （--start未指定時はインデックス入力を待つ対話プロンプトに入り無人実行では止まる上、
+rem   is_wanted=1の本は一切扱わない）なので、読書メーター同期の実処理である
+rem src.bookmeter_sync.sync_bookmeter_wishlist()を直接呼び出す（src/server.pyの
+rem do_bookmeter_sync()が使っているのと同じ関数）。
+echo 読みたい本の価格情報を更新中...
+python -c "import asyncio; from src.bookmeter_sync import sync_bookmeter_wishlist; asyncio.run(sync_bookmeter_wishlist(print))"
 if errorlevel 1 (
-    echo main.py の実行に失敗しました。中断します。
+    echo 読みたい本の更新に失敗しました。中断します。
     pause
     exit /b 1
 )
@@ -49,9 +54,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-git diff --cached --quiet
+rem index.html以外に公開リポジトリ側で既にステージ済みの変更が残っていても
+rem 巻き込まないよう、差分確認・commitともにindex.htmlのみを対象にする。
+git diff --cached --quiet -- index.html
 if errorlevel 1 (
-    git commit -m "chore: update wishlist" -q
+    git commit -m "chore: update wishlist" -q -- index.html
     if errorlevel 1 (
         echo git commit に失敗しました。中断します。
         pause

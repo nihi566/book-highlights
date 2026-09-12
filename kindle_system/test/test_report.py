@@ -72,6 +72,29 @@ class BuildHtmlTest(unittest.TestCase):
         self.assertIn("価格未取得本", html)
         self.assertIn("価格情報なし", html)
 
+    def test_shows_ku_label_instead_of_zero_yen_for_unlimited_books(self):
+        """
+        src/crawler.pyのKU安全弁はis_unlimited本のsell_price/actual_priceを常に0で
+        保存する（本来の価格はcampaign_textへ退避）。¥0とそのまま表示すると
+        「無料で買える本」という誤解を生むため、専用ラベルで表示すること。
+        """
+        books = [
+            {
+                "title": "Unlimited対象本",
+                "asin": "B0KU001",
+                "sell_price": 0,
+                "point_value": 0,
+                "actual_price": 0,
+                "campaign_text": "通常価格: ¥1,200",
+                "timestamp": "2026-01-01T00:00:00",
+                "is_unlimited": 1,
+            }
+        ]
+        html = report.build_html(books)
+        self.assertIn("Unlimited対象本", html)
+        self.assertNotIn("¥0", html)
+        self.assertIn("Kindle Unlimited 対象", html)
+
     def test_renders_valid_html_when_no_books(self):
         html = report.build_html([])
         self.assertIn("<html", html)
