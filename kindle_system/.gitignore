@@ -1,5 +1,6 @@
 data/kindle_monitor.db
-*.html
+kindle_sales_report.html
+!frontend/index.html
 __pycache__/
 .vscode/
 .env
