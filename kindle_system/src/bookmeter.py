@@ -78,6 +78,8 @@ def parse_books(html: str) -> List[Dict[str, str]]:
                 a.get_text(strip=True)
                 for a in item.select("ul.detail__authors li a")
             ]
+            if not authors:
+                logger.warning("著者要素が見つかりませんでした（title=%s）", title)
             books.append({"title": title, "author": "、".join(authors)})
         except Exception:
             logger.warning("書籍1件の解析に失敗したためスキップします", exc_info=True)

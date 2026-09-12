@@ -102,6 +102,21 @@ class ParseBooksTest(unittest.TestCase):
     def test_empty_html_returns_empty_list(self):
         self.assertEqual(parse_books("<html><body></body></html>"), [])
 
+    def test_missing_author_returns_empty_author_string_and_continues(self):
+        # 著者要素が無い書籍でも例外にせず、空文字の著者として継続する
+        html = """
+        <ul class="book-list__group">
+          <li class="group__book">
+            <div class="book__detail">
+              <div class="detail__title"><a href="/books/1">著者不明の本</a></div>
+              <ul class="detail__authors"></ul>
+            </div>
+          </li>
+        </ul>
+        """
+        books = parse_books(html)
+        self.assertEqual(books, [{"title": "著者不明の本", "author": ""}])
+
 
 class GetNextPageUrlTest(unittest.TestCase):
     def test_returns_next_url_when_present(self):
@@ -208,11 +223,32 @@ class FetchWishBooksTest(unittest.TestCase):
     @patch("src.bookmeter.time.sleep", return_value=None)
     @patch("src.bookmeter.requests.Session.get")
     def test_corrects_encoding_when_response_misdetected_as_latin1(self, mock_get, mock_sleep):
-        # Content-Type に charset が無い応答は requests が ISO-8859-1 と誤判定
-        # することがあり、対応しないと日本語タイトルが無音で文字化けする
+        # Content-Type に charset が無い応答で response.encoding が誤って
+        # "ISO-8859-1" のままだと、日本語タイトルが無音で文字化けする。
+        # MagicMockではなく実際のrequests.Responseを使い、バイト列からの
+        # デコード結果そのもの（response.textの中身）で検証する
+        resp = requests.Response()
+        resp.status_code = 200
+        resp._content = FIXTURE_PAGE_LAST.encode("utf-8")
+        resp.headers["Content-Type"] = "text/html"
+        resp.encoding = "ISO-8859-1"  # 誤判定された状態を模擬
+        mock_get.return_value = resp
+
+        books = fetch_wish_books()
+
+        self.assertEqual(books[0]["title"], "共著の本")
+        self.assertEqual(books[0]["author"], "著者A、著者B")
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_encoding_correction_falls_back_to_utf8_when_apparent_encoding_unknown(
+        self, mock_get, mock_sleep
+    ):
+        # apparent_encoding 自体がNoneを返す極端なケースでも、少なくとも例外で
+        # 落ちずにutf-8へフォールバックすることを確認する
         resp = _mock_response(FIXTURE_PAGE_LAST)
-        resp.encoding = "ISO-8859-1"
-        resp.apparent_encoding = "utf-8"
+        resp.encoding = None
+        resp.apparent_encoding = None
         mock_get.return_value = resp
 
         books = fetch_wish_books()
