@@ -357,5 +357,116 @@ class SaveMappingCrossSourceDedupTest(unittest.TestCase):
             self.assertEqual(rows[0].source, "kindle_sample")
 
 
+class GetWantedBooksTest(unittest.TestCase):
+    """get_wanted_books()（is_wanted=1 の本を最新価格とあわせて取得する）のテスト。
+
+    is_wanted=0 の本を含めないこと、価格情報が未取得の本も LEFT JOIN により
+    欠落しないことを中心に検証する（Phase の設計方針: R5 対策）。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_wanted_test_")
+        db_path = os.path.join(self.tmpdir, "wanted.db")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _insert_mapping(self, session, paid_asin, title, is_wanted):
+        from src.models import BookMapping
+        book = BookMapping(
+            paid_asin=paid_asin,
+            title=title,
+            created_at="2026-01-01T00:00:00",
+            is_purchased=0,
+            is_wanted=is_wanted,
+            source="bookmeter",
+        )
+        session.add(book)
+
+    def _insert_price(self, session, paid_asin, sell_price, timestamp):
+        from src.models import PriceHistory
+        session.add(
+            PriceHistory(
+                paid_asin=paid_asin,
+                sell_price=sell_price,
+                point_value=0,
+                actual_price=sell_price,
+                campaign_text="",
+                timestamp=timestamp,
+                is_unlimited=0,
+            )
+        )
+
+    def test_only_is_wanted_books_are_returned(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0WANT001", "読みたい本1", is_wanted=1)
+            self._insert_mapping(session, "B0NOTWANT001", "読みたくない本1", is_wanted=0)
+            session.commit()
+
+        books = repository.get_wanted_books()
+        asins = {b["asin"] for b in books}
+        self.assertIn("B0WANT001", asins)
+        self.assertNotIn("B0NOTWANT001", asins)
+
+    def test_book_without_price_history_is_included(self):
+        """R5: 価格未取得（登録直後）の本が LEFT JOIN で一覧から消えないこと。"""
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0NOPRICE001", "価格未取得本", is_wanted=1)
+            session.commit()
+
+        books = repository.get_wanted_books()
+        self.assertEqual(len(books), 1)
+        self.assertEqual(books[0]["title"], "価格未取得本")
+        self.assertIsNone(books[0]["sell_price"])
+        self.assertIsNone(books[0]["actual_price"])
+
+    def test_latest_price_is_selected_when_multiple_history_rows_exist(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0MULTI001", "複数履歴本", is_wanted=1)
+            self._insert_price(session, "B0MULTI001", sell_price=1000, timestamp="2026-01-01T00:00:00")
+            self._insert_price(session, "B0MULTI001", sell_price=800, timestamp="2026-02-01T00:00:00")
+            session.commit()
+
+        books = repository.get_wanted_books()
+        self.assertEqual(len(books), 1)
+        self.assertEqual(books[0]["sell_price"], 800)
+
+    def test_returns_empty_list_when_no_wanted_books(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0NOTWANT002", "読みたくない本2", is_wanted=0)
+            session.commit()
+
+        books = repository.get_wanted_books()
+        self.assertEqual(books, [])
+
+    def test_returned_field_types(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0TYPE001", "型検証本", is_wanted=1)
+            self._insert_price(session, "B0TYPE001", sell_price=1234, timestamp="2026-01-01T00:00:00")
+            session.commit()
+
+        books = repository.get_wanted_books()
+        self.assertEqual(len(books), 1)
+        book = books[0]
+        self.assertIsInstance(book["title"], str)
+        self.assertIsInstance(book["asin"], str)
+        self.assertIsInstance(book["sell_price"], int)
+
+
 if __name__ == "__main__":
     unittest.main()
