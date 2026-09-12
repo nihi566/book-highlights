@@ -323,6 +323,7 @@ async def crawl_price_info(
     browser_profile: Optional[Dict[str, Any]] = None,
     worker_id: int = 0,
     ban_coordinator=None,
+    request_pacer=None,
 ) -> Dict[str, Any]:
     """
     指定 ASIN の Amazon.co.jp 商品ページから価格情報を取得して返す。
@@ -334,6 +335,7 @@ async def crawl_price_info(
         browser_profile:  フィンガープリント設定 dict（None の場合はデフォルト値を使用）
         worker_id:        ログ表示用のワーカーID
         ban_coordinator:  BanCoordinator インスタンス（None の場合はBAN検知なし）
+        request_pacer:    RequestPacer インスタンス（None の場合はアクセス間隔調整なし）
 
     Returns:
         {
@@ -370,8 +372,6 @@ async def crawl_price_info(
         "is_unlimited":  0,
     }
 
-    print(f"\n{prefix}アクセス中: {url}")
-
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
             headless=headless,
@@ -393,6 +393,9 @@ async def crawl_price_info(
         await apply_stealth(page)
 
         try:
+            if request_pacer is not None:
+                await request_pacer.wait_for_turn(worker_id=worker_id)
+            print(f"\n{prefix}アクセス中: {url}")
             await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
             await random_delay(1.5, 3.0)
 

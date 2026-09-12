@@ -39,7 +39,7 @@ MOCK_XML = kindle_sample_extractor.MOCK_XML
 
 from src.resolver import resolve_sample_to_paid
 from src.crawler import crawl_price_info
-from src.anti_ban import BanCoordinator, get_profile
+from src.anti_ban import BanCoordinator, RequestPacer, get_profile
 from src.database import init_db_orm, get_session
 from src.models import BookMapping, PriceHistory
 
@@ -217,6 +217,8 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
 
     # BAN コーディネーター（並列数が2以上の場合に有効）
     ban_coordinator = BanCoordinator() if workers > 1 else None
+    # アクセス間隔調整（並列数が2以上の場合に有効。ワーカー数を増やしても合計アクセス頻度が増えないようにする）
+    request_pacer = RequestPacer() if workers > 1 else None
 
     # ── スキップを事前適用してワークリストを作成 ─────────────────────
     work_items = []  # (i, book) のリスト
@@ -276,6 +278,7 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
                     browser_profile=profile,
                     worker_id=worker_id,
                     ban_coordinator=ban_coordinator,
+                    request_pacer=request_pacer,
                 )
                 if paid_asin:
                     print(f"  [OK] 本編 ASIN 解決成功: {paid_asin}")
@@ -300,6 +303,7 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
                 browser_profile=profile,
                 worker_id=worker_id,
                 ban_coordinator=ban_coordinator,
+                request_pacer=request_pacer,
             )
             print(f"  [OK] クロール成功: 価格=¥{price_data.get('sell_price')}, ポイント={price_data.get('point_value')}pt")
 
@@ -310,9 +314,9 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         except Exception as e:
             print(f"  [Error] クロール中にエラー発生: {e}")
 
-        # ワーカー間ディレイ（Amazon アクセス回避）
-        delay = random.uniform(1.5, 3.5) if workers > 1 else random.uniform(2.0, 5.0)
-        print(f"  [Sleep] アクセス回避のため {delay:.1f} 秒待機します...")
+        # ループ再開までの小休止（Amazon向けの間隔調整は RequestPacer が担当）
+        delay = random.uniform(0.5, 1.5)
+        print(f"  [Sleep] {delay:.1f} 秒待機します...")
         await asyncio.sleep(delay)
 
     async def worker(worker_id: int) -> None:

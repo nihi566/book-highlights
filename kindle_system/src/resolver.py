@@ -272,6 +272,7 @@ async def resolve_sample_to_paid(
     browser_profile: Optional[Dict[str, Any]] = None,
     worker_id: int = 0,
     ban_coordinator=None,
+    request_pacer=None,
 ) -> Optional[str]:
     """
     サンプル ASIN → 有料本編 ASIN を解決して返す。
@@ -283,6 +284,7 @@ async def resolve_sample_to_paid(
         browser_profile:  フィンガープリント設定 dict（None の場合はデフォルト値を使用）
         worker_id:        ログ表示用のワーカーID
         ban_coordinator:  BanCoordinator インスタンス（None の場合はBAN検知なし）
+        request_pacer:    RequestPacer インスタンス（None の場合はアクセス間隔調整なし）
 
     Returns:
         有料本編の ASIN 文字列、解決できなかった場合は None
@@ -308,7 +310,6 @@ async def resolve_sample_to_paid(
 
     url = AMAZON_BASE.format(asin=sample_asin)
     prefix = f"[Worker-{worker_id}]" if worker_id else ""
-    print(f"\n{prefix}アクセス中: {url}")
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
@@ -332,6 +333,9 @@ async def resolve_sample_to_paid(
         await apply_stealth(page)
 
         try:
+            if request_pacer is not None:
+                await request_pacer.wait_for_turn(worker_id=worker_id)
+            print(f"\n{prefix}アクセス中: {url}")
             # ページロード（30秒タイムアウト）
             await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
             await random_delay(1.5, 3.0)

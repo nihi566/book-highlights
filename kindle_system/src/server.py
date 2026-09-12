@@ -150,7 +150,7 @@ async def do_run_only(start_val=None):
     job.start()
     try:
         job.emit("=== 今すぐ更新 ===")
-        cmd = [sys.executable, "-u", "-X", "utf8", MAIN_PY, "--workers", "2"]
+        cmd = [sys.executable, "-u", "-X", "utf8", MAIN_PY, "--workers", "3"]
         if start_val:
             cmd += ["--start", str(start_val)]
         await _run_proc(cmd)

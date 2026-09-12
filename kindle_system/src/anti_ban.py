@@ -91,7 +91,7 @@ def get_profile(worker_id: int) -> dict:
     ワーカーIDに基づいてブラウザプロファイルを返す。
     ワーカー数がプロファイル数を超えた場合はローテーションする。
     """
-    return BROWSER_PROFILES[worker_id % len(BROWSER_PROFILES)]
+    return BROWSER_PROFILES[(worker_id - 1) % len(BROWSER_PROFILES)]
 
 
 def get_random_profile() -> dict:
@@ -230,6 +230,30 @@ class BanCoordinator:
             "suspicious":    30.0,  # 30秒
             "ok":             0.0,
         }.get(signal, 60.0)
+
+
+class RequestPacer:
+    """
+    全ワーカー間で Amazon への実アクセス間隔を調整する。
+    ワーカー数を増やしても合計アクセス頻度が比例して増えないようにする。
+    """
+
+    def __init__(self, min_gap: float = 2.0, max_gap: float = 4.0) -> None:
+        self._last_request_ts: float = 0.0
+        self._min_gap = min_gap
+        self._max_gap = max_gap
+        self._lock = asyncio.Lock()
+
+    async def wait_for_turn(self, worker_id: int = 0) -> None:
+        async with self._lock:
+            gap = random.uniform(self._min_gap, self._max_gap)
+            now = time.monotonic()
+            elapsed = now - self._last_request_ts
+            if elapsed < gap:
+                wait = gap - elapsed
+                print(f"  [Worker-{worker_id}][PACER] 直前アクセスから{elapsed:.1f}s → 追加{wait:.1f}s待機")
+                await asyncio.sleep(wait)
+            self._last_request_ts = time.monotonic()
 
 
 # シングルトン（main.py から import して使う）
