@@ -20,6 +20,7 @@ BanCoordinator / RequestPacer は main.py の process_book と同じ呼び出し
         print(asyncio.run(sync_bookmeter_wishlist()))"
 """
 
+import asyncio
 from typing import Callable, Dict, List, Optional
 
 from src.anti_ban import BanCoordinator, RequestPacer
@@ -57,7 +58,11 @@ async def sync_bookmeter_wishlist(progress_cb: Optional[ProgressCallback] = None
     emit("=== 読書メーター同期 開始 ===")
 
     try:
-        books = fetch_wish_books()
+        # fetch_wish_books は requests + time.sleep による同期実装で、最大
+        # MAX_PAGES（100）ページを直列に取得するため数十秒〜数分ブロックしうる。
+        # await せず直接呼ぶとイベントループ全体が止まり、SSE配信や /api/stop
+        # が応答しなくなるため、get_books() 等の既存規約と同様にスレッドへ逃がす。
+        books = await asyncio.to_thread(fetch_wish_books)
     except Exception as e:
         emit(f"[エラー] 読書メーター取得に失敗しました: {e}")
         return {"total": 0, "registered": 0, "skipped": 0, "failed_titles": []}
@@ -140,7 +145,14 @@ async def sync_bookmeter_wishlist(progress_cb: Optional[ProgressCallback] = None
             failed_titles.append(title)
             continue
 
-        save_price_history(price_data)
+        try:
+            save_price_history(price_data)
+        except Exception as e:
+            emit(f"  [Error] 保存中にエラーが発生しました: {e}")
+            skipped += 1
+            failed_titles.append(title)
+            continue
+
         emit(f"  [OK] クロール成功: 価格=¥{price_data.get('sell_price')}")
         registered += 1
 

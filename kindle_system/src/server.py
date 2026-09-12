@@ -44,6 +44,7 @@ KINDLE_CANDIDATES = [
 from src.database import get_session
 from src.models import BookMapping, PriceHistory
 from src.repository import init_db
+from src.bookmeter_sync import sync_bookmeter_wishlist
 
 # ─── ジョブ管理（非同期版） ──────────────────────────────────────────────────
 
@@ -164,6 +165,24 @@ async def do_run_only(start_val=None):
         job.finish()
 
 
+async def do_bookmeter_sync():
+    job.start()
+    try:
+        result = await sync_bookmeter_wishlist(progress_cb=job.emit)
+        if result["failed_titles"]:
+            job.emit(f"[スキップ一覧] {', '.join(result['failed_titles'])}")
+    except asyncio.CancelledError:
+        # sync_bookmeter_wishlist は do_run_only のようなサブプロセスを持たず、
+        # キャンセルは次の await 到達時まで反映されない（fetch_wish_books の
+        # スレッド実行中は特に遅延しうる）。ここに到達した時点で finish() が
+        # ジョブ状態を初期化する。
+        pass
+    except Exception as e:
+        job.emit(f"[エラー] {e}")
+    finally:
+        job.finish()
+
+
 
 
 # ─── 購入済み / 欲しい本 DB操作 ──────────────────────────────────────────────
@@ -218,17 +237,18 @@ async def get_books():
             GROUP BY paid_asin
         ) p2 ON p1.paid_asin = p2.paid_asin AND p1.timestamp = p2.max_ts
     )
-    SELECT 
-        m.title, 
-        l.paid_asin as asin, 
-        l.sell_price, 
-        l.point_value, 
-        l.actual_price, 
-        l.campaign_text, 
+    SELECT
+        m.title,
+        l.paid_asin as asin,
+        l.sell_price,
+        l.point_value,
+        l.actual_price,
+        l.campaign_text,
         l.timestamp,
         l.is_unlimited,
         COALESCE(m.is_purchased, 0) as is_purchased,
-        COALESCE(m.is_wanted,   0) as is_wanted
+        COALESCE(m.is_wanted,   0) as is_wanted,
+        m.source
     FROM book_mappings m
     JOIN latest_prices l ON m.paid_asin = l.paid_asin
     ORDER BY l.actual_price ASC
@@ -313,9 +333,21 @@ async def run_job(start: str = Query(None)):
     """クロール処理のみを開始する"""
     if job.running:
         raise HTTPException(status_code=409, detail="すでに実行中です。")
-    
+
     # asyncio.create_task を使用してバックグラウンドタスクとして非同期に回す
     job.current_task = asyncio.create_task(do_run_only(start))
+    return {"ok": True}
+
+
+@app.post("/api/bookmeter/sync")
+async def run_bookmeter_sync():
+    """読書メーター「読みたい本」の一気通貫同期処理を開始する"""
+    if job.running:
+        raise HTTPException(status_code=409, detail="すでに実行中です。")
+
+    # 既存 job（JobManager）インスタンスを共有するため、通常のクロール実行
+    # （/api/run）と本エンドポイントは互いに対して409で多重起動を防ぐ
+    job.current_task = asyncio.create_task(do_bookmeter_sync())
     return {"ok": True}
 
 
