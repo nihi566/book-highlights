@@ -19,6 +19,7 @@ from typing import Optional
 
 from sqlmodel import Session, select
 
+from src import database as database_module
 from src.database import DB_PATH, get_session, init_db_orm
 from src.models import BookMapping, PriceHistory
 
@@ -103,26 +104,26 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
     if os.path.exists(staging_path):
         os.remove(staging_path)
 
-    source = sqlite3.connect(db_path, timeout=30)
     try:
-        staging_conn = sqlite3.connect(staging_path, timeout=30)
+        source = sqlite3.connect(db_path, timeout=30)
         try:
-            source.backup(staging_conn)
+            staging_conn = sqlite3.connect(staging_path, timeout=30)
+            try:
+                source.backup(staging_conn)
+            finally:
+                staging_conn.close()
         finally:
-            staging_conn.close()
-    finally:
-        source.close()
+            source.close()
 
-    new_count = None
-    try:
+        new_count = None
         conn = sqlite3.connect(staging_path, timeout=30)
         try:
             cur = conn.cursor()
 
             # 複製後の一時ファイル上で再度冪等チェック（他プロセスが db_path の
             # 複製〜置換の間に先に移行を完了させていた場合はここで検知できる。
-            # BEGIN の外で見ているが、先に完了した側の os.replace() は既に db_path
-            # へ反映済みのため、この staging を破棄するだけで安全に収束する）。
+            # 先に完了した側の os.replace() は既に db_path へ反映済みのため、
+            # この staging を破棄するだけで安全に収束する）。
             cur.execute("PRAGMA table_info(book_mappings)")
             columns = {row[1] for row in cur.fetchall()}
             if "id" in columns and "source" in columns:
@@ -181,9 +182,44 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
         finally:
             conn.close()
 
+        # 複製〜ここまでの間に db_path 自体が他プロセスに書き換えられていないか
+        # 最終確認する（真の排他ロックではないが、無言の上書きより安全に失敗させる）。
+        recheck_conn = sqlite3.connect(db_path, timeout=30)
+        try:
+            recheck_cur = recheck_conn.cursor()
+            recheck_cur.execute("PRAGMA table_info(book_mappings)")
+            recheck_columns = {row[1] for row in recheck_cur.fetchall()}
+            if "id" in recheck_columns and "source" in recheck_columns:
+                # 他プロセスが先に置換済み。この staging は不要になった。
+                return
+            recheck_cur.execute("SELECT COUNT(*) FROM book_mappings")
+            current_count = recheck_cur.fetchone()[0]
+        finally:
+            recheck_conn.close()
+        if current_count != old_count:
+            raise RuntimeError(
+                "book_mappings migration aborted: 複製後に元ファイルの行数が変化しました "
+                f"(複製時={old_count}, 置換直前={current_count})。他プロセスの書き込みを"
+                f"上書きしないよう置換を中止しました。バックアップ: {backup_path}"
+            )
+
+        # 元ファイルの WAL/journal サイドカーが残っていると、置換後に古い
+        # 差分が新ファイルへ誤って再生されうるため、置換前に取り除く。
+        for suffix in ("-wal", "-shm", "-journal"):
+            sidecar = db_path + suffix
+            if os.path.exists(sidecar):
+                os.remove(sidecar)
+
         # ここに到達した時点で staging_path は検証済みの新スキーマ。
         # 元ファイルには一度も書き込んでいないため、失敗時は無傷のまま残る。
         os.replace(staging_path, db_path)
+
+        # SQLAlchemy の接続プールが置換前（旧 inode）の接続を保持したままだと、
+        # 以後の書き込みが「削除済みだが参照され続けているファイル」に対して
+        # 行われてしまい、db_path から見える内容と食い違う（実測で再現・確認済み）。
+        # プールを破棄し、以後の接続が新ファイルを開き直すようにする。
+        database_module.engine.dispose()
+
         print(
             f"  [Migration] book_mappings を新スキーマへ移行しました"
             f"（{new_count} 行、バックアップ: {backup_path}）"
@@ -196,7 +232,10 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
 def init_db() -> None:
     """データベースのテーブルを作成し、既存 book_mappings があれば新スキーマへ移行する。"""
     init_db_orm()
-    migrate_book_mappings_schema()
+    # database_module.DB_PATH を都度参照する（migrate_book_mappings_schema の
+    # デフォルト引数 DB_PATH はモジュール import 時点の値に固定されるため、
+    # テスト等で src.database.DB_PATH を差し替えても追従しない）。
+    migrate_book_mappings_schema(database_module.DB_PATH)
 
 
 def get_paid_asin(sample_asin: str) -> Optional[str]:

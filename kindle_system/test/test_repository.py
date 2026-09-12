@@ -235,6 +235,66 @@ class GetOrCreateByPaidAsinTest(unittest.TestCase):
                 repository.get_or_create_by_paid_asin(session, None, is_wanted=1)
 
 
+class InitDbEngineStalenessTest(unittest.TestCase):
+    """
+    init_db()（init_db_orm() → migrate_book_mappings_schema()）を通しで実行した後、
+    同じ SQLAlchemy engine 経由で書き込みができることを確認する。
+
+    migrate_book_mappings_schema() は db_path を os.replace() で新しい inode へ
+    差し替えるため、init_db_orm() が先に開いた接続プールが古い（削除済みの）
+    inode を掴んだままだと、以後の書き込みが "no such column" 等で失敗する
+    （実際に再現した不具合。修正: migrate 側で engine.dispose() を呼ぶ）。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_engine_staleness_test_")
+        self.db_path = os.path.join(self.tmpdir, "old.db")
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("""
+            CREATE TABLE book_mappings (
+                sample_asin VARCHAR NOT NULL PRIMARY KEY,
+                paid_asin VARCHAR, title VARCHAR, created_at VARCHAR,
+                is_purchased INTEGER NOT NULL DEFAULT 0, is_wanted INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        conn.execute(
+            "INSERT INTO book_mappings VALUES ('B0OLD','B0PAID','old book',NULL,0,0)"
+        )
+        conn.commit()
+        conn.close()
+
+        import src.database as database_module
+        from sqlmodel import create_engine
+        self._database_module = database_module
+        self._original_db_path = database_module.DB_PATH
+        self._original_engine = database_module.engine
+        database_module.DB_PATH = self.db_path
+        database_module.engine = create_engine(
+            f"sqlite:///{self.db_path}", connect_args={"check_same_thread": False}
+        )
+
+    def tearDown(self):
+        self._database_module.engine.dispose()
+        self._database_module.DB_PATH = self._original_db_path
+        self._database_module.engine = self._original_engine
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_write_succeeds_after_init_db_migrates_existing_old_schema(self):
+        from sqlmodel import Session
+        from src.models import BookMapping
+
+        repository.init_db()
+
+        with self._database_module.get_session() as session:
+            session.add(
+                BookMapping(
+                    sample_asin="B0NEWAFTER", paid_asin="B0X", title="t",
+                    source="kindle_sample",
+                )
+            )
+            session.commit()  # ここで例外が出なければ修正が効いている
+
+
 class SaveMappingCrossSourceDedupTest(unittest.TestCase):
     """
     save_mapping が bookmeter 経由（sample_asin=None）で既に登録済みの paid_asin と
