@@ -10,7 +10,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ─────────────────────────────────────────────────────────────
-# Stage 2: Python クローラー専用コンテナ
+# Stage 2: Python アプリ本体（クローラー API + SSE + フロントエンド配信）
 # ─────────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy
 
@@ -34,7 +34,7 @@ COPY --from=frontend-builder /frontend/dist ./frontend/dist
 # データディレクトリを作成（ボリュームマウント先）
 RUN mkdir -p /app/data
 
-# ポート公開（クローラー API + SSE）
+# ポート公開（API + SSE + フロントエンド配信）
 EXPOSE 8001
 
 # 起動コマンド
