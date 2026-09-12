@@ -1,4 +1,6 @@
 data/kindle_monitor.db
+data/kindle_monitor.db-wal
+data/kindle_monitor.db-shm
 data/kindle_monitor.db.bak-*
 kindle_sales_report.html
 !frontend/index.html
