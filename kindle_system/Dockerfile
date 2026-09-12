@@ -10,66 +10,32 @@ COPY frontend/ ./
 RUN npm run build
 
 # ─────────────────────────────────────────────────────────────
-# Stage 2: Laravel (PHP-FPM + Nginx)
+# Stage 2: Python クローラー専用コンテナ
 # ─────────────────────────────────────────────────────────────
-FROM php:8.4-fpm AS app
+FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy
 
-# 必要な PHP 拡張と Nginx をインストール
-RUN apt-get update && apt-get install -y \
-    nginx \
-    libsqlite3-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    curl \
-    && docker-php-ext-install pdo pdo_sqlite zip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-# Composer のインストール
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Python 依存関係のインストール
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-WORKDIR /var/www/html
+# Playwright ブラウザのインストール（Chromium のみ）
+RUN playwright install chromium
 
-# Composer 依存関係のインストール（キャッシュ活用）
-COPY backend/composer.json backend/composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+# アプリケーションコードをコピー
+COPY main.py ./
+COPY src/ ./src/
+COPY test/ ./test/
 
-# Laravel アプリケーションコードをコピー
-COPY backend/ ./
+# フロントエンドビルド成果物をコピー（src/server.py の DIST_DIR = /app/frontend/dist と一致させる）
+COPY --from=frontend-builder /frontend/dist ./frontend/dist
 
-# .env がなければ .env.example からコピーしてキーを生成
-RUN cp .env.example .env
-RUN php artisan key:generate --force
-
-# React ビルド成果物を Laravel の public/ にコピー
-COPY --from=frontend-builder /frontend/dist/assets ./public/assets
-COPY --from=frontend-builder /frontend/dist/index.html ./public/index.html
-RUN test -f /frontend/dist/favicon.png && cp /frontend/dist/favicon.png ./public/favicon.png || true
-RUN test -f /frontend/dist/favicon.svg && cp /frontend/dist/favicon.svg ./public/favicon.svg || true
-
-# Nginx 設定
-COPY nginx/default.conf /etc/nginx/sites-available/default
-RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-
-# ディレクトリ権限
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-
-# SQLite データディレクトリ（ボリュームマウント先）
+# データディレクトリを作成（ボリュームマウント先）
 RUN mkdir -p /app/data
 
-# 起動スクリプト
-COPY <<'EOF' /start.sh
-#!/bin/sh
-# PHP-FPM をバックグラウンドで起動
-php-fpm -D
-# Nginx をフォアグラウンドで起動
-nginx -g "daemon off;"
-EOF
-RUN chmod +x /start.sh
-RUN sed -i 's/\r$//' /start.sh
+# ポート公開（クローラー API + SSE）
+EXPOSE 8001
 
-EXPOSE 80
-
-CMD ["/start.sh"]
+# 起動コマンド
+CMD ["python", "-u", "src/server.py"]
