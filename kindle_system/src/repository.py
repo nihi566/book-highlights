@@ -66,12 +66,18 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
     db_path が存在しない、または book_mappings テーブルが未作成の場合も何もしない
     （SQLModel.metadata.create_all が新スキーマで作成するため）。
 
-    移行手順（1トランザクション）:
-      1. バックアップを作成する
-      2. 新スキーマの一時テーブルを作成する
-      3. 旧テーブルから全行を INSERT SELECT する（source は全件 'kindle_sample' を補完）
-      4. 件数が一致することを確認する（不一致なら ROLLBACK して例外を投げる）
-      5. 旧テーブルを DROP し、一時テーブルを book_mappings へ RENAME する
+    実データファイルはオーナーが異なり書き込み不可な場合がある
+    （実測: `-rw-r--r-- root:root`。実行ユーザーからは書き込み不可）。
+    SQLite の CREATE/DROP/RENAME はファイル自体への書き込み権限を要するため、
+    db_path を直接書き換えることはしない。代わりに:
+      1. バックアップを作成する（sqlite3 backup API。恒久的な保全用）
+      2. 書き込み可能な一時ファイル（同じ backup API で全体複製）へ移行作業を行う
+         （複製の読み取りは world-readable なファイルであれば所有者に関わらず可能）
+      3. 一時ファイル上でスキーマ移行（CREATE new → INSERT SELECT → 件数検証 →
+         DROP old → RENAME → インデックス作成）を 1 トランザクションで行う
+      4. 検証済みの一時ファイルを `os.replace()` で db_path へ原子的に差し替える
+         （`data/` ディレクトリへの書き込み権限があれば、対象ファイル自体の
+         所有者・パーミッションに関わらず置換できる。実測済み）
     """
     if not os.path.exists(db_path):
         return
@@ -79,82 +85,112 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
     conn = sqlite3.connect(db_path, timeout=30)
     try:
         cur = conn.cursor()
-
         cur.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='book_mappings'"
         )
         if cur.fetchone() is None:
             return
+        cur.execute("PRAGMA table_info(book_mappings)")
+        columns = {row[1] for row in cur.fetchall()}
+        if "id" in columns and "source" in columns:
+            return
+    finally:
+        conn.close()
 
-        # 冪等チェックは BEGIN IMMEDIATE（排他ロック取得）の内側で行う。
-        # BEGIN の外でチェックすると、main.py と server.py が同時起動した場合に
-        # 両プロセスとも「旧スキーマ」と判定し、後発が既に移行済みのテーブルを
-        # 再度コピーし直してしまう（TOCTOU。source が全件 'kindle_sample' に
-        # 上書きされ、id も振り直される）。
-        conn.execute("BEGIN IMMEDIATE")
+    backup_path = backup_database(db_path)
+
+    staging_path = f"{db_path}.migrating-{os.getpid()}"
+    if os.path.exists(staging_path):
+        os.remove(staging_path)
+
+    source = sqlite3.connect(db_path, timeout=30)
+    try:
+        staging_conn = sqlite3.connect(staging_path, timeout=30)
         try:
+            source.backup(staging_conn)
+        finally:
+            staging_conn.close()
+    finally:
+        source.close()
+
+    new_count = None
+    try:
+        conn = sqlite3.connect(staging_path, timeout=30)
+        try:
+            cur = conn.cursor()
+
+            # 複製後の一時ファイル上で再度冪等チェック（他プロセスが db_path の
+            # 複製〜置換の間に先に移行を完了させていた場合はここで検知できる。
+            # BEGIN の外で見ているが、先に完了した側の os.replace() は既に db_path
+            # へ反映済みのため、この staging を破棄するだけで安全に収束する）。
             cur.execute("PRAGMA table_info(book_mappings)")
             columns = {row[1] for row in cur.fetchall()}
             if "id" in columns and "source" in columns:
-                conn.rollback()
                 return
 
-            backup_path = backup_database(db_path)
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                cur.execute("""
+                    CREATE TABLE book_mappings_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        sample_asin VARCHAR,
+                        paid_asin VARCHAR,
+                        title VARCHAR,
+                        created_at VARCHAR,
+                        is_purchased INTEGER NOT NULL DEFAULT 0,
+                        is_wanted INTEGER NOT NULL DEFAULT 0,
+                        source VARCHAR NOT NULL DEFAULT 'kindle_sample'
+                    )
+                """)
+                cur.execute("""
+                    INSERT INTO book_mappings_new
+                        (sample_asin, paid_asin, title, created_at, is_purchased, is_wanted, source)
+                    SELECT sample_asin, paid_asin, title, created_at, is_purchased, is_wanted, 'kindle_sample'
+                    FROM book_mappings
+                """)
 
-            cur.execute("""
-                CREATE TABLE book_mappings_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    sample_asin VARCHAR,
-                    paid_asin VARCHAR,
-                    title VARCHAR,
-                    created_at VARCHAR,
-                    is_purchased INTEGER NOT NULL DEFAULT 0,
-                    is_wanted INTEGER NOT NULL DEFAULT 0,
-                    source VARCHAR NOT NULL DEFAULT 'kindle_sample'
+                cur.execute("SELECT COUNT(*) FROM book_mappings")
+                old_count = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM book_mappings_new")
+                new_count = cur.fetchone()[0]
+                if old_count != new_count:
+                    conn.rollback()
+                    raise RuntimeError(
+                        "book_mappings migration failed: row count mismatch "
+                        f"(old={old_count}, new={new_count}). "
+                        f"元のファイルには一切書き込んでいないため無傷です。バックアップ: {backup_path}"
+                    )
+
+                cur.execute("DROP TABLE book_mappings")
+                cur.execute("ALTER TABLE book_mappings_new RENAME TO book_mappings")
+                # sample_asin は主キーではなくなったが、非NULL値の一意性（旧スキーマでは
+                # PRIMARY KEY により保証されていた）は部分UNIQUEインデックスで維持する。
+                # bookmeter 由来行（sample_asin=NULL）はこの制約の対象外。
+                cur.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_book_mappings_sample_asin_unique "
+                    "ON book_mappings (sample_asin) WHERE sample_asin IS NOT NULL"
                 )
-            """)
-            cur.execute("""
-                INSERT INTO book_mappings_new
-                    (sample_asin, paid_asin, title, created_at, is_purchased, is_wanted, source)
-                SELECT sample_asin, paid_asin, title, created_at, is_purchased, is_wanted, 'kindle_sample'
-                FROM book_mappings
-            """)
-
-            cur.execute("SELECT COUNT(*) FROM book_mappings")
-            old_count = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM book_mappings_new")
-            new_count = cur.fetchone()[0]
-            if old_count != new_count:
+                cur.execute(
+                    "CREATE INDEX IF NOT EXISTS ix_book_mappings_paid_asin "
+                    "ON book_mappings (paid_asin)"
+                )
+                conn.commit()
+            except Exception:
                 conn.rollback()
-                raise RuntimeError(
-                    "book_mappings migration failed: row count mismatch "
-                    f"(old={old_count}, new={new_count}). "
-                    f"元のテーブルは無傷です。バックアップ: {backup_path}"
-                )
+                raise
+        finally:
+            conn.close()
 
-            cur.execute("DROP TABLE book_mappings")
-            cur.execute("ALTER TABLE book_mappings_new RENAME TO book_mappings")
-            # sample_asin は主キーではなくなったが、非NULL値の一意性（旧スキーマでは
-            # PRIMARY KEY により保証されていた）は部分UNIQUEインデックスで維持する。
-            # bookmeter 由来行（sample_asin=NULL）はこの制約の対象外。
-            cur.execute(
-                "CREATE UNIQUE INDEX IF NOT EXISTS ix_book_mappings_sample_asin_unique "
-                "ON book_mappings (sample_asin) WHERE sample_asin IS NOT NULL"
-            )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS ix_book_mappings_paid_asin "
-                "ON book_mappings (paid_asin)"
-            )
-            conn.commit()
-            print(
-                f"  [Migration] book_mappings を新スキーマへ移行しました"
-                f"（{new_count} 行、バックアップ: {backup_path}）"
-            )
-        except Exception:
-            conn.rollback()
-            raise
+        # ここに到達した時点で staging_path は検証済みの新スキーマ。
+        # 元ファイルには一度も書き込んでいないため、失敗時は無傷のまま残る。
+        os.replace(staging_path, db_path)
+        print(
+            f"  [Migration] book_mappings を新スキーマへ移行しました"
+            f"（{new_count} 行、バックアップ: {backup_path}）"
+        )
     finally:
-        conn.close()
+        if os.path.exists(staging_path):
+            os.remove(staging_path)
 
 
 def init_db() -> None:

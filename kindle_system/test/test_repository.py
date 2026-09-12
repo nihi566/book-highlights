@@ -121,6 +121,25 @@ class MigrateBookMappingsSchemaTest(unittest.TestCase):
         backups = [f for f in os.listdir(self.tmpdir) if f.startswith("test.db.bak-")]
         self.assertEqual(len(backups), 1)
 
+    def test_migration_succeeds_when_db_file_itself_is_read_only(self):
+        """
+        実データ data/kindle_monitor.db は root 所有・-rw-r--r-- で実行ユーザーからは
+        書き込み不可（設計方針参照）。移行は db_path へ直接書き込まず、書き込み可能な
+        一時ファイルを os.replace() で原子的に差し替える方式のため、ファイル自体が
+        読み取り専用でも成功する（ディレクトリ自体の書き込み権限は必要）。
+        """
+        os.chmod(self.db_path, 0o444)
+        try:
+            repository.migrate_book_mappings_schema(self.db_path)
+        finally:
+            os.chmod(self.db_path, 0o644)  # tearDown の shutil.rmtree のため復元
+
+        columns = _table_columns(self.db_path, "book_mappings")
+        self.assertIn("id", columns)
+        self.assertIn("source", columns)
+        rows = _fetch_all_rows(self.db_path)
+        self.assertEqual(len(rows), 3)
+
     def test_migration_keeps_sample_asin_unique_but_allows_multiple_null(self):
         """
         旧スキーマは sample_asin が PRIMARY KEY で一意性が保証されていた。
