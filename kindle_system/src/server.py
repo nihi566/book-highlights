@@ -14,7 +14,6 @@ import time
 import asyncio
 import subprocess
 from fastapi import FastAPI, Response, Query, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import select, text
@@ -204,15 +203,6 @@ def set_wanted(paid_asin: str, status: int) -> bool:
 # ─── FastAPI アプリケーション ────────────────────────────────────────────────
 
 app = FastAPI(title="Kindle Pulse Server")
-
-# CORS 設定（既存のフロントエンドが別オリジンからアクセスする可能性を考慮）
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.get("/api/books")
 async def get_books():
