@@ -42,7 +42,7 @@ KINDLE_CANDIDATES = [
 ]
 
 # SQLModel の依存関係
-from src.database import get_session
+from src.database import init_db_orm, get_session
 from src.models import BookMapping, PriceHistory
 
 # ─── ジョブ管理（非同期版） ──────────────────────────────────────────────────
@@ -409,6 +409,8 @@ if __name__ == "__main__":
     print(f"  停止: Ctrl+C")
     print("=" * 50)
     try:
+        # DBテーブルが未作成の場合に備え、起動時に作成しておく（main.py と同様。既存テーブルには影響しない）
+        init_db_orm()
         # uvicornで起動
         uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
     except KeyboardInterrupt:
