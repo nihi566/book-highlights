@@ -1,0 +1,185 @@
+"""
+test_bookmeter.py
+------------------
+src/bookmeter.py の単体テスト（標準ライブラリ unittest）。
+
+固定HTML fixture（実際の読書メーター「読みたい本」一覧ページの構造に基づく）を用い、
+実ネットワークへは一切接続しない。ネットワークアクセスは requests.Session.get を
+モック化して差し替える。
+
+使い方:
+    python3 -m unittest test.test_bookmeter
+    python3 test/test_bookmeter.py
+"""
+
+import os
+import sys
+import unittest
+from unittest.mock import patch, MagicMock
+
+import requests
+
+# プロジェクトルートを sys.path に追加し、直接実行でも `src` パッケージを解決できるようにする
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BASE_DIR)
+
+from src.bookmeter import fetch_wish_books, parse_books, get_next_page_url
+
+
+# ─── fixture: 1ページ目相当（次ページあり・2冊） ──────────────────────────────────
+FIXTURE_PAGE_1 = """
+<ul class="book-list__group">
+  <li class="group__book">
+    <div class="book__detail">
+      <div class="detail__title"><a href="/books/15472989">紛争でしたら八田まで(1) (モーニングKC)</a></div>
+      <ul class="detail__authors"><li><a href="/search?author=a">田 素弘</a></li></ul>
+    </div>
+  </li>
+  <li class="group__book">
+    <div class="book__detail">
+      <div class="detail__title"><a href="/books/9837512">消費社会の神話と構造 新装版</a></div>
+      <ul class="detail__authors"><li><a href="/search?author=b">ジャン ボードリヤール</a></li></ul>
+    </div>
+  </li>
+</ul>
+<ul class="bm-pagination">
+  <li class="active"><a class="bm-pagination__link" href="/users/1770332/books/wish">1</a></li>
+  <li><a class="bm-pagination__link" rel="next" href="/users/1770332/books/wish?page=2">2</a></li>
+  <li><a rel="next" class="bm-pagination__link" href="/users/1770332/books/wish?page=2">次</a></li>
+</ul>
+"""
+
+# ─── fixture: 最終ページ相当（次ページなし・共著1冊） ─────────────────────────────
+# 実サイトでは最終ページの「次」は <a> ではなく disable な <div> になる（rel="next" が存在しない）
+FIXTURE_PAGE_LAST = """
+<ul class="book-list__group">
+  <li class="group__book">
+    <div class="book__detail">
+      <div class="detail__title"><a href="/books/2001">共著の本</a></div>
+      <ul class="detail__authors">
+        <li><a href="/search?author=c">著者A</a></li>
+        <li><a href="/search?author=d">著者B</a></li>
+      </ul>
+    </div>
+  </li>
+</ul>
+<ul class="bm-pagination">
+  <li class="disable"><div class="bm-pagination__link">次</div></li>
+</ul>
+"""
+
+WISH_URL = "https://bookmeter.com/users/1770332/books/wish"
+PAGE_2_URL = "https://bookmeter.com/users/1770332/books/wish?page=2"
+
+
+def _mock_response(text, status_ok=True):
+    resp = MagicMock()
+    resp.text = text
+    if status_ok:
+        resp.raise_for_status = MagicMock()
+    else:
+        resp.raise_for_status = MagicMock(side_effect=requests.exceptions.HTTPError("500"))
+    return resp
+
+
+class ParseBooksTest(unittest.TestCase):
+    def test_extracts_title_and_author(self):
+        books = parse_books(FIXTURE_PAGE_1)
+        self.assertEqual(
+            books,
+            [
+                {"title": "紛争でしたら八田まで(1) (モーニングKC)", "author": "田 素弘"},
+                {"title": "消費社会の神話と構造 新装版", "author": "ジャン ボードリヤール"},
+            ],
+        )
+
+    def test_joins_multiple_authors(self):
+        books = parse_books(FIXTURE_PAGE_LAST)
+        self.assertEqual(len(books), 1)
+        self.assertEqual(books[0]["title"], "共著の本")
+        self.assertEqual(books[0]["author"], "著者A、著者B")
+
+    def test_empty_html_returns_empty_list(self):
+        self.assertEqual(parse_books("<html><body></body></html>"), [])
+
+
+class GetNextPageUrlTest(unittest.TestCase):
+    def test_returns_next_url_when_present(self):
+        url = get_next_page_url(FIXTURE_PAGE_1, WISH_URL)
+        self.assertEqual(url, PAGE_2_URL)
+
+    def test_returns_none_when_absent(self):
+        self.assertIsNone(get_next_page_url(FIXTURE_PAGE_LAST, PAGE_2_URL))
+
+
+class FetchWishBooksTest(unittest.TestCase):
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_paginates_until_last_page(self, mock_get, mock_sleep):
+        mock_get.side_effect = [
+            _mock_response(FIXTURE_PAGE_1),
+            _mock_response(FIXTURE_PAGE_LAST),
+        ]
+
+        books = fetch_wish_books()
+
+        self.assertEqual(len(books), 3)
+        self.assertEqual(books[0]["title"], "紛争でしたら八田まで(1) (モーニングKC)")
+        self.assertEqual(books[2]["author"], "著者A、著者B")
+        self.assertEqual(mock_get.call_count, 2)
+        called_urls = [call.args[0] for call in mock_get.call_args_list]
+        self.assertEqual(called_urls, [WISH_URL, PAGE_2_URL])
+        # リクエスト間の待機を入れているが、テストでは time.sleep をモック化しているため実待機しない
+        self.assertTrue(mock_sleep.called)
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_network_error_returns_empty_list_without_raising(self, mock_get, mock_sleep):
+        mock_get.side_effect = requests.exceptions.ConnectionError("boom")
+
+        books = fetch_wish_books()
+
+        self.assertEqual(books, [])
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_http_error_status_returns_empty_list_without_raising(self, mock_get, mock_sleep):
+        mock_get.return_value = _mock_response(FIXTURE_PAGE_1, status_ok=False)
+
+        books = fetch_wish_books()
+
+        self.assertEqual(books, [])
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_safety_page_limit_stops_infinite_pagination(self, mock_get, mock_sleep):
+        # 呼び出しのたびに「次」リンクの参照先を進め、正常にページが進み続ける状況を再現する。
+        # それでも安全上限（max_pages）で必ず停止することを確認する
+        def ever_advancing_page(url, timeout=None):
+            page_no = int(url.split("page=")[1]) if "page=" in url else 1
+            html = f"""
+            <ul class="book-list__group">
+              <li class="group__book">
+                <div class="book__detail">
+                  <div class="detail__title"><a href="/books/{page_no}">書籍{page_no}</a></div>
+                  <ul class="detail__authors"><li><a href="/search?author=x">著者{page_no}</a></li></ul>
+                </div>
+              </li>
+            </ul>
+            <ul class="bm-pagination">
+              <li><a rel="next" class="bm-pagination__link"
+                 href="/users/1770332/books/wish?page={page_no + 1}">次</a></li>
+            </ul>
+            """
+            return _mock_response(html)
+
+        mock_get.side_effect = ever_advancing_page
+
+        books = fetch_wish_books(max_pages=3)
+
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(len(books), 3)  # 1冊 x 3ページ
+
+
+if __name__ == "__main__":
+    unittest.main()
