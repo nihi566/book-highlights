@@ -207,6 +207,76 @@ class GetOrCreateByPaidAsinTest(unittest.TestCase):
             paid_asins = {r.paid_asin for r in rows}
             self.assertEqual(paid_asins, {"B0AAA", "B0BBB"})
 
+    def test_empty_paid_asin_raises_value_error(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            with self.assertRaises(ValueError):
+                repository.get_or_create_by_paid_asin(session, "", is_wanted=1)
+            with self.assertRaises(ValueError):
+                repository.get_or_create_by_paid_asin(session, None, is_wanted=1)
+
+
+class SaveMappingCrossSourceDedupTest(unittest.TestCase):
+    """
+    save_mapping が bookmeter 経由（sample_asin=None）で既に登録済みの paid_asin と
+    重複行を作らないことを確認する（Phase の目的: 双方のソースから登録されても
+    行が重複しないこと）。
+
+    save_mapping は src.database.get_session() 経由でモジュールグローバルな engine
+    を使うため、テスト用の一時DBへ差し替えてから呼び出す。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_savemapping_test_")
+        db_path = os.path.join(self.tmpdir, "savemapping.db")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_save_mapping_merges_into_existing_bookmeter_row(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(
+                session, "B0SHARED", title="共有本", source="bookmeter", is_wanted=1
+            )
+            session.commit()
+
+        repository.save_mapping("B0SAMPLE999", "B0SHARED", "共有本(kindle_sample側タイトル)")
+
+        with Session(self.engine) as session:
+            rows = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0SHARED")
+            ).all()
+            self.assertEqual(
+                len(rows), 1, "bookmeter経由の既存行とsave_mappingが別行を作ってはならない"
+            )
+            self.assertEqual(rows[0].sample_asin, "B0SAMPLE999")
+            self.assertEqual(rows[0].paid_asin, "B0SHARED")
+
+    def test_save_mapping_still_creates_new_row_when_no_match(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        repository.save_mapping("B0SAMPLE_NEW", "B0PAID_NEW", "新規本")
+
+        with Session(self.engine) as session:
+            rows = session.exec(select(BookMapping)).all()
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].sample_asin, "B0SAMPLE_NEW")
+            self.assertEqual(rows[0].source, "kindle_sample")
+
 
 if __name__ == "__main__":
     unittest.main()

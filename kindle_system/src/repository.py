@@ -46,6 +46,12 @@ def backup_database(db_path: str = DB_PATH) -> Optional[str]:
             source.backup(dest)
         finally:
             dest.close()
+    except Exception:
+        # 途中失敗した不完全なバックアップファイルを残さない
+        # （最新の .bak-* を無条件に正として復元されると壊れたデータを掴む）
+        if os.path.exists(backup_path):
+            os.remove(backup_path)
+        raise
     finally:
         source.close()
 
@@ -80,15 +86,21 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
         if cur.fetchone() is None:
             return
 
-        cur.execute("PRAGMA table_info(book_mappings)")
-        columns = {row[1] for row in cur.fetchall()}
-        if "id" in columns and "source" in columns:
-            return
-
-        backup_database(db_path)
-
-        cur.execute("BEGIN")
+        # 冪等チェックは BEGIN IMMEDIATE（排他ロック取得）の内側で行う。
+        # BEGIN の外でチェックすると、main.py と server.py が同時起動した場合に
+        # 両プロセスとも「旧スキーマ」と判定し、後発が既に移行済みのテーブルを
+        # 再度コピーし直してしまう（TOCTOU。source が全件 'kindle_sample' に
+        # 上書きされ、id も振り直される）。
+        conn.execute("BEGIN IMMEDIATE")
         try:
+            cur.execute("PRAGMA table_info(book_mappings)")
+            columns = {row[1] for row in cur.fetchall()}
+            if "id" in columns and "source" in columns:
+                conn.rollback()
+                return
+
+            backup_path = backup_database(db_path)
+
             cur.execute("""
                 CREATE TABLE book_mappings_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -116,7 +128,8 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
                 conn.rollback()
                 raise RuntimeError(
                     "book_mappings migration failed: row count mismatch "
-                    f"(old={old_count}, new={new_count})"
+                    f"(old={old_count}, new={new_count}). "
+                    f"元のテーブルは無傷です。バックアップ: {backup_path}"
                 )
 
             cur.execute("DROP TABLE book_mappings")
@@ -135,7 +148,7 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
             conn.commit()
             print(
                 f"  [Migration] book_mappings を新スキーマへ移行しました"
-                f"（{new_count} 行、バックアップ: {db_path}.bak-*）"
+                f"（{new_count} 行、バックアップ: {backup_path}）"
             )
         except Exception:
             conn.rollback()
@@ -167,12 +180,22 @@ def get_purchased_asins() -> set:
 
 
 def save_mapping(sample_asin: str, paid_asin: str, title: str) -> None:
-    """サンプル ASIN と本編 ASIN の対応を DB に保存する（kindle_sample 経由）。"""
+    """
+    サンプル ASIN と本編 ASIN の対応を DB に保存する（kindle_sample 経由）。
+
+    sample_asin 一致の既存行を優先して探すが、見つからない場合は paid_asin 一致
+    （bookmeter 経由で先に登録された行等）も確認し、同一書籍の重複行を作らない
+    （Phase の目的: 双方のソースから登録されても行が重複しないこと）。
+    """
     now = datetime.now().isoformat()
     with get_session() as session:
         statement = select(BookMapping).where(BookMapping.sample_asin == sample_asin)
         book = session.exec(statement).first()
+        if not book and paid_asin:
+            statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
+            book = session.exec(statement).first()
         if book:
+            book.sample_asin = sample_asin
             book.paid_asin = paid_asin
             book.title = title
             book.created_at = now
@@ -233,7 +256,13 @@ def get_or_create_by_paid_asin(
     他の関数と異なり session を呼び出し側から受け取る（複数冊をまとめて 1 トランザクション
     で処理したい呼び出し元のため）。**commit は呼び出し側の責務**。この関数は
     flush のみ行い、返す BookMapping には自動採番済みの id が反映される。
+
+    paid_asin が空/None の場合は例外を送出する（`WHERE paid_asin IS NULL` に化けて
+    無関係な既存行を誤って更新するのを防ぐ）。
     """
+    if not paid_asin:
+        raise ValueError("paid_asin must be a non-empty string")
+
     statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
     book = session.exec(statement).first()
     if book:

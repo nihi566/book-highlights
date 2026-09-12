@@ -1,4 +1,5 @@
 data/kindle_monitor.db
+data/kindle_monitor.db.bak-*
 kindle_sales_report.html
 !frontend/index.html
 __pycache__/
