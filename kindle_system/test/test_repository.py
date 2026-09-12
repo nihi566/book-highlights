@@ -149,5 +149,64 @@ class MigrateBookMappingsSchemaTest(unittest.TestCase):
             conn.close()
 
 
+class GetOrCreateByPaidAsinTest(unittest.TestCase):
+    """get_or_create_by_paid_asin（paid_asin一致によるdedupヘルパー）のテスト。
+
+    この関数は呼び出し側から session を受け取り、commit は呼び出し側の責務
+    （src/repository.py の docstring 参照）なので、各テストは明示的に commit する。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_dedup_test_")
+        db_path = os.path.join(self.tmpdir, "dedup.db")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+
+    def tearDown(self):
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_creates_new_row_with_null_sample_asin(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            book = repository.get_or_create_by_paid_asin(
+                session, "B0NEW001", title="新刊", source="bookmeter", is_wanted=1
+            )
+            session.commit()
+            self.assertIsNone(book.sample_asin)
+            self.assertEqual(book.paid_asin, "B0NEW001")
+            self.assertEqual(book.source, "bookmeter")
+            self.assertEqual(book.is_wanted, 1)
+
+    def test_second_call_updates_is_wanted_without_creating_new_row(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(
+                session, "B0NEW002", title="既刊", source="bookmeter", is_wanted=1
+            )
+            repository.get_or_create_by_paid_asin(session, "B0NEW002", is_wanted=0)
+            session.commit()
+
+            statement = select(BookMapping).where(BookMapping.paid_asin == "B0NEW002")
+            rows = session.exec(statement).all()
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].is_wanted, 0)
+
+    def test_unknown_paid_asin_creates_new_row(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(session, "B0AAA", is_wanted=1)
+            repository.get_or_create_by_paid_asin(session, "B0BBB", is_wanted=1)
+            session.commit()
+
+            rows = session.exec(select(BookMapping)).all()
+            self.assertEqual(len(rows), 2)
+            paid_asins = {r.paid_asin for r in rows}
+            self.assertEqual(paid_asins, {"B0AAA", "B0BBB"})
+
+
 if __name__ == "__main__":
     unittest.main()
