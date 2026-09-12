@@ -17,7 +17,7 @@ import sqlite3
 from datetime import datetime
 from typing import Optional
 
-from sqlmodel import Session, select
+from sqlmodel import Session, select, text
 
 from src import database as database_module
 from src.database import DB_PATH, get_session, init_db_orm
@@ -313,6 +313,44 @@ def save_price_history(data: dict) -> None:
         )
         session.add(new_history)
         session.commit()
+
+
+def get_wanted_books() -> list:
+    """
+    is_wanted=1 の本を、最新の価格情報とあわせて取得する（wishlist-site-report 用）。
+
+    src/server.py の get_books() と同じ「price_history を timestamp 最新1件に絞る」
+    SQL パターンを使うが、INNER JOIN ではなく LEFT JOIN にする。読みたい本は登録直後で
+    価格情報が未取得のことがあり、INNER JOIN のままだとそのような本が理由もなく
+    一覧から消えてしまうため（設計方針 R5 対策）。
+    """
+    query = text("""
+        WITH latest_prices AS (
+            SELECT p1.paid_asin, p1.sell_price, p1.point_value, p1.actual_price, p1.campaign_text, p1.timestamp, p1.is_unlimited
+            FROM price_history p1
+            INNER JOIN (
+                SELECT paid_asin, MAX(timestamp) as max_ts
+                FROM price_history
+                GROUP BY paid_asin
+            ) p2 ON p1.paid_asin = p2.paid_asin AND p1.timestamp = p2.max_ts
+        )
+        SELECT
+            m.title,
+            m.paid_asin as asin,
+            l.sell_price,
+            l.point_value,
+            l.actual_price,
+            l.campaign_text,
+            l.timestamp,
+            l.is_unlimited
+        FROM book_mappings m
+        LEFT JOIN latest_prices l ON m.paid_asin = l.paid_asin
+        WHERE m.is_wanted = 1
+        ORDER BY m.title ASC
+    """)
+    with get_session() as session:
+        result = session.exec(query).mappings().all()
+        return [dict(row) for row in result]
 
 
 def get_or_create_by_paid_asin(
