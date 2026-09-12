@@ -40,7 +40,14 @@ MOCK_XML = kindle_sample_extractor.MOCK_XML
 from src.resolver import resolve_sample_to_paid
 from src.crawler import crawl_price_info
 from src.anti_ban import BanCoordinator, RequestPacer, get_profile
-from src.database import init_db_orm, get_session
+from src.repository import (
+    init_db,
+    get_paid_asin,
+    get_purchased_asins,
+    save_mapping,
+    save_price_history,
+)
+from src.database import get_session
 from src.models import BookMapping, PriceHistory
 
 # データベースのパス設定
@@ -49,76 +56,9 @@ SESSION_FILE = os.path.join(DB_DIR, "session_start.txt")  # レジューム用�
 
 
 # ─── データベース処理 ────────────────────────────────────────────────────────
-
-def init_db() -> None:
-    """データベースと必要なテーブルを初期化する。"""
-    init_db_orm()
-
-
-def get_paid_asin(sample_asin: str) -> str:
-    """DB に保存済みの本編 ASIN を取得する。なければ None。"""
-    with get_session() as session:
-        statement = select(BookMapping).where(BookMapping.sample_asin == sample_asin)
-        book = session.exec(statement).first()
-        return book.paid_asin if book and book.paid_asin else None
-
-
-def get_purchased_asins() -> set:
-    """購入済み（is_purchased=1）の paid_asin の集合を返す。"""
-    with get_session() as session:
-        statement = select(BookMapping).where(BookMapping.is_purchased == 1)
-        books = session.exec(statement).all()
-        return {b.paid_asin for b in books if b.paid_asin}
-
-
-def save_mapping(sample_asin: str, paid_asin: str, title: str) -> None:
-    """サンプル ASIN と 本編 ASIN の対応を DB に保存する。"""
-    now = datetime.now().isoformat()
-    with get_session() as session:
-        statement = select(BookMapping).where(BookMapping.sample_asin == sample_asin)
-        book = session.exec(statement).first()
-        if book:
-            book.paid_asin = paid_asin
-            book.title = title
-            book.created_at = now
-            session.add(book)
-        else:
-            new_book = BookMapping(
-                sample_asin=sample_asin,
-                paid_asin=paid_asin,
-                title=title,
-                created_at=now,
-                is_purchased=0
-            )
-            session.add(new_book)
-        session.commit()
-
-
-def save_price_history(data: dict) -> None:
-    """クロールした価格情報を DB に保存する。"""
-    now = datetime.now().isoformat()
-    sell_price = data.get("sell_price")
-    point_value = data.get("point_value", 0)
-    campaign_text = data.get("campaign_text", "")
-    is_unlimited = data.get("is_unlimited", 0)
-    
-    # 実質価格を計算
-    actual_price = None
-    if sell_price is not None:
-        actual_price = sell_price - point_value
-        
-    with get_session() as session:
-        new_history = PriceHistory(
-            paid_asin=data["asin"],
-            sell_price=sell_price,
-            point_value=point_value,
-            actual_price=actual_price,
-            campaign_text=campaign_text,
-            timestamp=now,
-            is_unlimited=is_unlimited
-        )
-        session.add(new_history)
-        session.commit()
+# save_price_history / save_mapping / get_paid_asin / get_purchased_asins / init_db は
+# bookmeter 系の新規 Phase からも再利用するため src/repository.py へ移動した。
+# ここでは src.repository からの import をそのまま使う。
 
 
 # ─── セッション管理（レジューム機能） ────────────────────────────────────────
