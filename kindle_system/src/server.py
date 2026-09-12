@@ -2,7 +2,7 @@
 server.py
 ---------
 Kindle Pulse ローカル管理サーバー（FastAPI + SQLModel版）。
-ブラウザから http://localhost:8765 でレポート閲覧 + ボタン操作が可能になる。
+ブラウザから http://localhost:8001 でレポート閲覧 + ボタン操作が可能になる。
 
 起動方法:
     python C:\\dev\\kindle_system\\src\\server.py
