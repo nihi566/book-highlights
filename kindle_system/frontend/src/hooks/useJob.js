@@ -11,7 +11,9 @@ export function useJob(onJobDone) {
   const startSSE = useCallback(() => {
     if (sseRef.current) sseRef.current.close();
 
-    // SSE のみクローラーコンテナに直接接続（VITE_CRAWLER_URL で設定）
+    // SSE は同一オリジンの相対パスで接続する。
+    // 本番は server.py が frontend/dist を同一オリジンで配信し、開発は vite の /api proxy を通る。
+    // VITE_CRAWLER_URL は別オリジンにサーバーを置く場合の任意の上書き（既定では未設定）。
     const crawlerBase = import.meta.env.VITE_CRAWLER_URL || '';
     const sse = new EventSource(`${crawlerBase}/api/events`);
     sseRef.current = sse;
