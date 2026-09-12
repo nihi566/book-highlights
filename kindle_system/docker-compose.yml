@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: kindle-crawler
     ports:
       - "8001:8001"
     volumes:
