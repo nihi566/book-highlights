@@ -62,6 +62,10 @@
   --badge-wanted-text:  #c2410c;
   --badge-wanted-border:rgba(234, 88, 12, 0.22);
 
+  --badge-source-bookmeter-bg:    rgba(13, 148, 136, 0.08);
+  --badge-source-bookmeter-text:  #0f766e;
+  --badge-source-bookmeter-border:rgba(13, 148, 136, 0.22);
+
   /* その他 */
   --radius:    1rem;
   --radius-sm: 0.6rem;
@@ -113,6 +117,10 @@
   --badge-discount-bg:    rgba(251,191,36,0.12);
   --badge-discount-text:  #fcd34d;
   --badge-discount-border:rgba(251,191,36,0.3);
+
+  --badge-source-bookmeter-bg:    rgba(45,212,191,0.12);
+  --badge-source-bookmeter-text:  #5eead4;
+  --badge-source-bookmeter-border:rgba(45,212,191,0.3);
 }
 
 /* ─── リセット & ベース ──────────────────────────────────────── */
@@ -406,6 +414,20 @@ h1 {
 }
 
 .btn-stop:hover { background: rgba(220,38,38,0.14); }
+
+/* 読書メーター同期ボタン（Secondary相当。今すぐ更新より視覚的に弱くする） */
+.btn-bookmeter-sync {
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  box-shadow: none;
+}
+
+.btn-bookmeter-sync:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
 
 /* スピナー */
 .spinner {
@@ -711,6 +733,12 @@ tr.purchased-row .book-link { text-decoration: line-through; }
   background: var(--badge-wanted-bg);
   color: var(--badge-wanted-text);
   border-color: var(--badge-wanted-border);
+}
+
+.badge.source-bookmeter {
+  background: var(--badge-source-bookmeter-bg);
+  color: var(--badge-source-bookmeter-text);
+  border-color: var(--badge-source-bookmeter-border);
 }
 
 /* 欲しい本行ハイライト */

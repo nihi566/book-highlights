@@ -33,7 +33,7 @@ export default function App() {
     toggleWant,
   } = useBooks();
 
-  const { running, sseLogs, checkStatus, startJob, stopJob, closeSSE } = useJob(loadData);
+  const { running, sseLogs, checkStatus, startJob, startBookmeterSync, stopJob, closeSSE } = useJob(loadData);
 
   // 初回マウント時にデータ取得 + ジョブ状態確認
   useEffect(() => {
@@ -50,6 +50,11 @@ export default function App() {
   const handleStop = async () => {
     const result = await stopJob();
     if (result?.error) alert(result.error);
+  };
+
+  const handleBookmeterSync = async () => {
+    const result = await startBookmeterSync();
+    if (result.error) alert(result.error);
   };
 
   const openHistory = (asin, title) => {
@@ -80,6 +85,7 @@ export default function App() {
         totalBooks={books.length}
         onRun={handleRun}
         onStop={handleStop}
+        onBookmeterSync={handleBookmeterSync}
       />
 
       {/* ターミナルログ（実行中のみ表示） */}

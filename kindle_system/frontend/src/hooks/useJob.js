@@ -76,6 +76,25 @@ export function useJob(onJobDone) {
     return {};
   }, [startSSE]);
 
+  const startBookmeterSync = useCallback(async () => {
+    setSseLogs([]);
+    setRunning(true);
+    try {
+      const res = await fetch('/api/bookmeter/sync', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        startSSE();
+      } else {
+        setRunning(false);
+        return { error: data.message || '読書メーター同期の開始に失敗しました。' };
+      }
+    } catch {
+      setRunning(false);
+      return { error: 'サーバーに接続できません。' };
+    }
+    return {};
+  }, [startSSE]);
+
   const stopJob = useCallback(async () => {
     try {
       const res = await fetch('/api/stop', { method: 'POST' });
@@ -93,5 +112,5 @@ export function useJob(onJobDone) {
     if (sseRef.current) sseRef.current.close();
   }, []);
 
-  return { running, sseLogs, checkStatus, startJob, stopJob, closeSSE };
+  return { running, sseLogs, checkStatus, startJob, startBookmeterSync, stopJob, closeSSE };
 }

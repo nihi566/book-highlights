@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function ControlPanel({ running, totalBooks, onRun, onStop }) {
+export default function ControlPanel({ running, totalBooks, onRun, onStop, onBookmeterSync }) {
   const [startIndex, setStartIndex] = useState('1');
   const [showError, setShowError] = useState(false);
   const [errorText, setErrorText] = useState('');
@@ -45,6 +45,16 @@ export default function ControlPanel({ running, totalBooks, onRun, onStop }) {
         >
           {running && <span className="spinner" />}
           今すぐ更新
+        </button>
+
+        {/* 読書メーター同期ボタン */}
+        <button
+          id="btn-bookmeter-sync"
+          className="btn btn-bookmeter-sync"
+          onClick={onBookmeterSync}
+          disabled={running}
+        >
+          読書メーター同期
         </button>
 
         {/* 停止ボタン（実行中のみ表示） */}

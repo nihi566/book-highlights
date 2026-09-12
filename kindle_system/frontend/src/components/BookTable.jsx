@@ -19,6 +19,11 @@ function DiscountBadge({ rate }) {
   return <span className="badge discount">{rate}% 還元</span>;
 }
 
+function SourceBadge({ source }) {
+  if (source !== 'bookmeter') return null;
+  return <span className="badge source-bookmeter">読書メーター</span>;
+}
+
 function WantToggle({ asin, isWanted, onToggle }) {
   return (
     <button
@@ -159,6 +164,7 @@ export default function BookTable({
                     {isCampaign && <span className="badge campaign">キャンペーン</span>}
                     <DiscountBadge rate={discountRate} />
                     {book.is_purchased === 1 && <span className="badge purchased">購入済み</span>}
+                    <SourceBadge source={book.source} />
                   </div>
 
                   {(campaign || book.timestamp) && (
