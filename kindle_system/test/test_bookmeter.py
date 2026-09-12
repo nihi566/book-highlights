@@ -111,6 +111,15 @@ class GetNextPageUrlTest(unittest.TestCase):
     def test_returns_none_when_absent(self):
         self.assertIsNone(get_next_page_url(FIXTURE_PAGE_LAST, PAGE_2_URL))
 
+    def test_detects_next_url_with_multi_value_rel_attribute(self):
+        # rel は複数値属性になりうる(例: rel="next nofollow")。完全一致セレクタ
+        # (a[rel="next"])だと検出できず1ページ目で正常終了したように見えてしまう
+        html = (
+            '<a class="bm-pagination__link" rel="next nofollow" '
+            'href="/users/1770332/books/wish?page=2">次</a>'
+        )
+        self.assertEqual(get_next_page_url(html, WISH_URL), PAGE_2_URL)
+
 
 class FetchWishBooksTest(unittest.TestCase):
     @patch("src.bookmeter.time.sleep", return_value=None)
@@ -140,6 +149,22 @@ class FetchWishBooksTest(unittest.TestCase):
         books = fetch_wish_books()
 
         self.assertEqual(books, [])
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_mid_pagination_failure_keeps_already_fetched_books(self, mock_get, mock_sleep):
+        # 1ページ目は成功、2ページ目で一時的なネットワークエラーが発生するケース。
+        # 1ページ目で取得済みの分まで捨ててはならない（全破棄すると呼び出し元は
+        # 「読みたい本が無い」と「取得に失敗した」を区別できなくなる）
+        mock_get.side_effect = [
+            _mock_response(FIXTURE_PAGE_1),
+            requests.exceptions.ConnectionError("boom"),
+        ]
+
+        books = fetch_wish_books()
+
+        self.assertEqual(len(books), 2)
+        self.assertEqual(books[0]["title"], "紛争でしたら八田まで(1) (モーニングKC)")
 
     @patch("src.bookmeter.time.sleep", return_value=None)
     @patch("src.bookmeter.requests.Session.get")
@@ -179,6 +204,21 @@ class FetchWishBooksTest(unittest.TestCase):
 
         self.assertEqual(mock_get.call_count, 3)
         self.assertEqual(len(books), 3)  # 1冊 x 3ページ
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_corrects_encoding_when_response_misdetected_as_latin1(self, mock_get, mock_sleep):
+        # Content-Type に charset が無い応答は requests が ISO-8859-1 と誤判定
+        # することがあり、対応しないと日本語タイトルが無音で文字化けする
+        resp = _mock_response(FIXTURE_PAGE_LAST)
+        resp.encoding = "ISO-8859-1"
+        resp.apparent_encoding = "utf-8"
+        mock_get.return_value = resp
+
+        books = fetch_wish_books()
+
+        self.assertEqual(resp.encoding, "utf-8")
+        self.assertEqual(books[0]["title"], "共著の本")
 
 
 if __name__ == "__main__":
