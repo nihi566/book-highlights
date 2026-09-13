@@ -24,6 +24,8 @@ export default function App() {
     setSortMode,
     filterMode,
     toggleFilter,
+    sourceTab,
+    setSourceTab,
     processedBooks,
     displayedBooks,
     hasMore,
@@ -100,6 +102,26 @@ export default function App() {
 
       {/* サマリーカード */}
       <SummaryCards books={books} />
+
+      {/* 由来タブ */}
+      <div className="source-tabs" role="tablist">
+        <button
+          role="tab"
+          aria-selected={sourceTab === 'kindle'}
+          className={`source-tab ${sourceTab === 'kindle' ? 'active' : ''}`}
+          onClick={() => setSourceTab('kindle')}
+        >
+          Kindle本棚
+        </button>
+        <button
+          role="tab"
+          aria-selected={sourceTab === 'bookmeter'}
+          className={`source-tab ${sourceTab === 'bookmeter' ? 'active' : ''}`}
+          onClick={() => setSourceTab('bookmeter')}
+        >
+          読書メーター欲しい本
+        </button>
+      </div>
 
       {/* フィルタ・ソートツールバー */}
       <FilterToolbar
