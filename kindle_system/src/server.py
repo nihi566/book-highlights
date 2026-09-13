@@ -423,6 +423,46 @@ else:
         else:
             return HTMLResponse(content="<p>React のビルドまたは reporter.py の実行を行ってください。</p>", status_code=200)
 
+def ensure_frontend_built() -> None:
+    """
+    dist/index.html が無い、または frontend/src 配下に dist より新しいファイルが
+    あれば npm run build を実行する。start_prod.bat を使わず python src/server.py を
+    直接起動した場合でも画面が古いビルドのままにならないようにするための対策。
+    """
+    frontend_dir = os.path.join(BASE_DIR, "frontend")
+    src_dir = os.path.join(frontend_dir, "src")
+    dist_index = os.path.join(DIST_DIR, "index.html")
+
+    if not os.path.isdir(src_dir):
+        return
+
+    dist_mtime = os.path.getmtime(dist_index) if os.path.exists(dist_index) else 0
+    needs_build = dist_mtime == 0
+    if not needs_build:
+        for root, _, files in os.walk(src_dir):
+            for name in files:
+                if os.path.getmtime(os.path.join(root, name)) > dist_mtime:
+                    needs_build = True
+                    break
+            if needs_build:
+                break
+
+    if not needs_build:
+        return
+
+    print("  [Build] frontend が最新ソースより古いため npm run build を実行します...")
+    try:
+        subprocess.run(
+            ["npm", "run", "build"],
+            cwd=frontend_dir,
+            shell=(os.name == "nt"),
+            check=True,
+        )
+        print("  [OK] frontend のビルドが完了しました。")
+    except Exception as e:
+        print(f"  [警告] frontend の自動ビルドに失敗しました（既存の dist で続行します）: {e}")
+
+
 # ─── エントリポイント ─────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -432,6 +472,7 @@ if __name__ == "__main__":
     print(f"  停止: Ctrl+C")
     print("=" * 50)
     try:
+        ensure_frontend_built()
         # DBテーブルが未作成の場合に備え、起動時に作成しておく（main.py と同様）。
         # 既存DBに旧スキーマ（sample_asin主キー）が残っている場合は、ここで新スキーマへ
         # 自動移行される（src.repository.init_db が create_all + migration をまとめて行う）。
