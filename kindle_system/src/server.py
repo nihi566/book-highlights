@@ -45,6 +45,9 @@ from src.database import get_session
 from src.models import BookMapping, PriceHistory
 from src.repository import init_db
 from src.bookmeter_sync import sync_bookmeter_wishlist
+from report import _load_env_file
+
+REPORT_PY = os.path.join(BASE_DIR, "report.py")
 
 # ─── ジョブ管理（非同期版） ──────────────────────────────────────────────────
 
@@ -109,19 +112,23 @@ job = JobManager()
 
 # ─── ジョブ処理（非同期） ────────────────────────────────────────────────────
 
-async def _run_proc(cmd: list):
+async def _run_proc(cmd: list, cwd: str = None):
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
-    
+    # 認証切れの git コマンドが対話プロンプト待ちで無限にハングしないようにする
+    # （stdin は継承されるがサーバーの標準入力を操作する手段が無いため）。
+    env["GIT_TERMINAL_PROMPT"] = "0"
+
     # 非同期サブプロセス起動
     proc = await asyncio.create_subprocess_exec(
         cmd[0], *cmd[1:],
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         env=env,
+        cwd=cwd,
     )
     job.current_proc = proc
-    
+
     try:
         # stdout から非同期で1行ずつ読み込む
         while True:
@@ -146,6 +153,8 @@ async def _run_proc(cmd: list):
 
     if not job.stopped:
         job.emit(f"[完了] 終了コード: {proc.returncode}")
+
+    return proc.returncode
 
 
 async def do_run_only(start_val=None):
@@ -183,6 +192,77 @@ async def do_bookmeter_sync():
         job.finish()
 
 
+async def do_publish():
+    """
+    「読みたい本」を GitHub Pages 公開用リポジトリへ公開する。
+
+    R2対策: report.py の _require_env() は未設定時に sys.exit(1) するため、
+    in-process では絶対に呼ばない。ここでは _load_env_file()（sys.exit しない）
+    のみ import し、PUBLIC_SITE_DIR / PUBLIC_SITE_URL は自前で検証する。
+    report.py 本体はこれまでどおりサブプロセスとして実行し、本体側の検証
+    （git 作業ツリー確認等）はそのまま活かす。
+    """
+    job.start()
+    try:
+        job.emit("=== 公開 ===")
+        _load_env_file(os.path.join(BASE_DIR, ".env"))
+
+        public_site_dir = os.environ.get("PUBLIC_SITE_DIR")
+        public_site_url = os.environ.get("PUBLIC_SITE_URL")
+        if not public_site_dir or not public_site_url:
+            job.emit(
+                "[エラー] 環境変数 PUBLIC_SITE_DIR / PUBLIC_SITE_URL が設定されていません。"
+                ".env.example を参考に .env に設定してください。"
+            )
+            return
+
+        report_returncode = await _run_proc([sys.executable, "-u", "-X", "utf8", REPORT_PY])
+        if report_returncode != 0:
+            job.emit("[エラー] レポート生成に失敗しました。公開を中断しました。")
+            return
+
+        add_returncode = await _run_proc(
+            ["git", "add", "index.html"], cwd=public_site_dir
+        )
+        if add_returncode != 0:
+            job.emit("[エラー] git add に失敗しました。公開を中断しました。")
+            return
+
+        # git diff --cached --quiet の終了コードは「差分なし=0 / 差分あり=1」で、
+        # 他の分岐と意味が逆になる（0 が異常ではなく「commit 不要」を意味する）。
+        diff_returncode = await _run_proc(
+            ["git", "diff", "--cached", "--quiet", "--", "index.html"], cwd=public_site_dir
+        )
+        if diff_returncode == 0:
+            job.emit("差分なし（前回から内容が同じ）。")
+        else:
+            commit_returncode = await _run_proc(
+                ["git", "commit", "-m", "chore: update wishlist", "-q", "--", "index.html"],
+                cwd=public_site_dir,
+            )
+            if commit_returncode != 0:
+                job.emit("[エラー] git commit に失敗しました。公開を中断しました。")
+                return
+
+        # 差分が無い場合も push は必ず試みる。前回の公開で push だけが失敗し
+        # commit だけがローカルに残っていた場合、diff の判定だけでは検出できず
+        # 「差分なし」のまま永久に push されない状態になってしまうため
+        # （push 自体は送るものが無ければ no-op で成功する）。
+        push_returncode = await _run_proc(["git", "push", "-q"], cwd=public_site_dir)
+        if push_returncode != 0:
+            job.emit(
+                "[エラー] git push に失敗しました。コミットはローカルに残っています。"
+                "通信状況や認証情報を確認し、もう一度「公開」を実行してください。"
+            )
+            return
+
+        job.emit(f"[完了] 公開しました: {public_site_url}")
+    except asyncio.CancelledError:
+        pass
+    except Exception as e:
+        job.emit(f"[エラー] {e}")
+    finally:
+        job.finish()
 
 
 # ─── 購入済み / 欲しい本 DB操作 ──────────────────────────────────────────────
@@ -351,6 +431,16 @@ async def run_bookmeter_sync():
     return {"ok": True}
 
 
+
+
+@app.post("/api/publish")
+async def publish():
+    """読みたい本を GitHub Pages へ公開する"""
+    if job.running:
+        raise HTTPException(status_code=409, detail="すでに実行中です。")
+
+    job.current_task = asyncio.create_task(do_publish())
+    return {"ok": True}
 
 
 @app.post("/api/stop")
