@@ -871,8 +871,10 @@ class GetWantedBooksTest(unittest.TestCase):
 
 class SetWantedTest(unittest.TestCase):
     """repository.set_wanted(paid_asin, status)（src/server.py の set_wanted 相当を
-    repository.py へ移植したもの）のテスト。挙動を server.py と完全一致させる
-    （対象無し→False、対象有り→True かつ is_wanted 更新、複数行一致時は全行更新）。
+    repository.py へ移植したもの）のテスト。戻り値の契約（対象無し→False、対象有り→True
+    かつ is_wanted 更新、複数行一致時は全行更新）は server.py を踏襲するが、空/None の
+    paid_asin のみ意図的に挙動を変える（src/repository.py の set_wanted docstring 参照。
+    `WHERE paid_asin IS NULL` 化による無関係行の一括更新を防ぐため）。
     """
 
     def setUp(self):
@@ -993,7 +995,8 @@ class SetWantedTest(unittest.TestCase):
 
 class SetPurchasedTest(unittest.TestCase):
     """repository.set_purchased(paid_asin, status)（src/server.py:272-286 の set_purchased
-    相当を repository.py へ移植したもの）のテスト。挙動を server.py と完全一致させる。
+    相当を repository.py へ移植したもの）のテスト。戻り値の契約は server.py を踏襲するが、
+    空/None の paid_asin のみ意図的に挙動を変える（set_wanted と同じ理由）。
     """
 
     def setUp(self):
