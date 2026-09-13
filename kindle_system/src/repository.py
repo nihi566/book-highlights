@@ -500,6 +500,32 @@ def save_price_history(data: dict) -> None:
         session.commit()
 
 
+def set_wanted(paid_asin: str, status: int) -> bool:
+    """欲しい本フラグをDBUPDATE。対象が見つからない場合は False。
+
+    src/server.py の set_wanted と挙動を完全一致させる（例外握り潰し + False を含む）。
+    paid_asin が空/None の場合は False を返す（`WHERE paid_asin IS NULL` に化けて
+    無関係な既存行（sample_asin/bookmeter 由来で paid_asin が未設定の行）を一括更新
+    するのを防ぐ。get_or_create_by_paid_asin と同じ理由。移植元の「False を返す」
+    契約を保つため raise ではなく早期 return にする）。
+    """
+    if not paid_asin:
+        return False
+    try:
+        with get_session() as session:
+            statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
+            books = session.exec(statement).all()
+            if not books:
+                return False
+            for book in books:
+                book.is_wanted = status
+                session.add(book)
+            session.commit()
+            return True
+    except Exception:
+        return False
+
+
 def get_wanted_books() -> list:
     """
     is_wanted=1 の本を、最新の価格情報とあわせて取得する（wishlist-site-report 用）。
