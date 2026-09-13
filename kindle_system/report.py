@@ -45,49 +45,125 @@ def _format_price(book: dict) -> str:
     return f"¥{actual_price:,}"
 
 
+_PRICE_HISTORY_SVG_WIDTH = 200
+_PRICE_HISTORY_SVG_HEIGHT = 50
+
+
+def _build_price_history_svg(history: list) -> str:
+    """
+    価格履歴（repository.get_price_history() の返り値形式）からインライン SVG の
+    折れ線グラフを組み立てる（外部グラフライブラリ不使用。R1/R3/R4 対策）。
+
+    is_unlimited=1 の点は src/crawler.py の KU 安全弁により価格が常に 0 で保存される
+    ため、折れ線の座標計算から除外する（R4）。有効な価格点が2点未満の場合は
+    プレースホルダー文言を返す（R3）。座標は数値のみで構成し、ユーザー由来の
+    自由文字列を一切埋め込まない（R1: エスケープ対象自体が存在しない設計）。
+    """
+    valid_points = [
+        point
+        for point in history
+        if not point.get("is_unlimited") and point.get("actual_price") is not None
+    ]
+    if len(valid_points) < 2:
+        return '<p class="price-history-empty">価格履歴データなし</p>'
+
+    prices = [point["actual_price"] for point in valid_points]
+    min_price = min(prices)
+    max_price = max(prices)
+    n = len(valid_points)
+
+    coords = []
+    for i, price in enumerate(prices):
+        x = i * (_PRICE_HISTORY_SVG_WIDTH / (n - 1))
+        if max_price == min_price:
+            y = _PRICE_HISTORY_SVG_HEIGHT / 2
+        else:
+            y = _PRICE_HISTORY_SVG_HEIGHT - (
+                (price - min_price) / (max_price - min_price) * _PRICE_HISTORY_SVG_HEIGHT
+            )
+        coords.append(f"{x:.1f},{y:.1f}")
+    points_attr = " ".join(coords)
+
+    return (
+        f'<svg class="price-history-svg" viewBox="0 0 {_PRICE_HISTORY_SVG_WIDTH} {_PRICE_HISTORY_SVG_HEIGHT}" '
+        f'width="{_PRICE_HISTORY_SVG_WIDTH}" height="{_PRICE_HISTORY_SVG_HEIGHT}">'
+        f'<polyline points="{points_attr}" fill="none" stroke="#0074d9" stroke-width="2"/>'
+        f"</svg>"
+    )
+
+
+def _build_book_row(book: dict) -> str:
+    title = html.escape(book.get("title") or "(タイトル不明)")
+    asin = html.escape(book.get("asin") or "")
+    price_text = html.escape(_format_price(book))
+    history_svg = _build_price_history_svg(book.get("price_history") or [])
+    return (
+        f'<li class="book">'
+        f'<span class="title">{title}</span>'
+        f'<span class="asin">{asin}</span>'
+        f'<span class="price">{price_text}</span>'
+        f'<div class="price-history">{history_svg}</div>'
+        f"</li>"
+    )
+
+
+def _build_category_section(section_id: str, heading: str, books: list, empty_message: str) -> str:
+    if books:
+        list_html = "<ul>" + "".join(_build_book_row(book) for book in books) + "</ul>"
+    else:
+        list_html = f'<p class="empty">{html.escape(empty_message)}</p>'
+    return (
+        f'<section id="{section_id}" class="book-section" data-category="{section_id}">'
+        f"<h2>{html.escape(heading)}</h2>"
+        f"{list_html}"
+        f"</section>"
+    )
+
+
 def build_html(books: list) -> str:
     """
-    読みたい本一覧を単一の静的 HTML として生成する（React 不要・軽量 JS のみ。filmarks 方式）。
+    書籍一覧を want済み/購入済み/全部の3カテゴリに分けた単一の静的 HTML として生成する
+    （React 不要・軽量 JS のみ。filmarks 方式）。
+
+    books の各要素が is_wanted / is_purchased フラグを持つ場合、そのフラグに応じて
+    「読みたい」「購入済み」セクションにも同じ本が重複して表示される（「全部」セクションは
+    フラグに関わらず常に全件を表示する）。
 
     全出力値は html.escape() でエスケープする（R2: タイトル等に <script> が含まれても
     HTML インジェクションにならないようにするため）。
     """
-    rows = []
-    for book in books:
-        title = html.escape(book.get("title") or "(タイトル不明)")
-        asin = html.escape(book.get("asin") or "")
-        price_text = html.escape(_format_price(book))
-        rows.append(
-            f'<li class="book">'
-            f'<span class="title">{title}</span>'
-            f'<span class="asin">{asin}</span>'
-            f'<span class="price">{price_text}</span>'
-            f"</li>"
-        )
+    wanted_books = [book for book in books if book.get("is_wanted")]
+    purchased_books = [book for book in books if book.get("is_purchased")]
 
-    if rows:
-        list_html = "<ul>" + "".join(rows) + "</ul>"
-    else:
-        list_html = '<p class="empty">読みたい本はまだ登録されていません。</p>'
+    sections_html = (
+        _build_category_section("section-all", "全部", books, "本はまだ登録されていません。")
+        + _build_category_section("section-wanted", "読みたい", wanted_books, "読みたい本はまだ登録されていません。")
+        + _build_category_section(
+            "section-purchased", "購入済み", purchased_books, "購入済みの本はまだ登録されていません。"
+        )
+    )
 
     return f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>読みたい本リスト</title>
+<title>蔵書リスト</title>
 <style>
   body {{ font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }}
   ul {{ list-style: none; padding: 0; margin: 0; }}
-  .book {{ display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #ddd; }}
+  .book {{ display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #ddd; }}
   .title {{ flex: 1; }}
   .asin {{ color: #888; font-size: 0.8rem; }}
   .price {{ font-weight: bold; white-space: nowrap; }}
   .empty {{ color: #888; }}
+  .price-history {{ width: 100%; }}
+  .price-history-svg {{ display: block; margin-top: 0.25rem; }}
+  .price-history-empty {{ color: #888; font-size: 0.75rem; }}
 </style>
 </head>
 <body>
-<h1>読みたい本リスト</h1>
-{list_html}
+<h1>蔵書リスト</h1>
+{sections_html}
 </body>
 </html>
 """
