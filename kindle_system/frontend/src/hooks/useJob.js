@@ -95,6 +95,25 @@ export function useJob(onJobDone) {
     return {};
   }, [startSSE]);
 
+  const startPublish = useCallback(async () => {
+    setSseLogs([]);
+    setRunning(true);
+    try {
+      const res = await fetch('/api/publish', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        startSSE();
+      } else {
+        setRunning(false);
+        return { error: data.message || '公開の開始に失敗しました。' };
+      }
+    } catch {
+      setRunning(false);
+      return { error: 'サーバーに接続できません。' };
+    }
+    return {};
+  }, [startSSE]);
+
   const stopJob = useCallback(async () => {
     try {
       const res = await fetch('/api/stop', { method: 'POST' });
@@ -112,5 +131,5 @@ export function useJob(onJobDone) {
     if (sseRef.current) sseRef.current.close();
   }, []);
 
-  return { running, sseLogs, checkStatus, startJob, startBookmeterSync, stopJob, closeSSE };
+  return { running, sseLogs, checkStatus, startJob, startBookmeterSync, startPublish, stopJob, closeSSE };
 }

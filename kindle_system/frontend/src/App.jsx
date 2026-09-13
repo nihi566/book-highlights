@@ -33,7 +33,7 @@ export default function App() {
     toggleWant,
   } = useBooks();
 
-  const { running, sseLogs, checkStatus, startJob, startBookmeterSync, stopJob, closeSSE } = useJob(loadData);
+  const { running, sseLogs, checkStatus, startJob, startBookmeterSync, startPublish, stopJob, closeSSE } = useJob(loadData);
 
   // 初回マウント時にデータ取得 + ジョブ状態確認
   useEffect(() => {
@@ -54,6 +54,12 @@ export default function App() {
 
   const handleBookmeterSync = async () => {
     const result = await startBookmeterSync();
+    if (result.error) alert(result.error);
+  };
+
+  const handlePublish = async () => {
+    if (!window.confirm('「読みたい本」を GitHub Pages へ公開します。よろしいですか？')) return;
+    const result = await startPublish();
     if (result.error) alert(result.error);
   };
 
@@ -86,10 +92,11 @@ export default function App() {
         onRun={handleRun}
         onStop={handleStop}
         onBookmeterSync={handleBookmeterSync}
+        onPublish={handlePublish}
       />
 
-      {/* ターミナルログ（実行中のみ表示） */}
-      <TerminalLog logs={sseLogs} visible={running} />
+      {/* ターミナルログ（実行中、または直前の実行結果が残っている間は表示） */}
+      <TerminalLog logs={sseLogs} visible={running || sseLogs.length > 0} />
 
       {/* サマリーカード */}
       <SummaryCards books={books} />

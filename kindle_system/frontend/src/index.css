@@ -429,6 +429,20 @@ h1 {
   background: var(--accent-soft);
 }
 
+/* 公開ボタン（Secondary相当。読書メーター同期ボタンと同じ視覚的強さ） */
+.btn-publish {
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  box-shadow: none;
+}
+
+.btn-publish:hover:not(:disabled) {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-soft);
+}
+
 /* スピナー */
 .spinner {
   display: inline-block;

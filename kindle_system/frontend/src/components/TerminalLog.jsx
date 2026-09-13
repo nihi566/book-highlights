@@ -3,7 +3,7 @@ import React, { useRef } from 'react';
 const LINE_CLASSES = {
   book:  /^\[Worker-\d+\]\[\d+\/\d+\]/,
   ok:    /\[OK\]|\[Report\]/,
-  error: /\[Error\]|\[タイムアウト\]|\[停止\]/,
+  error: /\[Error\]|\[エラー\]|\[タイムアウト\]|\[停止\]/,
   sleep: /\[Sleep\]/,
   step:  /^  \[\d\/\d\]|^  ->/,
 };
