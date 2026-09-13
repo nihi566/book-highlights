@@ -10,6 +10,8 @@ run.py
     python run.py purchase <asin> (--on|--off)
 """
 
+import argparse
+import asyncio
 import os
 import sys
 import subprocess
@@ -25,6 +27,8 @@ sys.path.insert(0, BASE_DIR)
 
 import report
 from report import _load_env_file
+import main as main_module
+from src.bookmeter_sync import sync_bookmeter_wishlist
 
 
 def publish() -> None:
@@ -96,3 +100,63 @@ def publish() -> None:
         sys.exit(1)
 
     print(f"[完了] 公開しました: {public_site_url}")
+
+
+async def _run_sync(xml_path: str, limit: int, start: int, workers: int) -> None:
+    """クロール→読書メーター同期→公開を1回ずつ順に実行する。"""
+    await main_module.run_integration(
+        xml_path=xml_path, limit=limit, start=start, workers=workers
+    )
+    await sync_bookmeter_wishlist()
+    publish()
+
+
+def cmd_sync(args: argparse.Namespace) -> None:
+    """
+    `run.py sync` のエントリ。xml_path のデフォルト解決（main.py と同じ
+    kindle_sample_extractor.DEFAULT_CACHE_PATH）、--workers のクランプ（1〜5）は
+    main.py の挙動をそのまま踏襲する（--xml オプションはスコープ外のため無い）。
+    """
+    xml_path = main_module.kindle_sample_extractor.DEFAULT_CACHE_PATH
+    if not os.path.exists(xml_path):
+        print(f"エラー: XML ファイルが見つかりません: {xml_path}", file=sys.stderr)
+        sys.exit(1)
+
+    workers = max(1, min(args.workers, 5))
+    if workers != args.workers:
+        print(f"[注意] --workers は 1、5 の範囲にクランプされました: {args.workers} → {workers}")
+
+    asyncio.run(
+        _run_sync(xml_path=xml_path, limit=args.limit, start=args.start, workers=workers)
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Kindle システム CLI バッチ運用エントリポイント"
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    sync_parser = subparsers.add_parser(
+        "sync", help="クロール→読書メーター同期→レポート生成→公開を順に実行する"
+    )
+    sync_parser.add_argument(
+        "--workers", type=int, default=1, help="並列ブラウザ数（デフォルト: 1、推奨: 2〜3）"
+    )
+    sync_parser.add_argument("--limit", type=int, default=None, help="処理する最大件数")
+    sync_parser.add_argument(
+        "--start", type=int, default=None, help="開始するインデックス番号"
+    )
+    sync_parser.set_defaults(func=cmd_sync)
+
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
