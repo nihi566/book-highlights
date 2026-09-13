@@ -8,13 +8,15 @@ Kindle for PC のキャッシュから蔵書情報を抽出し、価格・キャ
 ## セットアップ
 
 ```
+pip install -r requirements.txt
+playwright install
 copy .env.example .env
 ```
 
 `.env.example` を参考に、必要な環境変数を `.env` に設定する。
 
 - `KINDLE_XML_PATH`: 任意設定。Kindle for PC のキャッシュファイルのパスが標準と異なる場合のみ設定する。
-- `PUBLIC_SITE_DIR` / `PUBLIC_SITE_URL`: 公開機能（`publish()` / `report.py`）を使う場合は必須。
+- `PUBLIC_SITE_DIR` / `PUBLIC_SITE_URL`: 公開機能（`run.py sync` 内の `publish()`）を使う場合は必須。
 
 ## 使い方
 
@@ -42,16 +44,20 @@ python run.py purchase <asin> --on
 python run.py purchase <asin> --off
 ```
 
-### 静的レポートの生成・公開のみ実行
+### 静的レポートの生成のみ実行（公開はしない）
 
-`run.py sync` は内部で `report.py` によるレポート生成と公開を行うが、単体でも実行できる。
+`run.py sync` は内部でレポート生成と公開（git commit・push）の両方を行うが、
+`report.py` は単体でも実行できる。ただし **`report.py` 単体では公開は行われない**
+（`PUBLIC_SITE_DIR` 直下に `index.html` を書き出すだけで git 操作はしない）。
+クロールをやり直さずに公開だけをやり直す CLI コマンドは現状無いため、
+再公開が必要な場合は `python run.py sync` を実行する。
 
 ```
 python report.py
 ```
 
 蔵書一覧（読みたい本 / 購入済み本 / 全部）と価格履歴を `PUBLIC_SITE_DIR` 直下の
-`index.html` として書き出し、差分があれば commit・push して `PUBLIC_SITE_URL` へ公開する。
+`index.html` として書き出す。
 
 ### クロールのみ実行（読書メーター同期・公開を含まない）
 
