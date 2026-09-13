@@ -551,6 +551,23 @@ def set_purchased(paid_asin: str, status: int) -> bool:
         return False
 
 
+def get_price_history(paid_asin: str) -> list:
+    """指定 paid_asin の価格履歴を timestamp 昇順で全件取得する。
+
+    src/server.py の get_book_history と同じ SQL を移植したもの。
+    対象 paid_asin の履歴が無い場合は空リストを返す。
+    """
+    query = text("""
+        SELECT sell_price, point_value, actual_price, campaign_text, timestamp, is_unlimited
+        FROM price_history
+        WHERE paid_asin = :asin
+        ORDER BY timestamp ASC
+    """)
+    with get_session() as session:
+        result = session.exec(query, params={"asin": paid_asin}).mappings().all()
+        return [dict(row) for row in result]
+
+
 def get_wanted_books() -> list:
     """
     is_wanted=1 の本を、最新の価格情報とあわせて取得する（wishlist-site-report 用）。

@@ -1110,5 +1110,113 @@ class SetPurchasedTest(unittest.TestCase):
             self.assertEqual(row.is_purchased, 0)
 
 
+class GetPriceHistoryTest(unittest.TestCase):
+    """repository.get_price_history(paid_asin)（src/server.py の get_book_history
+    相当を repository.py へ移植したもの）のテスト。timestamp 昇順で全件返すこと、
+    対象 paid_asin が無い場合は空リストを返すことを検証する。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_pricehistory_test_")
+        db_path = os.path.join(self.tmpdir, "pricehistory.db")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _insert_price(
+        self, session, paid_asin, sell_price, timestamp,
+        point_value=0, campaign_text="", is_unlimited=0,
+    ):
+        from src.models import PriceHistory
+        session.add(
+            PriceHistory(
+                paid_asin=paid_asin,
+                sell_price=sell_price,
+                point_value=point_value,
+                actual_price=sell_price - point_value if sell_price is not None else None,
+                campaign_text=campaign_text,
+                timestamp=timestamp,
+                is_unlimited=is_unlimited,
+            )
+        )
+
+    def test_returns_empty_list_when_asin_not_found(self):
+        history = repository.get_price_history("B0NOHISTORY")
+        self.assertEqual(history, [])
+
+    def test_returns_multiple_records_in_timestamp_ascending_order(self):
+        from sqlmodel import Session
+
+        with Session(self.engine) as session:
+            self._insert_price(session, "B0HISTORY001", sell_price=1200, timestamp="2026-02-01T00:00:00")
+            self._insert_price(session, "B0HISTORY001", sell_price=1000, timestamp="2026-01-01T00:00:00")
+            self._insert_price(session, "B0HISTORY001", sell_price=800, timestamp="2026-03-01T00:00:00")
+            session.commit()
+
+        history = repository.get_price_history("B0HISTORY001")
+        self.assertEqual(len(history), 3)
+        self.assertEqual(
+            [h["timestamp"] for h in history],
+            ["2026-01-01T00:00:00", "2026-02-01T00:00:00", "2026-03-01T00:00:00"],
+        )
+
+    def test_does_not_include_other_asin_records(self):
+        from sqlmodel import Session
+
+        with Session(self.engine) as session:
+            self._insert_price(session, "B0TARGETASIN", sell_price=1000, timestamp="2026-01-01T00:00:00")
+            self._insert_price(session, "B0OTHERASIN", sell_price=500, timestamp="2026-01-02T00:00:00")
+            session.commit()
+
+        history = repository.get_price_history("B0TARGETASIN")
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]["sell_price"], 1000)
+
+    def test_returned_field_types_and_values(self):
+        """既定値（0/""）と区別できる値を入れ、各列が取り違えなく運ばれることを検証する。"""
+        from sqlmodel import Session
+
+        with Session(self.engine) as session:
+            self._insert_price(
+                session, "B0TYPEHISTORY", sell_price=1234, timestamp="2026-01-01T00:00:00",
+                point_value=150, campaign_text="ポイント還元中", is_unlimited=1,
+            )
+            session.commit()
+
+        history = repository.get_price_history("B0TYPEHISTORY")
+        self.assertEqual(len(history), 1)
+        record = history[0]
+        self.assertIsInstance(record["timestamp"], str)
+        self.assertEqual(record["sell_price"], 1234)
+        self.assertEqual(record["point_value"], 150)
+        self.assertEqual(record["actual_price"], 1084)
+        self.assertEqual(record["campaign_text"], "ポイント還元中")
+        self.assertEqual(record["is_unlimited"], 1)
+
+    def test_record_with_null_price_is_returned(self):
+        """価格取得失敗（sell_price/actual_price=None）で書き込まれた行が
+        欠落せず None のまま返ること（save_price_history が実際に書きうる状態）。"""
+        from sqlmodel import Session
+
+        with Session(self.engine) as session:
+            self._insert_price(session, "B0NULLPRICE", sell_price=None, timestamp="2026-01-01T00:00:00")
+            session.commit()
+
+        history = repository.get_price_history("B0NULLPRICE")
+        self.assertEqual(len(history), 1)
+        self.assertIsNone(history[0]["sell_price"])
+        self.assertIsNone(history[0]["actual_price"])
+
+
 if __name__ == "__main__":
     unittest.main()
