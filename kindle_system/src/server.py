@@ -13,7 +13,8 @@ import sys
 import time
 import asyncio
 import subprocess
-from fastapi import FastAPI, Response, Query, HTTPException
+from urllib.parse import urlparse
+from fastapi import FastAPI, Response, Query, HTTPException, Depends, Request
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import select, text
@@ -299,6 +300,27 @@ def set_wanted(paid_asin: str, status: int) -> bool:
             return True
     except Exception:
         return False
+
+# ─── CSRF対策 ────────────────────────────────────────────────────────────────
+
+async def verify_same_origin(request: Request) -> None:
+    """
+    Origin（無ければReferer）ヘッダーのホスト・ポートがリクエスト自身のHost
+    （request.url.hostname / request.url.port）と一致することを検証する。
+    一致しない場合（ヘッダー欠落を含む）は403を送出する。
+
+    外部サイトからの無認証POST（CSRF）を拒否するための最小対策。自オリジンの
+    基準は固定値ではなくリクエスト自身のHostから動的に導出するため、
+    localhost/127.0.0.1/LAN IP等アクセス経路の違いを問わず機能する。
+    """
+    header_value = request.headers.get("origin") or request.headers.get("referer")
+    if not header_value:
+        raise HTTPException(status_code=403, detail="Origin/Referer ヘッダーが必要です。")
+
+    parsed = urlparse(header_value)
+    if parsed.hostname != request.url.hostname or parsed.port != request.url.port:
+        raise HTTPException(status_code=403, detail="許可されていないオリジンからのリクエストです。")
+
 
 # ─── FastAPI アプリケーション ────────────────────────────────────────────────
 
