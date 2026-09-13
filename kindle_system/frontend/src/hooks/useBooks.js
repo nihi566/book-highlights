@@ -9,12 +9,13 @@ export function useBooks() {
   const [serverError, setServerError] = useState(false);
   const [sortMode, setSortMode] = useState('updated');
   const [filterMode, setFilterMode] = useState('all');
+  const [sourceTab, setSourceTab] = useState('kindle');
   const [visibleCount, setVisibleCount] = useState(50);
 
-  // フィルタやソートが変更されたら、表示件数を初期件数（50件）にリセットする
+  // フィルタやソート、タブが変更されたら、表示件数を初期件数（50件）にリセットする
   useEffect(() => {
     setVisibleCount(50);
-  }, [filterMode, sortMode]);
+  }, [filterMode, sortMode, sourceTab]);
 
   const loadData = useCallback(async () => {
     try {
@@ -76,6 +77,14 @@ export function useBooks() {
   const processedBooks = (() => {
     let result = [...books];
 
+    if (sourceTab === 'kindle') {
+      // from_bookmeter が立っていない行（由来フラグ未設定行を含む）は Kindle タブ側で拾い、
+      // どちらのフラグも立たない行が一覧から到達不能にならないようにする
+      result = result.filter((b) => b.from_kindle_sample === 1 || b.from_bookmeter !== 1);
+    } else if (sourceTab === 'bookmeter') {
+      result = result.filter((b) => b.from_bookmeter === 1);
+    }
+
     if (filterMode === 'campaign') {
       result = result.filter((b) => b.is_unlimited === 0 && b.campaign_text);
     } else if (filterMode === 'unlimited') {
@@ -120,6 +129,8 @@ export function useBooks() {
     setSortMode,
     filterMode,
     toggleFilter,
+    sourceTab,
+    setSourceTab,
     processedBooks,
     displayedBooks,
     hasMore,
