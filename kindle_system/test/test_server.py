@@ -104,7 +104,7 @@ class GetBooksSourceFlagsTest(unittest.TestCase):
         self.assertEqual(books[0]["from_bookmeter"], 0)
 
 
-def _make_request(host: str = "localhost:8001", headers: dict | None = None) -> Request:
+def _make_request(host: str = "localhost:8001", headers: dict | None = None, path: str = "/api/run") -> Request:
     """Starlette の Request を直接構築する（TestClient/httpx を導入しないため）。"""
     raw_headers = [(b"host", host.encode("latin-1"))]
     for key, value in (headers or {}).items():
@@ -116,8 +116,8 @@ def _make_request(host: str = "localhost:8001", headers: dict | None = None) -> 
     scope = {
         "type": "http",
         "method": "POST",
-        "path": "/api/run",
-        "raw_path": b"/api/run",
+        "path": path,
+        "raw_path": path.encode("latin-1"),
         "query_string": b"",
         "headers": raw_headers,
         "server": server,
@@ -152,6 +152,73 @@ class VerifySameOriginTest(unittest.TestCase):
         with self.assertRaises(HTTPException) as ctx:
             asyncio.run(server.verify_same_origin(request))
         self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_referer_fallback_passes_when_origin_missing(self):
+        """Originが無くRefererのみで自オリジンと一致する場合は通過する
+        （優先順位: Origin → Referer フォールバック の正常系）。"""
+        request = _make_request(headers={"referer": "http://localhost:8001/index.html"})
+        asyncio.run(server.verify_same_origin(request))  # 例外が発生しないこと
+
+    def test_same_host_different_port_raises_403(self):
+        """ホスト名は一致するがポートが異なる場合は拒否する
+        （ローカルの別アプリからのクロスオリジンPOSTを想定）。"""
+        request = _make_request(host="localhost:8001", headers={"origin": "http://localhost:9999"})
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(server.verify_same_origin(request))
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_dns_rebinding_same_external_hostname_raises_403(self):
+        """DNSリバインディング対策: Host/Originヘッダーの両方が同一の
+        外部ドメイン文字列（evil.example）であっても、そのホスト名自体が
+        ループバック/プライベートIP相当でなければ拒否する。単純な
+        Host/Origin一致比較だけでは通過してしまう経路を締め出す。"""
+        request = _make_request(host="evil.example:8001", headers={"origin": "http://evil.example:8001"})
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(server.verify_same_origin(request))
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_lan_private_ip_same_origin_passes(self):
+        """LAN内プライベートIP経由のアクセスは、Host/Originが一致していれば
+        引き続き通過する（0.0.0.0待受・LANアクセスのサポートを維持）。"""
+        request = _make_request(host="192.168.1.42:8001", headers={"origin": "http://192.168.1.42:8001"})
+        asyncio.run(server.verify_same_origin(request))  # 例外が発生しないこと
+
+    def test_malformed_port_in_origin_raises_403_not_500(self):
+        """Originヘッダーのポート番号が範囲外（例: 99999）の場合、
+        urlparseの遅延パースがValueErrorを送出しうるが、未処理の500では
+        なく403として一律拒否する。"""
+        request = _make_request(headers={"origin": "http://localhost:99999"})
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(server.verify_same_origin(request))
+        self.assertEqual(ctx.exception.status_code, 403)
+
+
+class PostEndpointsRequireSameOriginCheckTest(unittest.TestCase):
+    """全POSTルートに Depends(verify_same_origin) が適用されていることを
+    機械的に検証する回帰テスト。エンドポイント追加時の付け忘れ・
+    意図しない除外漏れを検出する（テスト十分性レビュー指摘への対応）。
+    """
+
+    # Phase auth-csrf-protection の「やらないこと」で明示的にスコープ外と
+    # した唯一のエンドポイント。停止操作はデータ変更を伴わず実害が小さい
+    # ため対象外（phases/auth-csrf-protection.md リスク表 R4）。
+    EXEMPT_PATHS = {"/api/stop"}
+
+    def test_all_post_routes_require_verify_same_origin_except_exempted(self):
+        missing = []
+        for route in server.app.routes:
+            methods = getattr(route, "methods", None)
+            if not methods or "POST" not in methods:
+                continue
+            if route.path in self.EXEMPT_PATHS:
+                continue
+            dependency_calls = {dep.call for dep in route.dependant.dependencies}
+            if server.verify_same_origin not in dependency_calls:
+                missing.append(route.path)
+        self.assertEqual(
+            missing, [],
+            f"Depends(verify_same_origin) が適用されていないPOSTルート: {missing}",
+        )
 
 
 if __name__ == "__main__":

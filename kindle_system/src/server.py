@@ -12,6 +12,7 @@ import os
 import sys
 import time
 import asyncio
+import ipaddress
 import subprocess
 from urllib.parse import urlparse
 from fastapi import FastAPI, Response, Query, HTTPException, Depends, Request
@@ -303,22 +304,57 @@ def set_wanted(paid_asin: str, status: int) -> bool:
 
 # ─── CSRF対策 ────────────────────────────────────────────────────────────────
 
+def _is_local_host(hostname: str) -> bool:
+    """
+    hostname が "localhost" またはループバック/プライベートIPアドレスの
+    文字列表現であるかを判定する。
+
+    Origin/Refererのホスト名がリクエスト自身のHost（Originヘッダーと同じく
+    クライアントが自由に設定できる値）と一致するだけでは検証にならない。
+    攻撃者が制御するドメイン（例: evil.com）をDNSリバインディングで
+    127.0.0.1等へ解決させれば、ブラウザはHostヘッダー・Originヘッダーの
+    両方に "evil.com" を送るため、単純な一致比較はすり抜けられてしまう
+    （実機確認済み）。ホスト名の「文字列」自体がループバック/プライベートIPの
+    表記であることも要求することで、DNSの実解決結果に関わらずドメイン名を
+    騙る経路を締め出す。本サーバーはLAN公開を想定するため、ループバックに
+    加えプライベートIPレンジも許可する（localhost/127.0.0.1/LAN IP等の
+    アクセス経路差異には対応しつつ、外部ドメインは常に拒否する）。
+    """
+    if hostname == "localhost":
+        return True
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        return False
+    return ip.is_loopback or ip.is_private
+
+
 async def verify_same_origin(request: Request) -> None:
     """
     Origin（無ければReferer）ヘッダーのホスト・ポートがリクエスト自身のHost
-    （request.url.hostname / request.url.port）と一致することを検証する。
-    一致しない場合（ヘッダー欠落を含む）は403を送出する。
+    （request.url.hostname / request.url.port）と一致し、かつそのホスト名が
+    ループバック/プライベートIP相当（LAN内アクセスを含む）であることを検証する。
+    一致しない場合・ヘッダー欠落・不正な値の場合は403を送出する。
 
-    外部サイトからの無認証POST（CSRF）を拒否するための最小対策。自オリジンの
+    外部サイトからの無認証POST（CSRF）を拒否するための対策。自オリジンの
     基準は固定値ではなくリクエスト自身のHostから動的に導出するため、
-    localhost/127.0.0.1/LAN IP等アクセス経路の違いを問わず機能する。
+    localhost/127.0.0.1/LAN IP等アクセス経路の違いを問わず機能する
+    （ホスト名自体の妥当性チェックは _is_local_host を参照）。
     """
     header_value = request.headers.get("origin") or request.headers.get("referer")
     if not header_value:
         raise HTTPException(status_code=403, detail="Origin/Referer ヘッダーが必要です。")
 
-    parsed = urlparse(header_value)
-    if parsed.hostname != request.url.hostname or parsed.port != request.url.port:
+    try:
+        parsed = urlparse(header_value)
+        same_host = parsed.hostname == request.url.hostname
+        same_port = parsed.port == request.url.port
+    except ValueError:
+        # ポート番号が範囲外(例: 99999)等でurlparseの遅延パースが例外を
+        # 送出するケース。500ではなく403として一律拒否する。
+        raise HTTPException(status_code=403, detail="不正な Origin/Referer ヘッダーです。")
+
+    if not same_host or not same_port or not _is_local_host(parsed.hostname or ""):
         raise HTTPException(status_code=403, detail="許可されていないオリジンからのリクエストです。")
 
 
@@ -432,7 +468,7 @@ async def get_events():
     )
 
 
-@app.post("/api/run")
+@app.post("/api/run", dependencies=[Depends(verify_same_origin)])
 async def run_job(start: str = Query(None)):
     """クロール処理のみを開始する"""
     if job.running:
@@ -443,7 +479,7 @@ async def run_job(start: str = Query(None)):
     return {"ok": True}
 
 
-@app.post("/api/bookmeter/sync")
+@app.post("/api/bookmeter/sync", dependencies=[Depends(verify_same_origin)])
 async def run_bookmeter_sync():
     """読書メーター「読みたい本」の一気通貫同期処理を開始する"""
     if job.running:
@@ -457,7 +493,7 @@ async def run_bookmeter_sync():
 
 
 
-@app.post("/api/publish")
+@app.post("/api/publish", dependencies=[Depends(verify_same_origin)])
 async def publish():
     """読みたい本を GitHub Pages へ公開する"""
     if job.running:
@@ -477,7 +513,7 @@ async def stop_job():
         return {"ok": False, "message": "実行中のジョブがありません。"}
 
 
-@app.post("/api/want")
+@app.post("/api/want", dependencies=[Depends(verify_same_origin)])
 async def want(asin: str = Query(...), status: int = Query(1)):
     """書籍の「欲しい」ステータスをトグルする"""
     if not asin:
@@ -486,7 +522,7 @@ async def want(asin: str = Query(...), status: int = Query(1)):
     return {"ok": ok, "asin": asin, "is_wanted": status}
 
 
-@app.post("/api/purchase")
+@app.post("/api/purchase", dependencies=[Depends(verify_same_origin)])
 async def purchase(asin: str = Query(...), status: int = Query(1)):
     """書籍の購入ステータスをトグルする"""
     if not asin:
