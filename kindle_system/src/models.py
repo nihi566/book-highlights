@@ -16,6 +16,8 @@ class BookMapping(SQLModel, table=True):
     is_purchased: int = Field(default=0)
     is_wanted: int = Field(default=0)
     source: str = Field(default="kindle_sample")
+    from_kindle_sample: bool = Field(default=False)
+    from_bookmeter: bool = Field(default=False)
 
 
 class PriceHistory(SQLModel, table=True):

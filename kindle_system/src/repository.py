@@ -59,26 +59,83 @@ def backup_database(db_path: str = DB_PATH) -> Optional[str]:
     return backup_path
 
 
+def _apply_source_flag_backfill(cur: sqlite3.Cursor, columns: set) -> None:
+    """from_kindle_sample/from_bookmeter 列を(無ければ)追加し、既存の source
+    値から best-effort で backfill する。呼び出し側が開いたトランザクション内で
+    実行される前提で、commit/rollback はしない。"""
+    if "from_kindle_sample" not in columns:
+        cur.execute(
+            "ALTER TABLE book_mappings ADD COLUMN from_kindle_sample "
+            "INTEGER NOT NULL DEFAULT 0"
+        )
+    if "from_bookmeter" not in columns:
+        cur.execute(
+            "ALTER TABLE book_mappings ADD COLUMN from_bookmeter "
+            "INTEGER NOT NULL DEFAULT 0"
+        )
+    cur.execute(
+        "UPDATE book_mappings SET from_kindle_sample = 1 WHERE source = 'kindle_sample'"
+    )
+    cur.execute("UPDATE book_mappings SET from_bookmeter = 1 WHERE source = 'bookmeter'")
+
+
+def _backfill_source_flags_in_place(db_path: str, columns: set) -> None:
+    """_apply_source_flag_backfill を db_path へ直接・1トランザクションで適用する。
+
+    ALTER TABLE ADD COLUMN + UPDATE は元ファイルへの追記のみで完結するため、
+    migrate_book_mappings_schema 本体が使う「全ファイル複製→os.replace()」は
+    使わない。全ファイル複製〜置換の間は他プロセスの同時書き込み
+    （crawler 側の price_history 追記等）を巻き込んで破棄しうるため、
+    列追加だけで済むこの経路ではその窓を作らないほうが安全。
+    db_path へ書き込めない場合（実データファイルがオーナー相違で読み取り専用等）は
+    sqlite3.OperationalError を送出し、呼び出し側の複製→置換フォールバックに委ねる。
+    """
+    conn = sqlite3.connect(db_path, timeout=30)
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            _apply_source_flag_backfill(conn.cursor(), columns)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+    finally:
+        conn.close()
+
+
 def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
     """
-    book_mappings を新スキーマ（id 主キー・source 列・sample_asin nullable）へ移行する。
+    book_mappings を新スキーマ（id 主キー・source 列・sample_asin nullable・
+    from_kindle_sample/from_bookmeter 列）へ移行する。
 
-    冪等: 既に id / source 列が存在する場合は何もしない。
+    冪等: 既に id / source / from_kindle_sample / from_bookmeter の 4 列が
+    揃っている場合は何もしない。
     db_path が存在しない、または book_mappings テーブルが未作成の場合も何もしない
     （SQLModel.metadata.create_all が新スキーマで作成するため）。
 
+    移行は 2 パターンある:
+      (a) 真の旧スキーマ（sample_asin PK・source/flags 列なし）からの全面移行。
+          source 列自体が無かった時期のデータは全て kindle_sample 経由とみなす。
+      (b) 新スキーマ（id/source あり）だが from_kindle_sample/from_bookmeter が
+          無いだけ。ALTER TABLE ADD COLUMN + UPDATE のみで完結するため、
+          まず `_backfill_source_flags_in_place` で db_path へ直接適用する。
+
     実データファイルはオーナーが異なり書き込み不可な場合がある
     （実測: `-rw-r--r-- root:root`。実行ユーザーからは書き込み不可）。
-    SQLite の CREATE/DROP/RENAME はファイル自体への書き込み権限を要するため、
-    db_path を直接書き換えることはしない。代わりに:
+    (b) が書き込み不可で失敗した場合、および (a) は常に、SQLite の
+    CREATE/DROP/RENAME がファイル自体への書き込み権限を要するため、
+    db_path を直接書き換えず以下のフォールバックを使う:
       1. バックアップを作成する（sqlite3 backup API。恒久的な保全用）
       2. 書き込み可能な一時ファイル（同じ backup API で全体複製）へ移行作業を行う
          （複製の読み取りは world-readable なファイルであれば所有者に関わらず可能）
-      3. 一時ファイル上でスキーマ移行（CREATE new → INSERT SELECT → 件数検証 →
-         DROP old → RENAME → インデックス作成）を 1 トランザクションで行う
+      3. 一時ファイル上でスキーマ移行を 1 トランザクションで行う
+         （(a) は CREATE new → INSERT SELECT → 件数検証 → DROP old → RENAME →
+         インデックス作成。(b) のフォールバックは ALTER TABLE ADD COLUMN → UPDATE のみ）
       4. 検証済みの一時ファイルを `os.replace()` で db_path へ原子的に差し替える
          （`data/` ディレクトリへの書き込み権限があれば、対象ファイル自体の
-         所有者・パーミッションに関わらず置換できる。実測済み）
+         所有者・パーミッションに関わらず置換できる。実測済み。置換直前に
+         book_mappings に加え price_history の行数も複製時から変化していないか
+         確認し、変化していれば他プロセスの同時書き込みを上書きしないよう中止する）
     """
     if not os.path.exists(db_path):
         return
@@ -93,10 +150,19 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
             return
         cur.execute("PRAGMA table_info(book_mappings)")
         columns = {row[1] for row in cur.fetchall()}
-        if "id" in columns and "source" in columns:
+        has_id_source = "id" in columns and "source" in columns
+        has_source_flags = "from_kindle_sample" in columns and "from_bookmeter" in columns
+        if has_id_source and has_source_flags:
             return
     finally:
         conn.close()
+
+    if has_id_source:
+        try:
+            _backfill_source_flags_in_place(db_path, columns)
+            return
+        except sqlite3.OperationalError:
+            pass  # db_path が書き込み不可。以下の複製→置換フォールバックへ。
 
     backup_path = backup_database(db_path)
 
@@ -126,55 +192,87 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
             # この staging を破棄するだけで安全に収束する）。
             cur.execute("PRAGMA table_info(book_mappings)")
             columns = {row[1] for row in cur.fetchall()}
-            if "id" in columns and "source" in columns:
+            has_id_source = "id" in columns and "source" in columns
+            has_source_flags = "from_kindle_sample" in columns and "from_bookmeter" in columns
+            if has_id_source and has_source_flags:
                 return
+
+            # book_mappings 以外にも同時書き込みが起こりうるテーブル（crawler が
+            # 追記する price_history）の複製時点の行数を控えておく。置換直前の
+            # 再確認でここと食い違えば、他プロセスの書き込みを上書きしないよう
+            # 置換を中止する（book_mappings の行数比較だけでは検知できないため）。
+            cur.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='price_history'"
+            )
+            has_price_history = cur.fetchone() is not None
+            staged_price_history_count = None
+            if has_price_history:
+                cur.execute("SELECT COUNT(*) FROM price_history")
+                staged_price_history_count = cur.fetchone()[0]
 
             conn.execute("BEGIN IMMEDIATE")
             try:
-                cur.execute("""
-                    CREATE TABLE book_mappings_new (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        sample_asin VARCHAR,
-                        paid_asin VARCHAR,
-                        title VARCHAR,
-                        created_at VARCHAR,
-                        is_purchased INTEGER NOT NULL DEFAULT 0,
-                        is_wanted INTEGER NOT NULL DEFAULT 0,
-                        source VARCHAR NOT NULL DEFAULT 'kindle_sample'
-                    )
-                """)
-                cur.execute("""
-                    INSERT INTO book_mappings_new
-                        (sample_asin, paid_asin, title, created_at, is_purchased, is_wanted, source)
-                    SELECT sample_asin, paid_asin, title, created_at, is_purchased, is_wanted, 'kindle_sample'
-                    FROM book_mappings
-                """)
+                if not has_id_source:
+                    # 真の旧スキーマ（sample_asin PK・source/flags列なし）からの
+                    # 全面移行。source列自体が無かった時期のデータは全て
+                    # kindle_sample 経由だったとみなす。
+                    cur.execute("""
+                        CREATE TABLE book_mappings_new (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            sample_asin VARCHAR,
+                            paid_asin VARCHAR,
+                            title VARCHAR,
+                            created_at VARCHAR,
+                            is_purchased INTEGER NOT NULL DEFAULT 0,
+                            is_wanted INTEGER NOT NULL DEFAULT 0,
+                            source VARCHAR NOT NULL DEFAULT 'kindle_sample',
+                            from_kindle_sample INTEGER NOT NULL DEFAULT 0,
+                            from_bookmeter INTEGER NOT NULL DEFAULT 0
+                        )
+                    """)
+                    cur.execute("""
+                        INSERT INTO book_mappings_new
+                            (sample_asin, paid_asin, title, created_at, is_purchased, is_wanted,
+                             source, from_kindle_sample, from_bookmeter)
+                        SELECT sample_asin, paid_asin, title, created_at, is_purchased, is_wanted,
+                               'kindle_sample', 1, 0
+                        FROM book_mappings
+                    """)
 
-                cur.execute("SELECT COUNT(*) FROM book_mappings")
-                old_count = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM book_mappings_new")
-                new_count = cur.fetchone()[0]
-                if old_count != new_count:
-                    conn.rollback()
-                    raise RuntimeError(
-                        "book_mappings migration failed: row count mismatch "
-                        f"(old={old_count}, new={new_count}). "
-                        f"元のファイルには一切書き込んでいないため無傷です。バックアップ: {backup_path}"
-                    )
+                    cur.execute("SELECT COUNT(*) FROM book_mappings")
+                    old_count = cur.fetchone()[0]
+                    cur.execute("SELECT COUNT(*) FROM book_mappings_new")
+                    new_count = cur.fetchone()[0]
+                    if old_count != new_count:
+                        conn.rollback()
+                        raise RuntimeError(
+                            "book_mappings migration failed: row count mismatch "
+                            f"(old={old_count}, new={new_count}). "
+                            f"元のファイルには一切書き込んでいないため無傷です。バックアップ: {backup_path}"
+                        )
 
-                cur.execute("DROP TABLE book_mappings")
-                cur.execute("ALTER TABLE book_mappings_new RENAME TO book_mappings")
-                # sample_asin は主キーではなくなったが、非NULL値の一意性（旧スキーマでは
-                # PRIMARY KEY により保証されていた）は部分UNIQUEインデックスで維持する。
-                # bookmeter 由来行（sample_asin=NULL）はこの制約の対象外。
-                cur.execute(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_book_mappings_sample_asin_unique "
-                    "ON book_mappings (sample_asin) WHERE sample_asin IS NOT NULL"
-                )
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS ix_book_mappings_paid_asin "
-                    "ON book_mappings (paid_asin)"
-                )
+                    cur.execute("DROP TABLE book_mappings")
+                    cur.execute("ALTER TABLE book_mappings_new RENAME TO book_mappings")
+                    # sample_asin は主キーではなくなったが、非NULL値の一意性（旧スキーマでは
+                    # PRIMARY KEY により保証されていた）は部分UNIQUEインデックスで維持する。
+                    # bookmeter 由来行（sample_asin=NULL）はこの制約の対象外。
+                    cur.execute(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS ix_book_mappings_sample_asin_unique "
+                        "ON book_mappings (sample_asin) WHERE sample_asin IS NOT NULL"
+                    )
+                    cur.execute(
+                        "CREATE INDEX IF NOT EXISTS ix_book_mappings_paid_asin "
+                        "ON book_mappings (paid_asin)"
+                    )
+                else:
+                    # 新スキーマ（id/source あり）だが from_kindle_sample/from_bookmeter が
+                    # まだ無い。_backfill_source_flags_in_place が db_path へ直接書き込め
+                    # なかった場合のフォールバックのみここを通る（想定外の source 値の
+                    # 行は両フラグ 0 のまま許容する）。
+                    cur.execute("SELECT COUNT(*) FROM book_mappings")
+                    old_count = cur.fetchone()[0]
+                    new_count = old_count
+                    _apply_source_flag_backfill(cur, columns)
                 conn.commit()
             except Exception:
                 conn.rollback()
@@ -189,11 +287,20 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
             recheck_cur = recheck_conn.cursor()
             recheck_cur.execute("PRAGMA table_info(book_mappings)")
             recheck_columns = {row[1] for row in recheck_cur.fetchall()}
-            if "id" in recheck_columns and "source" in recheck_columns:
+            if (
+                "id" in recheck_columns
+                and "source" in recheck_columns
+                and "from_kindle_sample" in recheck_columns
+                and "from_bookmeter" in recheck_columns
+            ):
                 # 他プロセスが先に置換済み。この staging は不要になった。
                 return
             recheck_cur.execute("SELECT COUNT(*) FROM book_mappings")
             current_count = recheck_cur.fetchone()[0]
+            current_price_history_count = None
+            if has_price_history:
+                recheck_cur.execute("SELECT COUNT(*) FROM price_history")
+                current_price_history_count = recheck_cur.fetchone()[0]
         finally:
             recheck_conn.close()
         if current_count != old_count:
@@ -201,6 +308,12 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
                 "book_mappings migration aborted: 複製後に元ファイルの行数が変化しました "
                 f"(複製時={old_count}, 置換直前={current_count})。他プロセスの書き込みを"
                 f"上書きしないよう置換を中止しました。バックアップ: {backup_path}"
+            )
+        if has_price_history and current_price_history_count != staged_price_history_count:
+            raise RuntimeError(
+                "book_mappings migration aborted: 複製後に price_history の行数が変化しました "
+                f"(複製時={staged_price_history_count}, 置換直前={current_price_history_count})。"
+                f"他プロセスの書き込みを上書きしないよう置換を中止しました。バックアップ: {backup_path}"
             )
 
         # 元ファイルの WAL/journal サイドカーが残っていると、置換後に古い

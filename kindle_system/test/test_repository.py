@@ -69,6 +69,29 @@ def _fetch_all_rows(db_path: str) -> list:
         conn.close()
 
 
+class BookMappingModelSourceFlagsTest(unittest.TestCase):
+    """BookMapping モデルに from_kindle_sample/from_bookmeter 列が追加され、
+    既定値が False であることを検証する。"""
+
+    def test_new_instance_has_default_false_flags(self):
+        from src.models import BookMapping
+
+        book = BookMapping(sample_asin="B0FLAGDEFAULT", paid_asin="B0FLAGDEFAULT")
+        self.assertFalse(book.from_kindle_sample)
+        self.assertFalse(book.from_bookmeter)
+
+    def test_flags_can_be_set_independently(self):
+        from src.models import BookMapping
+
+        book = BookMapping(
+            sample_asin="B0FLAGSET",
+            paid_asin="B0FLAGSET",
+            from_kindle_sample=True,
+        )
+        self.assertTrue(book.from_kindle_sample)
+        self.assertFalse(book.from_bookmeter)
+
+
 class MigrateBookMappingsSchemaTest(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_schema_test_")
@@ -140,6 +163,19 @@ class MigrateBookMappingsSchemaTest(unittest.TestCase):
         rows = _fetch_all_rows(self.db_path)
         self.assertEqual(len(rows), 3)
 
+    def test_migration_adds_source_flag_columns(self):
+        repository.migrate_book_mappings_schema(self.db_path)
+        columns = _table_columns(self.db_path, "book_mappings")
+        self.assertIn("from_kindle_sample", columns)
+        self.assertIn("from_bookmeter", columns)
+
+    def test_migration_backfills_from_kindle_sample_for_kindle_sample_source(self):
+        """真の旧スキーマ(sourceなし)からの移行は、source同様 kindle_sample 一択として扱う。"""
+        repository.migrate_book_mappings_schema(self.db_path)
+        rows = _fetch_all_rows(self.db_path)
+        self.assertTrue(all(r["from_kindle_sample"] == 1 for r in rows))
+        self.assertTrue(all(r["from_bookmeter"] == 0 for r in rows))
+
     def test_migration_keeps_sample_asin_unique_but_allows_multiple_null(self):
         """
         旧スキーマは sample_asin が PRIMARY KEY で一意性が保証されていた。
@@ -166,6 +202,109 @@ class MigrateBookMappingsSchemaTest(unittest.TestCase):
                 )
         finally:
             conn.close()
+
+
+def _create_new_schema_db_without_flags(db_path: str) -> None:
+    """id/source は既にある(1回目の移行は済んでいる)が、from_kindle_sample/from_bookmeter
+    列がまだ無い状態を再現する(本Phase以前にbookmeter-sync等でsourceが書かれた実データ相当)。"""
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("""
+            CREATE TABLE book_mappings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sample_asin VARCHAR,
+                paid_asin VARCHAR,
+                title VARCHAR,
+                created_at VARCHAR,
+                is_purchased INTEGER NOT NULL DEFAULT 0,
+                is_wanted INTEGER NOT NULL DEFAULT 0,
+                source VARCHAR NOT NULL DEFAULT 'kindle_sample'
+            )
+        """)
+        conn.execute(
+            "CREATE UNIQUE INDEX ix_book_mappings_sample_asin_unique "
+            "ON book_mappings (sample_asin) WHERE sample_asin IS NOT NULL"
+        )
+        conn.execute("CREATE INDEX ix_book_mappings_paid_asin ON book_mappings (paid_asin)")
+        conn.executemany(
+            "INSERT INTO book_mappings "
+            "(sample_asin, paid_asin, title, created_at, is_purchased, is_wanted, source) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [
+                ("B0KS001", "B0KSPAID001", "kindle_sample本", "2026-01-01T00:00:00", 1, 0, "kindle_sample"),
+                (None, "B0BM001", "bookmeter本", "2026-01-02T00:00:00", 0, 1, "bookmeter"),
+                ("B0UNK001", "B0UNKPAID001", "想定外source本", "2026-01-03T00:00:00", 0, 0, "unknown_source"),
+            ],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+class MigrateBookMappingsSchemaBackfillFlagsTest(unittest.TestCase):
+    """新スキーマ(id/source あり)だが from_kindle_sample/from_bookmeter が無い DB からの
+    バックフィルを検証する(R2: 想定外source値は両フラグ0のまま許容)。"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_backfill_test_")
+        self.db_path = os.path.join(self.tmpdir, "test.db")
+        _create_new_schema_db_without_flags(self.db_path)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_adds_flag_columns_without_touching_row_count(self):
+        before_rows = _fetch_all_rows(self.db_path)
+        repository.migrate_book_mappings_schema(self.db_path)
+        after_rows = _fetch_all_rows(self.db_path)
+        self.assertEqual(len(before_rows), len(after_rows))
+        columns = _table_columns(self.db_path, "book_mappings")
+        self.assertIn("from_kindle_sample", columns)
+        self.assertIn("from_bookmeter", columns)
+
+    def test_backfills_from_kindle_sample_for_kindle_sample_source_rows(self):
+        repository.migrate_book_mappings_schema(self.db_path)
+        rows = _fetch_all_rows(self.db_path)
+        by_sample_asin = {r["sample_asin"]: r for r in rows}
+        self.assertEqual(by_sample_asin["B0KS001"]["from_kindle_sample"], 1)
+        self.assertEqual(by_sample_asin["B0KS001"]["from_bookmeter"], 0)
+
+    def test_backfills_from_bookmeter_for_bookmeter_source_rows(self):
+        repository.migrate_book_mappings_schema(self.db_path)
+        rows = _fetch_all_rows(self.db_path)
+        by_paid_asin = {r["paid_asin"]: r for r in rows}
+        self.assertEqual(by_paid_asin["B0BM001"]["from_bookmeter"], 1)
+        self.assertEqual(by_paid_asin["B0BM001"]["from_kindle_sample"], 0)
+
+    def test_unrecognized_source_value_leaves_both_flags_unset(self):
+        repository.migrate_book_mappings_schema(self.db_path)
+        rows = _fetch_all_rows(self.db_path)
+        by_sample_asin = {r["sample_asin"]: r for r in rows}
+        self.assertEqual(by_sample_asin["B0UNK001"]["from_kindle_sample"], 0)
+        self.assertEqual(by_sample_asin["B0UNK001"]["from_bookmeter"], 0)
+
+    def test_is_idempotent_when_flag_columns_already_present(self):
+        repository.migrate_book_mappings_schema(self.db_path)
+        rows_after_first = _fetch_all_rows(self.db_path)
+        repository.migrate_book_mappings_schema(self.db_path)
+        rows_after_second = _fetch_all_rows(self.db_path)
+        self.assertEqual(rows_after_first, rows_after_second)
+
+    def test_falls_back_to_staging_when_db_file_itself_is_read_only(self):
+        """id/sourceがある新スキーマでflags列だけ無い場合、in-place ALTERが
+        db_pathへ書き込めない(読み取り専用)ときは複製→置換パターンへ
+        フォールバックし、バックフィルが成功すること。"""
+        os.chmod(self.db_path, 0o444)
+        try:
+            repository.migrate_book_mappings_schema(self.db_path)
+        finally:
+            os.chmod(self.db_path, 0o644)
+
+        columns = _table_columns(self.db_path, "book_mappings")
+        self.assertIn("from_kindle_sample", columns)
+        self.assertIn("from_bookmeter", columns)
+        rows = _fetch_all_rows(self.db_path)
+        self.assertEqual(len(rows), 3)
 
 
 class GetOrCreateByPaidAsinTest(unittest.TestCase):
