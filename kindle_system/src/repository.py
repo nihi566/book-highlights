@@ -12,6 +12,7 @@ get_paid_asin / get_purchased_asins）をここへ移し、bookmeter 系の新�
 マイグレーション関数と、paid_asin 一致による dedup ヘルパーを提供する。
 """
 
+import logging
 import os
 import sqlite3
 from datetime import datetime
@@ -22,6 +23,8 @@ from sqlmodel import Session, select, text
 from src import database as database_module
 from src.database import DB_PATH, get_session, init_db_orm
 from src.models import BookMapping, PriceHistory
+
+logger = logging.getLogger(__name__)
 
 
 def backup_database(db_path: str = DB_PATH) -> Optional[str]:
@@ -434,6 +437,22 @@ def save_mapping(sample_asin: str, paid_asin: str, title: str) -> None:
             statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
             book = session.exec(statement).first()
         if book:
+            old_sample_asin = book.sample_asin
+            if old_sample_asin and old_sample_asin != sample_asin:
+                # paid_asin一致でマージする際、既存のsample_asinを別値で上書きする。
+                # 上書き自体は禁止しない(仕様判断が要るためYAGNI)が、旧値との対応関係が
+                # DB上のどこにも残らなくなるため、追跡できるようログに残す。
+                # このプロジェクトにはlogging設定(basicConfig等)が無く、root loggerの
+                # 既定レベルはWARNINGのため、INFOでは本番実行経路で出力されない
+                # (lastResortハンドラもWARNING以上のみ)。src/bookmeter.pyの既存規約も
+                # warning/errorのみを使っており、それに合わせる。
+                logger.warning(
+                    "save_mapping: paid_asin=%s の既存sample_asinを上書きします "
+                    "(旧: %s -> 新: %s)",
+                    paid_asin,
+                    old_sample_asin,
+                    sample_asin,
+                )
             book.sample_asin = sample_asin
             book.paid_asin = paid_asin
             book.title = title
