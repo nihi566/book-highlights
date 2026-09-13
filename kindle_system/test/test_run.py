@@ -11,10 +11,11 @@ git コマンドはすべてモックし、実クロール・実読書メータ�
     python3 -m unittest test.test_run -v
 """
 
+import argparse
 import os
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
@@ -213,6 +214,79 @@ class PublishGitSequenceTest(unittest.TestCase):
             run.publish()
 
         self.assertEqual(cm.exception.code, 1)
+
+
+class SyncCommandTest(unittest.TestCase):
+    """sync サブコマンド: main.run_integration → sync_bookmeter_wishlist → publish()
+    の順に1回ずつ呼ばれること、--workers/--limit/--start が main.py と同じ意味
+    （--workers は1〜5にクランプ）で run_integration に渡ることを検証する。"""
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_calls_run_integration_then_sync_then_publish_in_order(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        manager = Mock()
+        manager.attach_mock(mock_run_integration, "run_integration")
+        manager.attach_mock(mock_sync, "sync_bookmeter_wishlist")
+        manager.attach_mock(mock_publish, "publish")
+
+        run.cmd_sync(argparse.Namespace(workers=2, limit=5, start=3))
+
+        self.assertEqual(
+            [c[0] for c in manager.mock_calls],
+            ["run_integration", "sync_bookmeter_wishlist", "publish"],
+        )
+        mock_run_integration.assert_called_once()
+        _, kwargs = mock_run_integration.call_args
+        self.assertEqual(kwargs["limit"], 5)
+        self.assertEqual(kwargs["start"], 3)
+        self.assertEqual(kwargs["workers"], 2)
+        mock_sync.assert_called_once()
+        mock_publish.assert_called_once()
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_clamps_workers_above_5_down_to_5(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        run.cmd_sync(argparse.Namespace(workers=10, limit=None, start=None))
+
+        _, kwargs = mock_run_integration.call_args
+        self.assertEqual(kwargs["workers"], 5)
+        self.assertIsNone(kwargs["limit"])
+        self.assertIsNone(kwargs["start"])
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_clamps_workers_below_1_up_to_1(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        run.cmd_sync(argparse.Namespace(workers=0, limit=None, start=None))
+
+        _, kwargs = mock_run_integration.call_args
+        self.assertEqual(kwargs["workers"], 1)
+
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_exits_when_default_xml_is_missing(
+        self, mock_run_integration, mock_sync, mock_publish
+    ):
+        with patch("run.os.path.exists", return_value=False):
+            with self.assertRaises(SystemExit) as cm:
+                run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None))
+
+        self.assertEqual(cm.exception.code, 1)
+        mock_run_integration.assert_not_called()
+        mock_sync.assert_not_called()
+        mock_publish.assert_not_called()
 
 
 if __name__ == "__main__":
