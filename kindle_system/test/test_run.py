@@ -221,6 +221,8 @@ class SyncCommandTest(unittest.TestCase):
     の順に1回ずつ呼ばれること、--workers/--limit/--start が main.py と同じ意味
     （--workers は1〜5にクランプ）で run_integration に渡ることを検証する。"""
 
+    _EMPTY_SYNC_RESULT = {"total": 0, "registered": 0, "skipped": 0, "failed_titles": []}
+
     @patch("run.os.path.exists", return_value=True)
     @patch("run.publish")
     @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
@@ -228,6 +230,7 @@ class SyncCommandTest(unittest.TestCase):
     def test_calls_run_integration_then_sync_then_publish_in_order(
         self, mock_run_integration, mock_sync, mock_publish, mock_exists
     ):
+        mock_sync.return_value = dict(self._EMPTY_SYNC_RESULT)
         manager = Mock()
         manager.attach_mock(mock_run_integration, "run_integration")
         manager.attach_mock(mock_sync, "sync_bookmeter_wishlist")
@@ -251,9 +254,41 @@ class SyncCommandTest(unittest.TestCase):
     @patch("run.publish")
     @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
     @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_sync_result_is_reported_via_progress_cb_and_skip_list(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        """
+        sync_bookmeter_wishlist() は progress_cb 省略時に一切出力せず、失敗した
+        本は戻り値の failed_titles にしか載らない契約（src/bookmeter_sync.py）。
+        無音のまま公開してしまう回帰を防ぐため、progress_cb=print が渡ること、
+        failed_titles があればスキップ一覧が標準出力へ出ることを固定する。
+        """
+        mock_sync.return_value = {
+            "total": 2,
+            "registered": 1,
+            "skipped": 1,
+            "failed_titles": ["解決できなかった本"],
+        }
+
+        with patch("builtins.print") as mock_print:
+            run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None))
+
+        _, kwargs = mock_sync.call_args
+        self.assertIs(kwargs.get("progress_cb"), mock_print)
+        printed = [call.args[0] for call in mock_print.call_args_list if call.args]
+        self.assertTrue(
+            any("解決できなかった本" in line for line in printed),
+            f"スキップ一覧が出力されていない: {printed}",
+        )
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
     def test_clamps_workers_above_5_down_to_5(
         self, mock_run_integration, mock_sync, mock_publish, mock_exists
     ):
+        mock_sync.return_value = dict(self._EMPTY_SYNC_RESULT)
         run.cmd_sync(argparse.Namespace(workers=10, limit=None, start=None))
 
         _, kwargs = mock_run_integration.call_args
@@ -268,6 +303,7 @@ class SyncCommandTest(unittest.TestCase):
     def test_clamps_workers_below_1_up_to_1(
         self, mock_run_integration, mock_sync, mock_publish, mock_exists
     ):
+        mock_sync.return_value = dict(self._EMPTY_SYNC_RESULT)
         run.cmd_sync(argparse.Namespace(workers=0, limit=None, start=None))
 
         _, kwargs = mock_run_integration.call_args

@@ -104,11 +104,21 @@ def publish() -> None:
 
 
 async def _run_sync(xml_path: str, limit: int, start: int, workers: int) -> None:
-    """クロール→読書メーター同期→公開を1回ずつ順に実行する。"""
+    """
+    クロール→読書メーター同期→公開を1回ずつ順に実行する。
+
+    sync_bookmeter_wishlist() は progress_cb 省略時に一切出力せず、失敗した
+    本は戻り値の failed_titles にしか載らない契約（src/bookmeter_sync.py の
+    docstring参照）。CLIバッチにはSSE/画面が無く標準出力が唯一の通知経路
+    のため、src/server.py の do_bookmeter_sync() と同様に progress_cb=print
+    を接続し、スキップ一覧を明示する（無音のまま公開してしまうことを防ぐ）。
+    """
     await main_module.run_integration(
         xml_path=xml_path, limit=limit, start=start, workers=workers
     )
-    await sync_bookmeter_wishlist()
+    result = await sync_bookmeter_wishlist(progress_cb=print)
+    if result["failed_titles"]:
+        print(f"[スキップ一覧] {', '.join(result['failed_titles'])}")
     publish()
 
 
