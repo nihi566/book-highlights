@@ -29,6 +29,7 @@ import report
 from report import _load_env_file
 import main as main_module
 from src.bookmeter_sync import sync_bookmeter_wishlist
+from src.repository import set_wanted, set_purchased
 
 
 def publish() -> None:
@@ -131,6 +132,28 @@ def cmd_sync(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_want(args: argparse.Namespace) -> None:
+    status = 1 if args.on else 0
+    if not set_wanted(args.asin, status):
+        print(f"エラー: 対象が見つかりませんでした（ASIN: {args.asin}）。", file=sys.stderr)
+        sys.exit(1)
+    print(f"[OK] want フラグを更新しました（ASIN: {args.asin}, status: {status}）。")
+
+
+def cmd_purchase(args: argparse.Namespace) -> None:
+    status = 1 if args.on else 0
+    if not set_purchased(args.asin, status):
+        print(f"エラー: 対象が見つかりませんでした（ASIN: {args.asin}）。", file=sys.stderr)
+        sys.exit(1)
+    print(f"[OK] purchase フラグを更新しました（ASIN: {args.asin}, status: {status}）。")
+
+
+def _add_on_off_group(subparser: argparse.ArgumentParser) -> None:
+    group = subparser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--on", action="store_true", help="フラグをONにする")
+    group.add_argument("--off", action="store_true", help="フラグをOFFにする")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Kindle システム CLI バッチ運用エントリポイント"
@@ -148,6 +171,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--start", type=int, default=None, help="開始するインデックス番号"
     )
     sync_parser.set_defaults(func=cmd_sync)
+
+    want_parser = subparsers.add_parser("want", help="「欲しい本」フラグを更新する")
+    want_parser.add_argument("asin", help="対象の paid_asin")
+    _add_on_off_group(want_parser)
+    want_parser.set_defaults(func=cmd_want)
+
+    purchase_parser = subparsers.add_parser("purchase", help="購入済みフラグを更新する")
+    purchase_parser.add_argument("asin", help="対象の paid_asin")
+    _add_on_off_group(purchase_parser)
+    purchase_parser.set_defaults(func=cmd_purchase)
 
     return parser
 
