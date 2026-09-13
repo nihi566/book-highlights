@@ -14,6 +14,7 @@ import shutil
 import sqlite3
 import tempfile
 import unittest
+import unittest.mock
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
@@ -329,6 +330,58 @@ class MigrateBookMappingsSchemaBackfillFlagsTest(unittest.TestCase):
         self.assertIn("from_bookmeter", columns)
         rows = _fetch_all_rows(self.db_path)
         self.assertEqual(len(rows), 3)
+
+
+class MigrateBookMappingsSchemaLockContentionTest(unittest.TestCase):
+    """migrate_book_mappings_schema（実体は _backfill_source_flags_in_place）が、
+    他プロセスが実際に BEGIN IMMEDIATE でロックを保持している状態で呼び出されても、
+    例外を伝播させず「見送り」として静かに終了することを検証する（この防御コードが
+    退行しても検知できない、という既存の穴を塞ぐ）。
+
+    本番コードは timeout=30 で接続するため、実ロック競合をそのまま再現すると
+    最大30秒かかる。ここでは unittest.mock.patch で src.repository.sqlite3.connect
+    のみを差し替え、timeout引数だけを短縮して高速化する（本番コードの timeout=30
+    自体は変更しない）。"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_lockcontention_test_")
+        self.db_path = os.path.join(self.tmpdir, "test.db")
+        _create_new_schema_db_without_flags(self.db_path)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_migration_skips_silently_when_lock_is_actually_held(self):
+        real_connect = sqlite3.connect
+
+        def _fast_timeout_connect(*args, **kwargs):
+            kwargs["timeout"] = 0.2
+            return real_connect(*args, **kwargs)
+
+        # 別接続で実際に BEGIN IMMEDIATE を保持し、書き込みロックを取得した状態を再現する。
+        locker_conn = real_connect(self.db_path)
+        try:
+            locker_conn.execute("BEGIN IMMEDIATE")
+
+            with unittest.mock.patch(
+                "src.repository.sqlite3.connect", side_effect=_fast_timeout_connect
+            ):
+                try:
+                    repository.migrate_book_mappings_schema(self.db_path)
+                except Exception as e:
+                    self.fail(f"ロック競合時に例外が伝播した(見送りにならなかった): {e}")
+        finally:
+            locker_conn.rollback()
+            locker_conn.close()
+
+        # 見送られたため、flags列はまだ追加されていない。
+        columns = _table_columns(self.db_path, "book_mappings")
+        self.assertNotIn("from_kindle_sample", columns)
+
+        # ロック解放後（=次回起動時の再試行相当）に呼び出せば正常に完了する。
+        repository.migrate_book_mappings_schema(self.db_path)
+        columns_after_retry = _table_columns(self.db_path, "book_mappings")
+        self.assertIn("from_kindle_sample", columns_after_retry)
 
 
 class GetOrCreateByPaidAsinTest(unittest.TestCase):
