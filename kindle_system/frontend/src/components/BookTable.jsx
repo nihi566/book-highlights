@@ -19,7 +19,10 @@ function DiscountBadge({ rate }) {
   return <span className="badge discount">{rate}% 還元</span>;
 }
 
-function SourceBadge({ source }) {
+function SourceBadge({ source, fromKindleSample, fromBookmeter }) {
+  if (fromKindleSample === 1 && fromBookmeter === 1) {
+    return <span className="badge source-both">両方</span>;
+  }
   if (source !== 'bookmeter') return null;
   return <span className="badge source-bookmeter">読書メーター</span>;
 }
@@ -164,7 +167,11 @@ export default function BookTable({
                     {isCampaign && <span className="badge campaign">キャンペーン</span>}
                     <DiscountBadge rate={discountRate} />
                     {book.is_purchased === 1 && <span className="badge purchased">購入済み</span>}
-                    <SourceBadge source={book.source} />
+                    <SourceBadge
+                      source={book.source}
+                      fromKindleSample={book.from_kindle_sample}
+                      fromBookmeter={book.from_bookmeter}
+                    />
                   </div>
 
                   {(campaign || book.timestamp) && (
