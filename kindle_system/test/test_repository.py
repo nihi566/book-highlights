@@ -373,6 +373,43 @@ class GetOrCreateByPaidAsinTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 repository.get_or_create_by_paid_asin(session, None, is_wanted=1)
 
+    def test_new_row_has_from_bookmeter_flag_set(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            book = repository.get_or_create_by_paid_asin(
+                session, "B0FLAGNEW", title="新刊", source="bookmeter", is_wanted=1
+            )
+            session.commit()
+            self.assertTrue(book.from_bookmeter)
+            self.assertFalse(book.from_kindle_sample)
+
+    def test_merge_sets_from_bookmeter_without_clearing_from_kindle_sample(self):
+        """paid_asin一致でkindle_sample経由の既存行にマージする際、from_bookmeterを
+        立てつつ、相手側のfrom_kindle_sampleは変更しない(既存値を保持する)ことを検証する。"""
+        from sqlmodel import Session
+        from src.models import BookMapping
+        with Session(self.engine) as session:
+            session.add(
+                BookMapping(
+                    sample_asin="B0KSFLAG",
+                    paid_asin="B0MERGEBM",
+                    title="サンプル本",
+                    source="kindle_sample",
+                    from_kindle_sample=True,
+                )
+            )
+            session.commit()
+
+            book = repository.get_or_create_by_paid_asin(
+                session, "B0MERGEBM", is_wanted=1
+            )
+            session.commit()
+            self.assertTrue(book.from_bookmeter)
+            self.assertTrue(
+                book.from_kindle_sample,
+                "既存のfrom_kindle_sampleがget_or_create_by_paid_asinのマージで消えてはならない",
+            )
+
 
 class InitDbEngineStalenessTest(unittest.TestCase):
     """
@@ -494,6 +531,107 @@ class SaveMappingCrossSourceDedupTest(unittest.TestCase):
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0].sample_asin, "B0SAMPLE_NEW")
             self.assertEqual(rows[0].source, "kindle_sample")
+
+    def test_save_mapping_sets_from_kindle_sample_on_new_row(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        repository.save_mapping("B0SAMPLE_FLAG", "B0PAID_FLAG", "新規本")
+
+        with Session(self.engine) as session:
+            row = session.exec(
+                select(BookMapping).where(BookMapping.sample_asin == "B0SAMPLE_FLAG")
+            ).first()
+            self.assertTrue(row.from_kindle_sample)
+            self.assertFalse(row.from_bookmeter)
+
+    def test_save_mapping_sets_from_kindle_sample_on_merge_without_clearing_from_bookmeter(self):
+        """paid_asin一致でbookmeter経由の既存行にマージする際、from_kindle_sampleを
+        立てつつ、相手側のfrom_bookmeterは変更しない(既存値を保持する)ことを検証する。"""
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            session.add(
+                BookMapping(
+                    paid_asin="B0MERGEFLAG",
+                    title="共有本",
+                    source="bookmeter",
+                    is_wanted=1,
+                    from_bookmeter=True,
+                )
+            )
+            session.commit()
+
+        repository.save_mapping("B0SAMPLE_MERGEFLAG", "B0MERGEFLAG", "共有本")
+
+        with Session(self.engine) as session:
+            row = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0MERGEFLAG")
+            ).first()
+            self.assertTrue(row.from_kindle_sample)
+            self.assertTrue(
+                row.from_bookmeter, "既存のfrom_bookmeterがsave_mappingのマージで消えてはならない"
+            )
+
+
+class DualSourceRegistrationFlagsIntegrationTest(unittest.TestCase):
+    """save_mapping と get_or_create_by_paid_asin を両順序(kindle_sample→bookmeter /
+    bookmeter→kindle_sample)で呼び出した場合、最終的に両フラグが1になることを検証する
+    (受入条件(2)の直接検証)。"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_dualsource_test_")
+        db_path = os.path.join(self.tmpdir, "dualsource.db")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_kindle_sample_then_bookmeter_sets_both_flags(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        repository.save_mapping("B0ORDER_A", "B0PAID_ORDER_A", "本A")
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(session, "B0PAID_ORDER_A", is_wanted=1)
+            session.commit()
+
+        with Session(self.engine) as session:
+            rows = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0PAID_ORDER_A")
+            ).all()
+            self.assertEqual(len(rows), 1)
+            self.assertTrue(rows[0].from_kindle_sample)
+            self.assertTrue(rows[0].from_bookmeter)
+
+    def test_bookmeter_then_kindle_sample_sets_both_flags(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(
+                session, "B0PAID_ORDER_B", title="本B", source="bookmeter", is_wanted=1
+            )
+            session.commit()
+        repository.save_mapping("B0ORDER_B", "B0PAID_ORDER_B", "本B")
+
+        with Session(self.engine) as session:
+            rows = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0PAID_ORDER_B")
+            ).all()
+            self.assertEqual(len(rows), 1)
+            self.assertTrue(rows[0].from_kindle_sample)
+            self.assertTrue(rows[0].from_bookmeter)
 
 
 class GetWantedBooksTest(unittest.TestCase):

@@ -328,7 +328,9 @@ async def get_books():
         l.is_unlimited,
         COALESCE(m.is_purchased, 0) as is_purchased,
         COALESCE(m.is_wanted,   0) as is_wanted,
-        m.source
+        m.source,
+        m.from_kindle_sample,
+        m.from_bookmeter
     FROM book_mappings m
     JOIN latest_prices l ON m.paid_asin = l.paid_asin
     ORDER BY l.actual_price ASC

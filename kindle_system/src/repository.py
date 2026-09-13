@@ -387,6 +387,7 @@ def save_mapping(sample_asin: str, paid_asin: str, title: str) -> None:
             book.paid_asin = paid_asin
             book.title = title
             book.created_at = now
+            book.from_kindle_sample = True
             session.add(book)
         else:
             new_book = BookMapping(
@@ -396,6 +397,7 @@ def save_mapping(sample_asin: str, paid_asin: str, title: str) -> None:
                 created_at=now,
                 is_purchased=0,
                 source="kindle_sample",
+                from_kindle_sample=True,
             )
             session.add(new_book)
         session.commit()
@@ -493,6 +495,7 @@ def get_or_create_by_paid_asin(
     book = session.exec(statement).first()
     if book:
         book.is_wanted = is_wanted
+        book.from_bookmeter = True
         session.add(book)
         session.flush()
         session.refresh(book)
@@ -506,6 +509,7 @@ def get_or_create_by_paid_asin(
         is_purchased=0,
         is_wanted=is_wanted,
         source=source,
+        from_bookmeter=True,
     )
     session.add(new_book)
     session.flush()
