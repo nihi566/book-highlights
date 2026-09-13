@@ -183,6 +183,15 @@ class VerifySameOriginTest(unittest.TestCase):
         request = _make_request(host="192.168.1.42:8001", headers={"origin": "http://192.168.1.42:8001"})
         asyncio.run(server.verify_same_origin(request))  # 例外が発生しないこと
 
+    def test_public_ip_same_host_raises_403(self):
+        """Host/Originが一致していても、そのIPアドレスが公開（グローバル）
+        IPであればループバック/プライベートIPではないため拒否する
+        （_is_local_host の is_private/is_loopback 判定分岐を通す）。"""
+        request = _make_request(host="8.8.8.8:8001", headers={"origin": "http://8.8.8.8:8001"})
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(server.verify_same_origin(request))
+        self.assertEqual(ctx.exception.status_code, 403)
+
     def test_malformed_port_in_origin_raises_403_not_500(self):
         """Originヘッダーのポート番号が範囲外（例: 99999）の場合、
         urlparseの遅延パースがValueErrorを送出しうるが、未処理の500では
@@ -206,15 +215,24 @@ class PostEndpointsRequireSameOriginCheckTest(unittest.TestCase):
 
     def test_all_post_routes_require_verify_same_origin_except_exempted(self):
         missing = []
+        checked = []
         for route in server.app.routes:
             methods = getattr(route, "methods", None)
             if not methods or "POST" not in methods:
                 continue
             if route.path in self.EXEMPT_PATHS:
                 continue
+            checked.append(route.path)
             dependency_calls = {dep.call for dep in route.dependant.dependencies}
             if server.verify_same_origin not in dependency_calls:
                 missing.append(route.path)
+
+        # POSTルートを1件も収集できなかった場合（FastAPIの内部APIが変わった、
+        # importに失敗している等）に空振りで緑にならないようにする。
+        self.assertGreaterEqual(
+            len(checked), 5,
+            f"対象外(EXEMPT_PATHS)以外のPOSTルートが5件未満しか収集できていません: {checked}",
+        )
         self.assertEqual(
             missing, [],
             f"Depends(verify_same_origin) が適用されていないPOSTルート: {missing}",

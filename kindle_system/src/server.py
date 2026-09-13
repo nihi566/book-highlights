@@ -314,7 +314,8 @@ def _is_local_host(hostname: str) -> bool:
     攻撃者が制御するドメイン（例: evil.com）をDNSリバインディングで
     127.0.0.1等へ解決させれば、ブラウザはHostヘッダー・Originヘッダーの
     両方に "evil.com" を送るため、単純な一致比較はすり抜けられてしまう
-    （実機確認済み）。ホスト名の「文字列」自体がループバック/プライベートIPの
+    （単体テスト test_dns_rebinding_same_external_hostname_raises_403 で
+    再現・検証済み）。ホスト名の「文字列」自体がループバック/プライベートIPの
     表記であることも要求することで、DNSの実解決結果に関わらずドメイン名を
     騙る経路を締め出す。本サーバーはLAN公開を想定するため、ループバックに
     加えプライベートIPレンジも許可する（localhost/127.0.0.1/LAN IP等の
@@ -503,6 +504,9 @@ async def publish():
     return {"ok": True}
 
 
+# CSRF検証(verify_same_origin)の対象外: 停止操作はデータ変更を伴わず実害が
+# 小さいため、Phase auth-csrf-protection のスコープ外と判断した
+# （リスク表R4）。付け忘れではない。
 @app.post("/api/stop")
 async def stop_job():
     """実行中のジョブを停止する"""
