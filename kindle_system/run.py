@@ -54,3 +54,45 @@ def publish() -> None:
         sys.exit(1)
 
     report.main()
+
+    git_env = os.environ.copy()
+    # 認証切れの git コマンドが対話プロンプト待ちで無限にハングしないようにする
+    # （do_publish() と同じ対処。無人バッチ実行では標準入力を操作する手段が無い）。
+    git_env["GIT_TERMINAL_PROMPT"] = "0"
+
+    def _run_git(args: list) -> int:
+        result = subprocess.run(
+            ["git"] + args, cwd=public_site_dir, env=git_env, shell=False
+        )
+        return result.returncode
+
+    if _run_git(["add", "index.html"]) != 0:
+        print("エラー: git add に失敗しました。公開を中断しました。", file=sys.stderr)
+        sys.exit(1)
+
+    # git diff --cached --quiet の終了コードは「差分なし=0 / 差分あり=1」で、
+    # 他の分岐と意味が逆になる（0 が異常ではなく「commit 不要」を意味する）。
+    diff_returncode = _run_git(["diff", "--cached", "--quiet", "--", "index.html"])
+    if diff_returncode == 0:
+        print("差分なし（前回から内容が同じ）。")
+    else:
+        commit_returncode = _run_git(
+            ["commit", "-m", "chore: update wishlist", "-q", "--", "index.html"]
+        )
+        if commit_returncode != 0:
+            print("エラー: git commit に失敗しました。公開を中断しました。", file=sys.stderr)
+            sys.exit(1)
+
+    # 差分が無い場合も push は必ず試みる。前回の公開で push だけが失敗し
+    # commit だけがローカルに残っていた場合、diff の判定だけでは検出できず
+    # 「差分なし」のまま永久に push されない状態になってしまうため
+    # （push 自体は送るものが無ければ no-op で成功する）。
+    if _run_git(["push", "-q"]) != 0:
+        print(
+            "エラー: git push に失敗しました。コミットはローカルに残っています。"
+            "通信状況や認証情報を確認し、もう一度実行してください。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    print(f"[完了] 公開しました: {public_site_url}")
