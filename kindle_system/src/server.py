@@ -426,8 +426,8 @@ else:
 def ensure_frontend_built() -> None:
     """
     dist/index.html が無い、または frontend/src 配下に dist より新しいファイルが
-    あれば npm run build を実行する。start_prod.bat を使わず python src/server.py を
-    直接起動した場合でも画面が古いビルドのままにならないようにするための対策。
+    あれば npm run build を実行する。python src/server.py を起動するだけで画面が
+    古いビルドのままにならないようにするための対策。
     """
     frontend_dir = os.path.join(BASE_DIR, "frontend")
     src_dir = os.path.join(frontend_dir, "src")
