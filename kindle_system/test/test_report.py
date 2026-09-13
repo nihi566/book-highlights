@@ -126,8 +126,12 @@ class BuildHtmlTest(unittest.TestCase):
             }
         ]
         html = report.build_html(books)
-        self.assertNotIn("<script>", html)
-        self.assertIn("&lt;script&gt;", html)
+        # フィルタUI用の信頼済み<script>タグ自体は許容しつつ、asin由来の
+        # 未エスケープペイロード("B0<script>")のみが混入していないことを確認する。
+        self.assertNotIn("B0<script>", html)
+        # is_purchased=1のため「全部」「購入済み」の2セクションに表示される
+        # （カウントを固定することでエスケープ漏れの検出力低下を防ぐ）。
+        self.assertEqual(html.count("&lt;script&gt;"), 2)
 
 
 class CategorySectionsTest(unittest.TestCase):
@@ -167,6 +171,43 @@ class CategorySectionsTest(unittest.TestCase):
         books = [self._book("フラグなし本Z", "B0CATN1", is_wanted=0, is_purchased=0)]
         html = report.build_html(books)
         self.assertEqual(html.count("フラグなし本Z"), 1)  # 全部のみ
+
+
+class FilterUiTest(unittest.TestCase):
+    """report.build_html() のフィルタ切り替えUI（3カテゴリボタン + 初期表示）のテスト。"""
+
+    def test_filter_buttons_exist_for_each_category(self):
+        html = report.build_html([])
+        self.assertIn('data-target="section-all"', html)
+        self.assertIn('data-target="section-wanted"', html)
+        self.assertIn('data-target="section-purchased"', html)
+
+    def test_initial_display_shows_only_all_section(self):
+        """初期表示は「全部」セクションのみで、他の2セクションはhiddenクラスを持つこと。"""
+        html = report.build_html([])
+        self.assertIn('id="section-all" class="book-section"', html)
+        self.assertIn('id="section-wanted" class="book-section hidden"', html)
+        self.assertIn('id="section-purchased" class="book-section hidden"', html)
+
+    def test_every_filter_button_target_has_matching_section_id(self):
+        """フィルタボタンのdata-targetが実在するセクションidを指していること
+        （ID不一致はJS実行時に全セクション非表示のまま復旧不能になるため）。"""
+        import re
+
+        html = report.build_html([])
+        targets = re.findall(r'data-target="([^"]+)"', html)
+        self.assertTrue(targets)
+        for target in targets:
+            self.assertIn(f'id="{target}"', html)
+
+    def test_includes_toggle_script_without_page_navigation(self):
+        """ページ遷移(XHR/location遷移)を発生させない素のJSでトグルすること。"""
+        html = report.build_html([])
+        self.assertIn("<script>", html)
+        self.assertIn("classList", html)
+        self.assertNotIn("location.href", html)
+        self.assertNotIn("fetch(", html)
+        self.assertNotIn("XMLHttpRequest", html)
 
 
 class BuildPriceHistorySvgTest(unittest.TestCase):

@@ -1,7 +1,7 @@
 """
 report.py
 ---------
-「読みたい本」（book_mappings.is_wanted = 1）を GitHub Pages 公開用の静的 HTML として
+蔵書一覧（読みたい本 / 購入済み本 / 全部）と価格履歴を GitHub Pages 公開用の静的 HTML として
 書き出すバッチスクリプト。filmarks_scraper の reporter.py 相当（単一 HTML・軽量 JS のみ・
 React 不要）。
 
@@ -26,7 +26,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
-from src.repository import get_wanted_books
+from src.repository import get_books, get_price_history
 
 
 def _format_price(book: dict) -> str:
@@ -107,17 +107,46 @@ def _build_book_row(book: dict) -> str:
     )
 
 
-def _build_category_section(section_id: str, heading: str, books: list, empty_message: str) -> str:
+def _build_category_section(section_id: str, heading: str, books: list, empty_message: str, visible: bool) -> str:
     if books:
         list_html = "<ul>" + "".join(_build_book_row(book) for book in books) + "</ul>"
     else:
         list_html = f'<p class="empty">{html.escape(empty_message)}</p>'
+    section_class = "book-section" if visible else "book-section hidden"
     return (
-        f'<section id="{section_id}" class="book-section" data-category="{section_id}">'
+        f'<section id="{section_id}" class="{section_class}" data-category="{section_id}">'
         f"<h2>{html.escape(heading)}</h2>"
         f"{list_html}"
         f"</section>"
     )
+
+
+_FILTER_BAR_HTML = (
+    '<div class="filter-bar">'
+    '<button type="button" class="filter-btn active" data-target="section-all">全部</button>'
+    '<button type="button" class="filter-btn" data-target="section-wanted">読みたい</button>'
+    '<button type="button" class="filter-btn" data-target="section-purchased">購入済み</button>'
+    "</div>"
+)
+
+_FILTER_TOGGLE_SCRIPT = """<script>
+document.querySelectorAll('.filter-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var target = document.getElementById(btn.dataset.target);
+    if (!target) {
+      return;
+    }
+    document.querySelectorAll('.book-section').forEach(function (sec) {
+      sec.classList.add('hidden');
+    });
+    target.classList.remove('hidden');
+    document.querySelectorAll('.filter-btn').forEach(function (b) {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+  });
+});
+</script>"""
 
 
 def build_html(books: list) -> str:
@@ -136,10 +165,12 @@ def build_html(books: list) -> str:
     purchased_books = [book for book in books if book.get("is_purchased")]
 
     sections_html = (
-        _build_category_section("section-all", "全部", books, "本はまだ登録されていません。")
-        + _build_category_section("section-wanted", "読みたい", wanted_books, "読みたい本はまだ登録されていません。")
+        _build_category_section("section-all", "全部", books, "本はまだ登録されていません。", visible=True)
         + _build_category_section(
-            "section-purchased", "購入済み", purchased_books, "購入済みの本はまだ登録されていません。"
+            "section-wanted", "読みたい", wanted_books, "読みたい本はまだ登録されていません。", visible=False
+        )
+        + _build_category_section(
+            "section-purchased", "購入済み", purchased_books, "購入済みの本はまだ登録されていません。", visible=False
         )
     )
 
@@ -159,11 +190,17 @@ def build_html(books: list) -> str:
   .price-history {{ width: 100%; }}
   .price-history-svg {{ display: block; margin-top: 0.25rem; }}
   .price-history-empty {{ color: #888; font-size: 0.75rem; }}
+  .hidden {{ display: none; }}
+  .filter-bar {{ display: flex; gap: 0.5rem; margin-bottom: 1rem; }}
+  .filter-btn {{ padding: 0.4rem 0.8rem; cursor: pointer; }}
+  .filter-btn.active {{ font-weight: bold; border-bottom: 2px solid #0074d9; }}
 </style>
 </head>
 <body>
 <h1>蔵書リスト</h1>
+{_FILTER_BAR_HTML}
 {sections_html}
+{_FILTER_TOGGLE_SCRIPT}
 </body>
 </html>
 """
@@ -228,7 +265,9 @@ def main() -> None:
         )
         sys.exit(1)
 
-    books = get_wanted_books()
+    books = get_books(filter="all")
+    for book in books:
+        book["price_history"] = get_price_history(book["asin"])
     html_content = build_html(books)
 
     # 途中中断で壊れた index.html を公開リポジトリに残さないよう、一時ファイルへ
