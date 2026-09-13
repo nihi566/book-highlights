@@ -7,6 +7,7 @@ src/repository.py の単体テスト（マイグレーション冪等性・デ�
     python -m unittest test.test_repository -v
 """
 
+import logging
 import os
 import sys
 import shutil
@@ -596,6 +597,53 @@ class SaveMappingCrossSourceDedupTest(unittest.TestCase):
             self.assertTrue(
                 row.from_bookmeter, "既存のfrom_bookmeterがsave_mappingのマージで消えてはならない"
             )
+
+    def test_save_mapping_logs_when_overwriting_existing_sample_asin(self):
+        """paid_asin一致で既存行にマージする際、既存のsample_asinが別値へ上書きされる
+        場合はログ(旧値→新値)を出力する。上書き自体は禁止しない(YAGNI)が、旧値との
+        対応関係がDB上のどこにも残らなくなるため、後から追跡できるようにする
+        (P0: データ整合性)。"""
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        repository.save_mapping("B0OLDSAMPLE", "B0OVERWRITE", "本(1回目)")
+
+        # level="WARNING"で固定する(=INFOでは検知できるがWARNINGでは検知できない、
+        # というlevel="INFO"指定だと、本番で実際には出力されないINFOへ退行しても
+        # このテストは緑のまま気づけない。実際に出力される水準そのものを検証する)。
+        with self.assertLogs("src.repository", level="WARNING") as cm:
+            repository.save_mapping("B0NEWSAMPLE", "B0OVERWRITE", "本(2回目)")
+
+        self.assertEqual(cm.records[0].levelno, logging.WARNING)
+        self.assertTrue(
+            any("B0OLDSAMPLE" in msg and "B0NEWSAMPLE" in msg for msg in cm.output),
+            f"旧sample_asinと新sample_asinの両方を含むログが出力されていない: {cm.output}",
+        )
+
+        # ログだけでなく、上書き後のDB最終状態も検証する(行が重複しない・値が
+        # 正しく更新されていることを確認しないと、ログの存在だけでは実処理の
+        # 正しさを保証できない)。
+        with Session(self.engine) as session:
+            rows = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0OVERWRITE")
+            ).all()
+            self.assertEqual(len(rows), 1, "paid_asin一致マージで行が重複してはならない")
+            self.assertEqual(rows[0].sample_asin, "B0NEWSAMPLE")
+            self.assertTrue(rows[0].from_kindle_sample)
+
+    def test_save_mapping_does_not_log_when_sample_asin_is_first_set(self):
+        """bookmeter経由(sample_asin=None)の既存行への初回マージはsample_asinが
+        新規に設定されるだけで上書きではないため、ログを出さない(正常系のノイズ防止)。"""
+        from sqlmodel import Session
+
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(
+                session, "B0NOLOGSHARED", title="共有本", source="bookmeter", is_wanted=1
+            )
+            session.commit()
+
+        with self.assertNoLogs("src.repository", level="INFO"):
+            repository.save_mapping("B0NOLOGSAMPLE", "B0NOLOGSHARED", "共有本")
 
 
 class DualSourceRegistrationFlagsIntegrationTest(unittest.TestCase):
