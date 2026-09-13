@@ -503,11 +503,11 @@ def save_price_history(data: dict) -> None:
 def set_wanted(paid_asin: str, status: int) -> bool:
     """欲しい本フラグをDBUPDATE。対象が見つからない場合は False。
 
-    src/server.py の set_wanted と挙動を完全一致させる（例外握り潰し + False を含む）。
-    paid_asin が空/None の場合は False を返す（`WHERE paid_asin IS NULL` に化けて
-    無関係な既存行（sample_asin/bookmeter 由来で paid_asin が未設定の行）を一括更新
-    するのを防ぐ。get_or_create_by_paid_asin と同じ理由。移植元の「False を返す」
-    契約を保つため raise ではなく早期 return にする）。
+    戻り値の契約（成功 True / 対象なし・例外時 False。例外握り潰しを含む）は
+    src/server.py の set_wanted を踏襲する。ただし paid_asin が空/None の場合は
+    移植元と異なり早期 return する（意図的な差分。移植元のままだと WHERE 句が
+    `paid_asin IS NULL` に化け、sample_asin/bookmeter 由来で paid_asin が未設定の
+    既存行を一括更新してしまうため。get_or_create_by_paid_asin と同じ理由）。
     """
     if not paid_asin:
         return False
@@ -519,6 +519,31 @@ def set_wanted(paid_asin: str, status: int) -> bool:
                 return False
             for book in books:
                 book.is_wanted = status
+                session.add(book)
+            session.commit()
+            return True
+    except Exception:
+        return False
+
+
+def set_purchased(paid_asin: str, status: int) -> bool:
+    """購入済みDBUPDATE。対象が見つからない場合は False。
+
+    戻り値の契約（成功 True / 対象なし・例外時 False。例外握り潰しを含む）は
+    src/server.py の set_purchased を踏襲する。ただし paid_asin が空/None の場合は
+    移植元と異なり早期 return する（set_wanted と同じ理由。移植元のままだと
+    WHERE 句が `paid_asin IS NULL` に化け、無関係な既存行を一括更新してしまうため）。
+    """
+    if not paid_asin:
+        return False
+    try:
+        with get_session() as session:
+            statement = select(BookMapping).where(BookMapping.paid_asin == paid_asin)
+            books = session.exec(statement).all()
+            if not books:
+                return False
+            for book in books:
+                book.is_purchased = status
                 session.add(book)
             session.commit()
             return True

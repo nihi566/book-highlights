@@ -901,7 +901,7 @@ class SetWantedTest(unittest.TestCase):
         from src.models import BookMapping
 
         with Session(self.engine) as session:
-            session.add(BookMapping(paid_asin="B0SETWANTED", title="本", is_wanted=0))
+            session.add(BookMapping(paid_asin="B0SETWANTED", title="本", is_wanted=0, is_purchased=1))
             session.commit()
 
         result = repository.set_wanted("B0SETWANTED", 1)
@@ -912,6 +912,7 @@ class SetWantedTest(unittest.TestCase):
                 select(BookMapping).where(BookMapping.paid_asin == "B0SETWANTED")
             ).first()
             self.assertEqual(row.is_wanted, 1)
+            self.assertEqual(row.is_purchased, 1, "set_wantedはis_purchasedを巻き込んで書き換えてはならない")
 
     def test_sets_is_wanted_to_zero(self):
         """status引数がそのまま反映されること（is_wanted=1へのハードコードを検出する）。"""
@@ -988,6 +989,125 @@ class SetWantedTest(unittest.TestCase):
             ).all()
             self.assertEqual(len(rows), 2)
             self.assertTrue(all(r.is_wanted == 1 for r in rows))
+
+
+class SetPurchasedTest(unittest.TestCase):
+    """repository.set_purchased(paid_asin, status)（src/server.py:272-286 の set_purchased
+    相当を repository.py へ移植したもの）のテスト。挙動を server.py と完全一致させる。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_setpurchased_test_")
+        db_path = os.path.join(self.tmpdir, "setpurchased.db")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_returns_false_when_paid_asin_not_found(self):
+        result = repository.set_purchased("B0NOTFOUND", 1)
+        self.assertFalse(result)
+
+    def test_returns_true_and_updates_is_purchased_when_found(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            session.add(BookMapping(paid_asin="B0SETPURCHASED", title="本", is_purchased=0, is_wanted=1))
+            session.commit()
+
+        result = repository.set_purchased("B0SETPURCHASED", 1)
+        self.assertTrue(result)
+
+        with Session(self.engine) as session:
+            row = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0SETPURCHASED")
+            ).first()
+            self.assertEqual(row.is_purchased, 1)
+            self.assertEqual(row.is_wanted, 1, "set_purchasedはis_wantedを巻き込んで書き換えてはならない")
+
+    def test_sets_is_purchased_to_zero(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            session.add(BookMapping(paid_asin="B0PURCHASEDOFF", title="本", is_purchased=1))
+            session.commit()
+
+        result = repository.set_purchased("B0PURCHASEDOFF", 0)
+        self.assertTrue(result)
+
+        with Session(self.engine) as session:
+            row = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0PURCHASEDOFF")
+            ).first()
+            self.assertEqual(row.is_purchased, 0)
+
+    def test_updates_all_rows_when_multiple_rows_share_paid_asin(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            session.add(BookMapping(sample_asin="B0PS1", paid_asin="B0PDUP", title="本1", is_purchased=0))
+            session.add(BookMapping(sample_asin="B0PS2", paid_asin="B0PDUP", title="本2", is_purchased=0))
+            session.commit()
+
+        result = repository.set_purchased("B0PDUP", 1)
+        self.assertTrue(result)
+
+        with Session(self.engine) as session:
+            rows = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0PDUP")
+            ).all()
+            self.assertEqual(len(rows), 2)
+            self.assertTrue(all(r.is_purchased == 1 for r in rows))
+
+    def test_does_not_touch_other_paid_asin_rows(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            session.add(BookMapping(paid_asin="B0PTARGET", title="対象本", is_purchased=0))
+            session.add(BookMapping(paid_asin="B0POTHER", title="別の本", is_purchased=0))
+            session.commit()
+
+        repository.set_purchased("B0PTARGET", 1)
+
+        with Session(self.engine) as session:
+            other = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == "B0POTHER")
+            ).first()
+            self.assertEqual(other.is_purchased, 0)
+
+    def test_returns_false_and_does_not_touch_null_paid_asin_rows_when_paid_asin_is_empty(self):
+        """paid_asin が空/None の場合、`WHERE paid_asin IS NULL` に化けて
+        paid_asin 未設定の既存行を一括更新しないことを確認する（set_wanted と同種の欠陥防止）。"""
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+
+        with Session(self.engine) as session:
+            session.add(
+                BookMapping(sample_asin="B0PNULLPAID", paid_asin=None, title="paid_asin未設定本", is_purchased=0)
+            )
+            session.commit()
+
+        self.assertFalse(repository.set_purchased(None, 1))
+        self.assertFalse(repository.set_purchased("", 1))
+
+        with Session(self.engine) as session:
+            row = session.exec(
+                select(BookMapping).where(BookMapping.sample_asin == "B0PNULLPAID")
+            ).first()
+            self.assertEqual(row.is_purchased, 0)
 
 
 if __name__ == "__main__":
