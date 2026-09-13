@@ -14,6 +14,9 @@ import shutil
 import tempfile
 import unittest
 
+from fastapi import HTTPException
+from starlette.requests import Request
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
@@ -99,6 +102,56 @@ class GetBooksSourceFlagsTest(unittest.TestCase):
         self.assertEqual(len(books), 1)
         self.assertEqual(books[0]["from_kindle_sample"], 1)
         self.assertEqual(books[0]["from_bookmeter"], 0)
+
+
+def _make_request(host: str = "localhost:8001", headers: dict | None = None) -> Request:
+    """Starlette の Request を直接構築する（TestClient/httpx を導入しないため）。"""
+    raw_headers = [(b"host", host.encode("latin-1"))]
+    for key, value in (headers or {}).items():
+        raw_headers.append((key.encode("latin-1"), value.encode("latin-1")))
+
+    host_part, _, port_part = host.partition(":")
+    server = (host_part, int(port_part) if port_part else 80)
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/api/run",
+        "raw_path": b"/api/run",
+        "query_string": b"",
+        "headers": raw_headers,
+        "server": server,
+        "scheme": "http",
+        "client": ("testclient", 12345),
+        "http_version": "1.1",
+    }
+    return Request(scope)
+
+
+class VerifySameOriginTest(unittest.TestCase):
+    """verify_same_origin の受入条件（auth-csrf-protection Phase）を検証する。"""
+
+    def test_same_origin_header_passes(self):
+        request = _make_request(headers={"origin": "http://localhost:8001"})
+        asyncio.run(server.verify_same_origin(request))  # 例外が発生しないこと
+
+    def test_missing_origin_and_referer_raises_403(self):
+        request = _make_request(headers={})
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(server.verify_same_origin(request))
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_external_origin_raises_403(self):
+        request = _make_request(headers={"origin": "http://evil.example"})
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(server.verify_same_origin(request))
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_external_referer_raises_403(self):
+        request = _make_request(headers={"referer": "http://evil.example/page"})
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(server.verify_same_origin(request))
+        self.assertEqual(ctx.exception.status_code, 403)
 
 
 if __name__ == "__main__":
