@@ -1218,5 +1218,141 @@ class GetPriceHistoryTest(unittest.TestCase):
         self.assertIsNone(history[0]["actual_price"])
 
 
+class GetBooksFilterTest(unittest.TestCase):
+    """repository.get_books(filter="all")（静的レポート用の全件取得関数）のテスト。
+
+    filter="wanted" は is_wanted=1 のみ、filter="purchased" は is_purchased=1 のみ、
+    filter="all" は全件を返すこと、不正な filter 値で ValueError になることを検証する。
+    get_wanted_books と同じ LEFT JOIN パターンを踏襲するため、価格未取得の本も
+    欠落しないことも合わせて確認する。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_getbooks_test_")
+        db_path = os.path.join(self.tmpdir, "getbooks.db")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _insert_mapping(self, session, paid_asin, title, is_wanted=0, is_purchased=0):
+        from src.models import BookMapping
+        session.add(
+            BookMapping(
+                paid_asin=paid_asin,
+                title=title,
+                created_at="2026-01-01T00:00:00",
+                is_purchased=is_purchased,
+                is_wanted=is_wanted,
+                source="bookmeter",
+            )
+        )
+
+    def _insert_price(self, session, paid_asin, sell_price, timestamp):
+        from src.models import PriceHistory
+        session.add(
+            PriceHistory(
+                paid_asin=paid_asin,
+                sell_price=sell_price,
+                point_value=0,
+                actual_price=sell_price,
+                campaign_text="",
+                timestamp=timestamp,
+                is_unlimited=0,
+            )
+        )
+
+    def test_filter_wanted_returns_only_is_wanted_books(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0WANT001", "読みたい本1", is_wanted=1)
+            self._insert_mapping(session, "B0PURCHASED001", "購入済み本1", is_purchased=1)
+            session.commit()
+
+        books = repository.get_books(filter="wanted")
+        asins = {b["asin"] for b in books}
+        self.assertIn("B0WANT001", asins)
+        self.assertNotIn("B0PURCHASED001", asins)
+
+    def test_filter_purchased_returns_only_is_purchased_books(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0WANT002", "読みたい本2", is_wanted=1)
+            self._insert_mapping(session, "B0PURCHASED002", "購入済み本2", is_purchased=1)
+            session.commit()
+
+        books = repository.get_books(filter="purchased")
+        asins = {b["asin"] for b in books}
+        self.assertIn("B0PURCHASED002", asins)
+        self.assertNotIn("B0WANT002", asins)
+
+    def test_filter_all_returns_every_book(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0WANT003", "読みたい本3", is_wanted=1)
+            self._insert_mapping(session, "B0PURCHASED003", "購入済み本3", is_purchased=1)
+            self._insert_mapping(session, "B0NEITHER003", "どちらでもない本3")
+            session.commit()
+
+        books = repository.get_books(filter="all")
+        asins = {b["asin"] for b in books}
+        self.assertEqual(asins, {"B0WANT003", "B0PURCHASED003", "B0NEITHER003"})
+
+    def test_invalid_filter_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            repository.get_books(filter="invalid")
+
+    def test_book_without_price_history_is_included(self):
+        """get_wanted_books と同じ LEFT JOIN パターン（R5 対策）が踏襲されていること。"""
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0NOPRICE002", "価格未取得本", is_wanted=1)
+            session.commit()
+
+        books = repository.get_books(filter="wanted")
+        self.assertEqual(len(books), 1)
+        self.assertIsNone(books[0]["sell_price"])
+        self.assertIsNone(books[0]["actual_price"])
+
+    def test_latest_price_is_selected_when_multiple_history_rows_exist(self):
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0MULTI002", "複数履歴本", is_wanted=1)
+            self._insert_price(session, "B0MULTI002", sell_price=1000, timestamp="2026-01-01T00:00:00")
+            self._insert_price(session, "B0MULTI002", sell_price=700, timestamp="2026-02-01T00:00:00")
+            session.commit()
+
+        books = repository.get_books(filter="all")
+        book = next(b for b in books if b["asin"] == "B0MULTI002")
+        self.assertEqual(book["sell_price"], 700)
+
+    def test_is_purchased_and_is_wanted_flags_are_returned_correctly(self):
+        """is_purchased/is_wanted列がtypoやSELECTからの脱落なく正しく運ばれること。
+        両フラグが立つ本は wanted/purchased 双方のフィルタに現れることも固定する。"""
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0BOTH001", "購入済みかつ読みたい本", is_wanted=1, is_purchased=1)
+            self._insert_mapping(session, "B0NEITHER001", "どちらでもない本")
+            session.commit()
+
+        books = {b["asin"]: b for b in repository.get_books(filter="all")}
+        self.assertEqual(books["B0BOTH001"]["is_wanted"], 1)
+        self.assertEqual(books["B0BOTH001"]["is_purchased"], 1)
+        self.assertEqual(books["B0NEITHER001"]["is_wanted"], 0)
+        self.assertEqual(books["B0NEITHER001"]["is_purchased"], 0)
+
+        self.assertIn("B0BOTH001", {b["asin"] for b in repository.get_books(filter="wanted")})
+        self.assertIn("B0BOTH001", {b["asin"] for b in repository.get_books(filter="purchased")})
+
+
 if __name__ == "__main__":
     unittest.main()

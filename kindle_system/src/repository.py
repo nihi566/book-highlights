@@ -568,6 +568,66 @@ def get_price_history(paid_asin: str) -> list:
         return [dict(row) for row in result]
 
 
+_GET_BOOKS_WHERE_CLAUSES = {
+    "wanted": "WHERE m.is_wanted = 1",
+    "purchased": "WHERE m.is_purchased = 1",
+    "all": "",
+}
+
+
+def get_books(filter: str = "all") -> list:
+    """
+    静的レポート用の全件取得関数。
+
+    filter は "wanted"（is_wanted=1 のみ）/ "purchased"（is_purchased=1 のみ）/
+    "all"（全件）を受け付ける。不正な値は ValueError。get_wanted_books と同じ
+    LEFT JOIN パターンを踏襲する（登録直後で価格未取得の本を欠落させないため）。
+
+    注意: src/server.py の get_books()（/api/books）とは名前が同じだが契約が違う。
+    差し替える場合は以下の調整が必要（server.py の書き換えは本 Phase のスコープ外）:
+      - INNER JOIN → LEFT JOIN（価格未取得の本が新たに一覧に含まれる）
+      - source / from_kindle_sample / from_bookmeter 列を返さない
+      - 並び順が actual_price ASC ではなく title ASC
+
+    where_clause は filter の値を検証したうえで固定リテラルの集合
+    （_GET_BOOKS_WHERE_CLAUSES）からのみ選ぶ。呼び出し側の値が直接 SQL へ
+    混入する経路を作らないため（防御的設計。値検証の分岐がここに集約される）。
+    """
+    if filter not in _GET_BOOKS_WHERE_CLAUSES:
+        raise ValueError(f"filter は 'wanted' / 'purchased' / 'all' のいずれかである必要があります: {filter!r}")
+    where_clause = _GET_BOOKS_WHERE_CLAUSES[filter]
+
+    query = text(f"""
+        WITH latest_prices AS (
+            SELECT p1.paid_asin, p1.sell_price, p1.point_value, p1.actual_price, p1.campaign_text, p1.timestamp, p1.is_unlimited
+            FROM price_history p1
+            INNER JOIN (
+                SELECT paid_asin, MAX(timestamp) as max_ts
+                FROM price_history
+                GROUP BY paid_asin
+            ) p2 ON p1.paid_asin = p2.paid_asin AND p1.timestamp = p2.max_ts
+        )
+        SELECT
+            m.title,
+            m.paid_asin as asin,
+            l.sell_price,
+            l.point_value,
+            l.actual_price,
+            l.campaign_text,
+            l.timestamp,
+            l.is_unlimited,
+            COALESCE(m.is_purchased, 0) as is_purchased,
+            COALESCE(m.is_wanted, 0) as is_wanted
+        FROM book_mappings m
+        LEFT JOIN latest_prices l ON m.paid_asin = l.paid_asin
+        {where_clause}
+        ORDER BY m.title ASC
+    """)
+    with get_session() as session:
+        result = session.exec(query).mappings().all()
+        return [dict(row) for row in result]
+
+
 def get_wanted_books() -> list:
     """
     is_wanted=1 の本を、最新の価格情報とあわせて取得する（wishlist-site-report 用）。
