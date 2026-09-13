@@ -74,12 +74,13 @@ def _apply_source_flag_backfill(cur: sqlite3.Cursor, columns: set) -> None:
             "INTEGER NOT NULL DEFAULT 0"
         )
     cur.execute(
-        "UPDATE book_mappings SET from_kindle_sample = 1 WHERE source = 'kindle_sample'"
+        "UPDATE book_mappings SET from_kindle_sample = 1 "
+        "WHERE source = 'kindle_sample' OR sample_asin IS NOT NULL"
     )
     cur.execute("UPDATE book_mappings SET from_bookmeter = 1 WHERE source = 'bookmeter'")
 
 
-def _backfill_source_flags_in_place(db_path: str, columns: set) -> None:
+def _backfill_source_flags_in_place(db_path: str) -> str:
     """_apply_source_flag_backfill を db_path へ直接・1トランザクションで適用する。
 
     ALTER TABLE ADD COLUMN + UPDATE は元ファイルへの追記のみで完結するため、
@@ -87,20 +88,49 @@ def _backfill_source_flags_in_place(db_path: str, columns: set) -> None:
     使わない。全ファイル複製〜置換の間は他プロセスの同時書き込み
     （crawler 側の price_history 追記等）を巻き込んで破棄しうるため、
     列追加だけで済むこの経路ではその窓を作らないほうが安全。
-    db_path へ書き込めない場合（実データファイルがオーナー相違で読み取り専用等）は
-    sqlite3.OperationalError を送出し、呼び出し側の複製→置換フォールバックに委ねる。
+
+    列の存在チェックは BEGIN IMMEDIATE でロックを取ってから読み直す（呼び出し前に
+    読んだ列集合のままだと、ロック待ちの間に他プロセスが先に列を追加していた場合
+    "duplicate column name" で失敗しうるため）。
+
+    戻り値:
+      "done"     — 成功。呼び出し側はここで終了してよい。
+      "skip"     — 他プロセスが db_path をロック中（一時的な競合）。全ファイル複製→
+                   置換は同時書き込みを巻き込みかねないため降格せず、今回は何もせず
+                   見送る（次回起動時に再試行される）。
+      "fallback" — db_path へ書き込めない（実データファイルがオーナー相違で読み取り
+                   専用等）。呼び出し側の複製→置換フォールバックに委ねる。
     """
     conn = sqlite3.connect(db_path, timeout=30)
     try:
-        conn.execute("BEGIN IMMEDIATE")
         try:
-            _apply_source_flag_backfill(conn.cursor(), columns)
+            conn.execute("BEGIN IMMEDIATE")
+        except sqlite3.OperationalError as e:
+            return "skip" if _is_lock_contention(e) else "fallback"
+
+        try:
+            cur = conn.cursor()
+            cur.execute("PRAGMA table_info(book_mappings)")
+            columns = {row[1] for row in cur.fetchall()}
+            _apply_source_flag_backfill(cur, columns)
             conn.commit()
+            return "done"
+        except sqlite3.OperationalError as e:
+            conn.rollback()
+            return "skip" if _is_lock_contention(e) else "fallback"
         except Exception:
             conn.rollback()
             raise
     finally:
         conn.close()
+
+
+def _is_lock_contention(error: sqlite3.OperationalError) -> bool:
+    """一時的なロック競合（database is locked / database is busy）かどうかを
+    エラーメッセージから判定する。書き込み権限が無い場合の "attempt to write a
+    readonly database" 等とは区別し、前者は複製→置換へ降格させない。"""
+    message = str(error).lower()
+    return "locked" in message or "busy" in message
 
 
 def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
@@ -119,12 +149,16 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
       (b) 新スキーマ（id/source あり）だが from_kindle_sample/from_bookmeter が
           無いだけ。ALTER TABLE ADD COLUMN + UPDATE のみで完結するため、
           まず `_backfill_source_flags_in_place` で db_path へ直接適用する。
+          他プロセスが db_path をロック中の一時的な競合（"database is locked" 等）
+          の場合は、複製→置換へ降格せず何もせず見送る（次回起動時に再試行される。
+          複製→置換は同時書き込みを巻き込みうるため、一時的な競合ではそちらを
+          使わないほうが安全なため）。
 
     実データファイルはオーナーが異なり書き込み不可な場合がある
     （実測: `-rw-r--r-- root:root`。実行ユーザーからは書き込み不可）。
-    (b) が書き込み不可で失敗した場合、および (a) は常に、SQLite の
-    CREATE/DROP/RENAME がファイル自体への書き込み権限を要するため、
-    db_path を直接書き換えず以下のフォールバックを使う:
+    (b) が書き込み不可（読み取り専用等。ロック競合ではない）で失敗した場合、
+    および (a) は常に、SQLite の CREATE/DROP/RENAME がファイル自体への
+    書き込み権限を要するため、db_path を直接書き換えず以下のフォールバックを使う:
       1. バックアップを作成する（sqlite3 backup API。恒久的な保全用）
       2. 書き込み可能な一時ファイル（同じ backup API で全体複製）へ移行作業を行う
          （複製の読み取りは world-readable なファイルであれば所有者に関わらず可能）
@@ -157,14 +191,17 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
     finally:
         conn.close()
 
-    if has_id_source:
-        try:
-            _backfill_source_flags_in_place(db_path, columns)
-            return
-        except sqlite3.OperationalError:
-            pass  # db_path が書き込み不可。以下の複製→置換フォールバックへ。
-
+    # 既存の複製→置換パターンと同様、実ファイルへ書き込む前に必ずバックアップを
+    # 作る（in-place 経路が成功する場合も含む。恒久的な保全用）。
     backup_path = backup_database(db_path)
+
+    if has_id_source:
+        outcome = _backfill_source_flags_in_place(db_path)
+        if outcome in ("done", "skip"):
+            # "skip" は他プロセスによる一時的なロック競合。複製→置換は同時書き込みを
+            # 巻き込みかねないため降格せず、次回起動時の再試行に委ねる。
+            return
+        # outcome == "fallback"（書き込み不可）のときのみ、以下の複製→置換へ進む。
 
     staging_path = f"{db_path}.migrating-{os.getpid()}"
     if os.path.exists(staging_path):
@@ -343,12 +380,26 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
 
 
 def init_db() -> None:
-    """データベースのテーブルを作成し、既存 book_mappings があれば新スキーマへ移行する。"""
+    """データベースのテーブルを作成し、既存 book_mappings があれば新スキーマへ移行する。
+
+    スキーマ移行が失敗しても起動そのものは止めない（警告を出し、既存スキーマの
+    まま続行する）。crawler と server の両プロセスがこの関数を起動時に呼ぶため、
+    一方が book_mappings/price_history へ書き込み中の一時的な競合で移行が中断
+    しうる。その場合に例外を伝播させると起動自体が失敗してしまう（移行の遅延は
+    次回起動時のリトライで解消でき、データ自体は無傷のため、起動を止めてまで
+    今すぐ解決する必要はない）。
+    """
     init_db_orm()
     # database_module.DB_PATH を都度参照する（migrate_book_mappings_schema の
     # デフォルト引数 DB_PATH はモジュール import 時点の値に固定されるため、
     # テスト等で src.database.DB_PATH を差し替えても追従しない）。
-    migrate_book_mappings_schema(database_module.DB_PATH)
+    try:
+        migrate_book_mappings_schema(database_module.DB_PATH)
+    except Exception as e:
+        print(
+            f"  [Migration] book_mappings のスキーマ移行に失敗しました。"
+            f"既存のスキーマのまま起動を継続します（次回起動時に再試行されます）: {e}"
+        )
 
 
 def get_paid_asin(sample_asin: str) -> Optional[str]:
@@ -479,7 +530,8 @@ def get_or_create_by_paid_asin(
     paid_asin 一致による dedup ヘルパー。
 
     既存行（sample_asin 経由 / bookmeter 経由いずれでも）があれば新規行を作らず
-    is_wanted のみ更新して返す。無ければ新規作成する（sample_asin は None のまま）。
+    is_wanted と from_bookmeter（相手側の from_kindle_sample は変更しない）を
+    更新して返す。無ければ新規作成する（sample_asin は None のまま）。
 
     他の関数と異なり session を呼び出し側から受け取る（複数冊をまとめて 1 トランザクション
     で処理したい呼び出し元のため）。**commit は呼び出し側の責務**。この関数は

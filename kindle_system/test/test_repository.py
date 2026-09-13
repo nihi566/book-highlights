@@ -233,7 +233,11 @@ def _create_new_schema_db_without_flags(db_path: str) -> None:
             [
                 ("B0KS001", "B0KSPAID001", "kindle_sample本", "2026-01-01T00:00:00", 1, 0, "kindle_sample"),
                 (None, "B0BM001", "bookmeter本", "2026-01-02T00:00:00", 0, 1, "bookmeter"),
-                ("B0UNK001", "B0UNKPAID001", "想定外source本", "2026-01-03T00:00:00", 0, 0, "unknown_source"),
+                # sample_asin が NULL かつ source も想定外の値。sample_asin は
+                # save_mapping(kindle_sample経由)しか書かないため、これが NULL の
+                # 場合は kindle_sample 由来と判定する手がかりが無い、真に
+                # 判定不能なケースを表す(R2)。
+                (None, "B0UNKPAID001", "想定外source本", "2026-01-03T00:00:00", 0, 0, "unknown_source"),
             ],
         )
         conn.commit()
@@ -279,9 +283,28 @@ class MigrateBookMappingsSchemaBackfillFlagsTest(unittest.TestCase):
     def test_unrecognized_source_value_leaves_both_flags_unset(self):
         repository.migrate_book_mappings_schema(self.db_path)
         rows = _fetch_all_rows(self.db_path)
+        by_paid_asin = {r["paid_asin"]: r for r in rows}
+        self.assertEqual(by_paid_asin["B0UNKPAID001"]["from_kindle_sample"], 0)
+        self.assertEqual(by_paid_asin["B0UNKPAID001"]["from_bookmeter"], 0)
+
+    def test_sample_asin_present_sets_from_kindle_sample_even_with_unrecognized_source(self):
+        """sample_asinはsave_mapping(kindle_sample経由)しか書かないため、sourceの値が
+        想定外でもsample_asinが設定済みならkindle_sample由来と判定できる。"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            conn.execute(
+                "INSERT INTO book_mappings (sample_asin, paid_asin, source) "
+                "VALUES ('B0MYSTERY', 'B0MYSTERYPAID', 'unknown_source')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        repository.migrate_book_mappings_schema(self.db_path)
+        rows = _fetch_all_rows(self.db_path)
         by_sample_asin = {r["sample_asin"]: r for r in rows}
-        self.assertEqual(by_sample_asin["B0UNK001"]["from_kindle_sample"], 0)
-        self.assertEqual(by_sample_asin["B0UNK001"]["from_bookmeter"], 0)
+        self.assertEqual(by_sample_asin["B0MYSTERY"]["from_kindle_sample"], 1)
+        self.assertEqual(by_sample_asin["B0MYSTERY"]["from_bookmeter"], 0)
 
     def test_is_idempotent_when_flag_columns_already_present(self):
         repository.migrate_book_mappings_schema(self.db_path)
