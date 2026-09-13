@@ -93,6 +93,12 @@ def _build_price_history_svg(history: list) -> str:
 
 
 def _build_book_row(book: dict) -> str:
+    """
+    1冊分の <li> を組み立てる（R2対策: title/asin/価格表示は html.escape() を通す）。
+
+    book["price_history"] は repository.get_price_history() と同じ形式の list を
+    想定する（main() が呼び出し前に付与する。キーが無い/Noneの場合は履歴なし扱い）。
+    """
     title = html.escape(book.get("title") or "(タイトル不明)")
     asin = html.escape(book.get("asin") or "")
     price_text = html.escape(_format_price(book))
@@ -108,6 +114,11 @@ def _build_book_row(book: dict) -> str:
 
 
 def _build_category_section(section_id: str, heading: str, books: list, empty_message: str, visible: bool) -> str:
+    """
+    section_id / heading は呼び出し元(build_html)が固定リテラルのみを渡す前提
+    （ここではエスケープしない。呼び出し元でユーザー由来の値を渡さないこと）。
+    heading と empty_message は html.escape() を通す。行の内容は _build_book_row 側でエスケープ済み。
+    """
     if books:
         list_html = "<ul>" + "".join(_build_book_row(book) for book in books) + "</ul>"
     else:
@@ -156,10 +167,12 @@ def build_html(books: list) -> str:
 
     books の各要素が is_wanted / is_purchased フラグを持つ場合、そのフラグに応じて
     「読みたい」「購入済み」セクションにも同じ本が重複して表示される（「全部」セクションは
-    フラグに関わらず常に全件を表示する）。
+    フラグに関わらず常に全件を表示する）。任意で book["price_history"]
+    （repository.get_price_history() と同形式の list）を持たせると価格履歴グラフが描画される
+    （持たない場合はプレースホルダー表示になる）。
 
-    全出力値は html.escape() でエスケープする（R2: タイトル等に <script> が含まれても
-    HTML インジェクションにならないようにするため）。
+    タイトル・ASIN・価格表示・価格履歴グラフ座標のエスケープ/無害化は
+    _build_book_row() / _build_price_history_svg() が担う（R2 対策）。
     """
     wanted_books = [book for book in books if book.get("is_wanted")]
     purchased_books = [book for book in books if book.get("is_purchased")]
@@ -246,6 +259,11 @@ def main() -> None:
     """
     R1/R6 対策: PUBLIC_SITE_DIR / PUBLIC_SITE_URL の存在確認と、書き込み先が
     git リポジトリの作業ツリーであることの確認を行ってから書き出す。
+
+    repository.get_books(filter="all") で全件を1回取得した後、各書籍について
+    get_price_history(asin) を呼び出し price_history として付与する（1冊ごとに
+    問い合わせる形。個人利用規模の蔵書数を前提としており、KISS/YAGNIにより
+    一括取得へのバッチ化は現時点では行わない）。
     """
     _load_env_file(os.path.join(BASE_DIR, ".env"))
 

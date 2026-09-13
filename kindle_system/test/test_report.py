@@ -8,15 +8,24 @@ report.py の HTML 生成関数（build_html）の単体テスト。
 """
 
 import os
+import re
 import sys
 import shutil
 import tempfile
 import unittest
+import unittest.mock
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
 import report
+
+
+def _extract_section_html(html: str, section_id: str) -> str:
+    """指定id の <section> 内側のHTMLだけを取り出す（他セクションとの取り違え防止用）。"""
+    match = re.search(rf'<section id="{re.escape(section_id)}"[^>]*>(.*?)</section>', html, re.S)
+    assert match is not None, f"section {section_id!r} が見つかりません"
+    return match.group(1)
 
 
 class BuildHtmlTest(unittest.TestCase):
@@ -107,8 +116,10 @@ class BuildHtmlTest(unittest.TestCase):
         html = report.build_html([])
         self.assertIn("<html", html)
         self.assertIn("</html>", html)
-        # 0件時は空状態メッセージが実際に出ること（title タグの文言では代用しない）
-        self.assertIn("読みたい本はまだ登録されていません。", html)
+        # 0件時、初期表示される「全部」セクションに空状態メッセージが実際に出ること
+        # （section-wanted 等 hidden 側の文言では代用しない。section-all に限定して検証する）
+        all_section = _extract_section_html(html, "section-all")
+        self.assertIn("本はまだ登録されていません。", all_section)
 
     def test_escapes_asin(self):
         books = [
@@ -160,17 +171,40 @@ class CategorySectionsTest(unittest.TestCase):
     def test_wanted_only_book_appears_in_all_and_wanted_sections_only(self):
         books = [self._book("欲しい本X", "B0CATW1", is_wanted=1, is_purchased=0)]
         html = report.build_html(books)
-        self.assertEqual(html.count("欲しい本X"), 2)  # 全部 + 読みたい
+        self.assertIn("欲しい本X", _extract_section_html(html, "section-all"))
+        self.assertIn("欲しい本X", _extract_section_html(html, "section-wanted"))
+        self.assertNotIn("欲しい本X", _extract_section_html(html, "section-purchased"))
 
     def test_purchased_only_book_appears_in_all_and_purchased_sections_only(self):
         books = [self._book("買った本Y", "B0CATP1", is_wanted=0, is_purchased=1)]
         html = report.build_html(books)
-        self.assertEqual(html.count("買った本Y"), 2)  # 全部 + 購入済み
+        self.assertIn("買った本Y", _extract_section_html(html, "section-all"))
+        self.assertNotIn("買った本Y", _extract_section_html(html, "section-wanted"))
+        self.assertIn("買った本Y", _extract_section_html(html, "section-purchased"))
 
     def test_book_without_flags_appears_only_in_all_section(self):
         books = [self._book("フラグなし本Z", "B0CATN1", is_wanted=0, is_purchased=0)]
         html = report.build_html(books)
-        self.assertEqual(html.count("フラグなし本Z"), 1)  # 全部のみ
+        self.assertIn("フラグなし本Z", _extract_section_html(html, "section-all"))
+        self.assertNotIn("フラグなし本Z", _extract_section_html(html, "section-wanted"))
+        self.assertNotIn("フラグなし本Z", _extract_section_html(html, "section-purchased"))
+
+    def test_price_history_key_on_book_is_rendered_as_polyline(self):
+        """book['price_history'] が build_html まで正しく伝播し、<polyline> として
+        描画されること（main() が付与するキー名との契約を固定する）。"""
+        book = self._book("価格履歴あり本", "B0CATH1", is_wanted=0, is_purchased=0)
+        book["price_history"] = [
+            {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
+            {"actual_price": 800, "is_unlimited": 0, "timestamp": "2026-01-02T00:00:00"},
+        ]
+        html = report.build_html([book])
+        self.assertIn("<polyline", _extract_section_html(html, "section-all"))
+
+    def test_missing_price_history_key_shows_placeholder(self):
+        """price_history キーが無い本(未取得データ等)ではプレースホルダーになること。"""
+        book = self._book("価格履歴なし本", "B0CATH2", is_wanted=0, is_purchased=0)
+        html = report.build_html([book])
+        self.assertIn("価格履歴データなし", _extract_section_html(html, "section-all"))
 
 
 class FilterUiTest(unittest.TestCase):
@@ -208,6 +242,63 @@ class FilterUiTest(unittest.TestCase):
         self.assertNotIn("location.href", html)
         self.assertNotIn("fetch(", html)
         self.assertNotIn("XMLHttpRequest", html)
+
+
+class MainIntegrationTest(unittest.TestCase):
+    """main() が get_books/get_price_history の結果をbuild_htmlへ正しく配線することのテスト。
+
+    実DBには接続せず、report.get_books / report.get_price_history をモックする。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="report_main_test_")
+        os.makedirs(os.path.join(self.tmpdir, ".git"))
+        self._saved_env = {}
+        for key in ("PUBLIC_SITE_DIR", "PUBLIC_SITE_URL"):
+            self._saved_env[key] = os.environ.get(key)
+        os.environ["PUBLIC_SITE_DIR"] = self.tmpdir
+        os.environ["PUBLIC_SITE_URL"] = "https://example.invalid/"
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        for key, value in self._saved_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    def test_main_wires_get_books_and_price_history_into_output(self):
+        fake_book = {
+            "title": "結合テスト本",
+            "asin": "B0INTEG1",
+            "sell_price": 1000,
+            "point_value": 0,
+            "actual_price": 1000,
+            "campaign_text": "",
+            "timestamp": "2026-01-02T00:00:00",
+            "is_unlimited": 0,
+            "is_wanted": 1,
+            "is_purchased": 0,
+        }
+        fake_history = [
+            {"actual_price": 1200, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
+            {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-02T00:00:00"},
+        ]
+        with unittest.mock.patch.object(
+            report, "get_books", return_value=[dict(fake_book)]
+        ) as mock_get_books, unittest.mock.patch.object(
+            report, "get_price_history", return_value=fake_history
+        ) as mock_get_history:
+            report.main()
+
+        mock_get_books.assert_called_once_with(filter="all")
+        mock_get_history.assert_called_once_with("B0INTEG1")
+
+        output_path = os.path.join(self.tmpdir, "index.html")
+        with open(output_path, encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn("結合テスト本", html)
+        self.assertIn("<polyline", html)  # price_history が build_html まで伝播していること
 
 
 class BuildPriceHistorySvgTest(unittest.TestCase):
@@ -283,9 +374,22 @@ class BuildPriceHistorySvgTest(unittest.TestCase):
         svg = report._build_price_history_svg(history)
         self.assertIn("価格履歴データなし", svg)
 
+    def test_flat_line_when_all_valid_prices_are_equal(self):
+        """全有効点が同価格のとき、ゼロ除算(max_price == min_price)を起こさず
+        水平な折れ線(全点同じy座標)を返すこと。"""
+        history = [
+            {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
+            {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-02T00:00:00"},
+        ]
+        svg = report._build_price_history_svg(history)
+        self.assertIn("<polyline", svg)
+        points = re.search(r'points="([^"]*)"', svg).group(1).split()
+        y0 = float(points[0].split(",")[1])
+        y1 = float(points[1].split(",")[1])
+        self.assertEqual(y0, y1)
+
     def test_polyline_points_are_numeric_only(self):
         """R1: 座標は数値のみで構成され、自由文字列(ユーザー由来の文字列)を含まないこと。"""
-        import re
 
         history = [
             {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
