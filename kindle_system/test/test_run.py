@@ -289,5 +289,82 @@ class SyncCommandTest(unittest.TestCase):
         mock_publish.assert_not_called()
 
 
+class WantPurchaseArgparseTest(unittest.TestCase):
+    """want / purchase サブコマンドは --on / --off のどちらか一方が必須
+    （mutually exclusive group + required）であることを検証する。"""
+
+    def test_want_requires_on_or_off(self):
+        parser = run.build_parser()
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["want", "B0EXAMPLE"])
+
+    def test_want_rejects_both_on_and_off(self):
+        parser = run.build_parser()
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["want", "B0EXAMPLE", "--on", "--off"])
+
+    def test_want_accepts_on_only(self):
+        parser = run.build_parser()
+        args = parser.parse_args(["want", "B0EXAMPLE", "--on"])
+        self.assertEqual(args.asin, "B0EXAMPLE")
+        self.assertTrue(args.on)
+        self.assertFalse(args.off)
+        self.assertIs(args.func, run.cmd_want)
+
+    def test_purchase_requires_on_or_off(self):
+        parser = run.build_parser()
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["purchase", "B0EXAMPLE"])
+
+    def test_purchase_rejects_both_on_and_off(self):
+        parser = run.build_parser()
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["purchase", "B0EXAMPLE", "--on", "--off"])
+
+    def test_purchase_accepts_off_only(self):
+        parser = run.build_parser()
+        args = parser.parse_args(["purchase", "B0EXAMPLE", "--off"])
+        self.assertEqual(args.asin, "B0EXAMPLE")
+        self.assertFalse(args.on)
+        self.assertTrue(args.off)
+        self.assertIs(args.func, run.cmd_purchase)
+
+
+class WantCommandTest(unittest.TestCase):
+    @patch("run.set_wanted", return_value=True)
+    def test_on_calls_set_wanted_with_status_1(self, mock_set_wanted):
+        run.cmd_want(argparse.Namespace(asin="B0EXAMPLE", on=True, off=False))
+        mock_set_wanted.assert_called_once_with("B0EXAMPLE", 1)
+
+    @patch("run.set_wanted", return_value=True)
+    def test_off_calls_set_wanted_with_status_0(self, mock_set_wanted):
+        run.cmd_want(argparse.Namespace(asin="B0EXAMPLE", on=False, off=True))
+        mock_set_wanted.assert_called_once_with("B0EXAMPLE", 0)
+
+    @patch("run.set_wanted", return_value=False)
+    def test_not_found_exits_with_code_1(self, mock_set_wanted):
+        with self.assertRaises(SystemExit) as cm:
+            run.cmd_want(argparse.Namespace(asin="B0MISSING", on=True, off=False))
+        self.assertEqual(cm.exception.code, 1)
+
+
+class PurchaseCommandTest(unittest.TestCase):
+    @patch("run.set_purchased", return_value=True)
+    def test_on_calls_set_purchased_with_status_1(self, mock_set_purchased):
+        run.cmd_purchase(argparse.Namespace(asin="B0EXAMPLE", on=True, off=False))
+        mock_set_purchased.assert_called_once_with("B0EXAMPLE", 1)
+
+    @patch("run.set_purchased", return_value=True)
+    def test_off_calls_set_purchased_with_status_0(self, mock_set_purchased):
+        run.cmd_purchase(argparse.Namespace(asin="B0EXAMPLE", on=False, off=True))
+        mock_set_purchased.assert_called_once_with("B0EXAMPLE", 0)
+
+    @patch("run.set_purchased", return_value=False)
+    def test_not_found_exits_with_code_1(self, mock_set_purchased):
+        with self.assertRaises(SystemExit) as cm:
+            run.cmd_purchase(argparse.Namespace(asin="B0MISSING", on=True, off=False))
+        self.assertEqual(cm.exception.code, 1)
+
+
 if __name__ == "__main__":
     unittest.main()
