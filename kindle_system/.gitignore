@@ -6,3 +6,4 @@ kindle_sales_report.html
 __pycache__/
 .vscode/
 .env
+.venv/
