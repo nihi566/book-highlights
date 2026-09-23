@@ -103,9 +103,15 @@ def publish() -> None:
     print(f"[完了] 公開しました: {public_site_url}")
 
 
-async def _run_sync(xml_path: str, limit: int, start: int, workers: int) -> None:
+async def _run_sync(
+    xml_path: str, limit: int, start: int, workers: int, target: str
+) -> None:
     """
-    クロール→読書メーター同期→公開を1回ずつ順に実行する。
+    target に応じて Kindle クロール / 読書メーター同期を実行し、公開は常に1回行う。
+
+    - target="kindle":    Kindle クロールのみ
+    - target="bookmeter": 読書メーター同期のみ
+    - target="both"（既定）: 従来どおり両方を順に実行（後方互換）
 
     sync_bookmeter_wishlist() は progress_cb 省略時に一切出力せず、失敗した
     本は戻り値の failed_titles にしか載らない契約（src/bookmeter_sync.py の
@@ -113,12 +119,14 @@ async def _run_sync(xml_path: str, limit: int, start: int, workers: int) -> None
     のため、src/server.py の do_bookmeter_sync() と同様に progress_cb=print
     を接続し、スキップ一覧を明示する（無音のまま公開してしまうことを防ぐ）。
     """
-    await main_module.run_integration(
-        xml_path=xml_path, limit=limit, start=start, workers=workers
-    )
-    result = await sync_bookmeter_wishlist(progress_cb=print)
-    if result["failed_titles"]:
-        print(f"[スキップ一覧] {', '.join(result['failed_titles'])}")
+    if target in ("kindle", "both"):
+        await main_module.run_integration(
+            xml_path=xml_path, limit=limit, start=start, workers=workers
+        )
+    if target in ("bookmeter", "both"):
+        result = await sync_bookmeter_wishlist(progress_cb=print)
+        if result["failed_titles"]:
+            print(f"[スキップ一覧] {', '.join(result['failed_titles'])}")
     publish()
 
 
@@ -127,9 +135,13 @@ def cmd_sync(args: argparse.Namespace) -> None:
     `run.py sync` のエントリ。xml_path のデフォルト解決（main.py と同じ
     kindle_sample_extractor.DEFAULT_CACHE_PATH）、--workers のクランプ（1〜5）は
     main.py の挙動をそのまま踏襲する（--xml オプションはスコープ外のため無い）。
+
+    --target=bookmeter のときは Kindle クロールを行わないため、Kindle の
+    キャッシュ XML が存在しなくても実行できる（存在チェックをスキップする）。
     """
+    target = args.target
     xml_path = main_module.kindle_sample_extractor.DEFAULT_CACHE_PATH
-    if not os.path.exists(xml_path):
+    if target in ("kindle", "both") and not os.path.exists(xml_path):
         print(f"エラー: XML ファイルが見つかりません: {xml_path}", file=sys.stderr)
         sys.exit(1)
 
@@ -138,7 +150,13 @@ def cmd_sync(args: argparse.Namespace) -> None:
         print(f"[注意] --workers は 1、5 の範囲にクランプされました: {args.workers} → {workers}")
 
     asyncio.run(
-        _run_sync(xml_path=xml_path, limit=args.limit, start=args.start, workers=workers)
+        _run_sync(
+            xml_path=xml_path,
+            limit=args.limit,
+            start=args.start,
+            workers=workers,
+            target=target,
+        )
     )
 
 
@@ -179,6 +197,12 @@ def build_parser() -> argparse.ArgumentParser:
     sync_parser.add_argument("--limit", type=int, default=None, help="処理する最大件数")
     sync_parser.add_argument(
         "--start", type=int, default=None, help="開始するインデックス番号"
+    )
+    sync_parser.add_argument(
+        "--target",
+        choices=["kindle", "bookmeter", "both"],
+        default="both",
+        help="実行対象（kindle: Kindleクロールのみ / bookmeter: 読書メーター同期のみ / both: 両方。デフォルト: both）",
     )
     sync_parser.set_defaults(func=cmd_sync)
 

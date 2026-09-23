@@ -23,12 +23,16 @@ copy .env.example .env
 ### クロール → 読書メーター同期 → レポート生成 → 公開（一括実行）
 
 ```
-python run.py sync [--workers N] [--limit N] [--start N]
+python run.py sync [--workers N] [--limit N] [--start N] [--target kindle|bookmeter|both]
 ```
 
 - `--workers`: 並列ブラウザ数（デフォルト 1、1〜5 にクランプされる）
 - `--limit`: 処理する最大件数
 - `--start`: 開始するインデックス番号
+- `--target`: 実行対象（デフォルト `both`）
+  - `kindle`: Kindleの「読みたい本」クロールのみ実行する
+  - `bookmeter`: 読書メーターの「読みたい本」同期のみ実行する
+  - `both`: 両方を順に実行する（従来の `run.py sync` と同じ挙動）
 
 ### 「欲しい本」フラグの更新
 

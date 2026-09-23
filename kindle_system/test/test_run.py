@@ -236,7 +236,7 @@ class SyncCommandTest(unittest.TestCase):
         manager.attach_mock(mock_sync, "sync_bookmeter_wishlist")
         manager.attach_mock(mock_publish, "publish")
 
-        run.cmd_sync(argparse.Namespace(workers=2, limit=5, start=3))
+        run.cmd_sync(argparse.Namespace(workers=2, limit=5, start=3, target="both"))
 
         self.assertEqual(
             [c[0] for c in manager.mock_calls],
@@ -271,7 +271,7 @@ class SyncCommandTest(unittest.TestCase):
         }
 
         with patch("builtins.print") as mock_print:
-            run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None))
+            run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None, target="both"))
 
         _, kwargs = mock_sync.call_args
         self.assertIs(kwargs.get("progress_cb"), mock_print)
@@ -289,7 +289,7 @@ class SyncCommandTest(unittest.TestCase):
         self, mock_run_integration, mock_sync, mock_publish, mock_exists
     ):
         mock_sync.return_value = dict(self._EMPTY_SYNC_RESULT)
-        run.cmd_sync(argparse.Namespace(workers=10, limit=None, start=None))
+        run.cmd_sync(argparse.Namespace(workers=10, limit=None, start=None, target="both"))
 
         _, kwargs = mock_run_integration.call_args
         self.assertEqual(kwargs["workers"], 5)
@@ -304,7 +304,7 @@ class SyncCommandTest(unittest.TestCase):
         self, mock_run_integration, mock_sync, mock_publish, mock_exists
     ):
         mock_sync.return_value = dict(self._EMPTY_SYNC_RESULT)
-        run.cmd_sync(argparse.Namespace(workers=0, limit=None, start=None))
+        run.cmd_sync(argparse.Namespace(workers=0, limit=None, start=None, target="both"))
 
         _, kwargs = mock_run_integration.call_args
         self.assertEqual(kwargs["workers"], 1)
@@ -317,12 +317,87 @@ class SyncCommandTest(unittest.TestCase):
     ):
         with patch("run.os.path.exists", return_value=False):
             with self.assertRaises(SystemExit) as cm:
-                run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None))
+                run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None, target="both"))
 
         self.assertEqual(cm.exception.code, 1)
         mock_run_integration.assert_not_called()
         mock_sync.assert_not_called()
         mock_publish.assert_not_called()
+
+
+class SyncCommandTargetTest(unittest.TestCase):
+    """--target による実行対象の絞り込み（kindle のみ / bookmeter のみ）を検証する。"""
+
+    _EMPTY_SYNC_RESULT = {"total": 0, "registered": 0, "skipped": 0, "failed_titles": []}
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_target_kindle_skips_bookmeter_sync(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None, target="kindle"))
+
+        mock_run_integration.assert_called_once()
+        mock_sync.assert_not_called()
+        mock_publish.assert_called_once()
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_target_bookmeter_skips_kindle_crawl(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        mock_sync.return_value = dict(self._EMPTY_SYNC_RESULT)
+
+        run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None, target="bookmeter"))
+
+        mock_run_integration.assert_not_called()
+        mock_sync.assert_called_once()
+        mock_publish.assert_called_once()
+
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_target_bookmeter_does_not_require_xml_file(
+        self, mock_run_integration, mock_sync, mock_publish
+    ):
+        """bookmeter 単独実行では Kindle キャッシュ XML の存在チェックを行わない。"""
+        mock_sync.return_value = dict(self._EMPTY_SYNC_RESULT)
+
+        with patch("run.os.path.exists", return_value=False) as mock_exists:
+            run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None, target="bookmeter"))
+
+        mock_exists.assert_not_called()
+        mock_run_integration.assert_not_called()
+        mock_sync.assert_called_once()
+        mock_publish.assert_called_once()
+
+    @patch("run.os.path.exists", return_value=False)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_target_kindle_still_exits_when_xml_missing(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        with self.assertRaises(SystemExit) as cm:
+            run.cmd_sync(argparse.Namespace(workers=1, limit=None, start=None, target="kindle"))
+
+        self.assertEqual(cm.exception.code, 1)
+        mock_run_integration.assert_not_called()
+        mock_publish.assert_not_called()
+
+    def test_sync_parser_defaults_target_to_both(self):
+        parser = run.build_parser()
+        args = parser.parse_args(["sync"])
+        self.assertEqual(args.target, "both")
+
+    def test_sync_parser_rejects_unknown_target(self):
+        parser = run.build_parser()
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["sync", "--target", "unknown"])
 
 
 class WantPurchaseArgparseTest(unittest.TestCase):
