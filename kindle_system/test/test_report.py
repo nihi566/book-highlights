@@ -244,6 +244,61 @@ class FilterUiTest(unittest.TestCase):
         self.assertNotIn("XMLHttpRequest", html)
 
 
+class ControlsUiTest(unittest.TestCase):
+    """report.build_html() の検索・並べ替え・詳細フィルタ（KU対象のみ/価格帯）UIのテスト。"""
+
+    def _book(self, title, asin, actual_price, is_unlimited=0):
+        return {
+            "title": title,
+            "asin": asin,
+            "sell_price": actual_price,
+            "point_value": 0,
+            "actual_price": actual_price,
+            "campaign_text": "",
+            "timestamp": None,
+            "is_unlimited": is_unlimited,
+            "is_wanted": 0,
+            "is_purchased": 0,
+        }
+
+    def test_includes_search_sort_ku_and_price_controls(self):
+        html = report.build_html([])
+        self.assertIn('id="search-input"', html)
+        self.assertIn('id="sort-select"', html)
+        self.assertIn('id="ku-only-checkbox"', html)
+        self.assertIn('id="price-min"', html)
+        self.assertIn('id="price-max"', html)
+
+    def test_sort_options_cover_price_and_title(self):
+        html = report.build_html([])
+        self.assertIn('value="price-asc"', html)
+        self.assertIn('value="price-desc"', html)
+        self.assertIn('value="title-asc"', html)
+
+    def test_book_row_has_numeric_price_attribute(self):
+        books = [self._book("価格属性本", "B0ATTR001", 1234)]
+        html = report.build_html(books)
+        self.assertIn('data-price="1234"', html)
+        self.assertIn('data-ku="0"', html)
+
+    def test_ku_book_has_empty_price_attribute_and_ku_flag(self):
+        books = [self._book("KU属性本", "B0ATTR002", 0, is_unlimited=1)]
+        html = report.build_html(books)
+        self.assertIn('data-price="" data-ku="1"', html)
+
+    def test_book_without_price_has_empty_price_attribute(self):
+        books = [self._book("価格未取得属性本", "B0ATTR003", None)]
+        html = report.build_html(books)
+        self.assertIn('data-price="" data-ku="0"', html)
+
+    def test_data_price_attribute_does_not_duplicate_escaped_asin_count(self):
+        """R2: data-price/data-ku は数値/真偽値のみを持ち、asin文字列を複製しないこと
+        （複製すると _build_book_row のエスケープ件数の契約(test_escapes_asin)が崩れる）。"""
+        books = [self._book("普通の本2", "B0<script>2", 500)]
+        html = report.build_html(books)
+        self.assertEqual(html.count("&lt;script&gt;"), 1)
+
+
 class MainIntegrationTest(unittest.TestCase):
     """main() が get_books/get_price_history の結果をbuild_htmlへ正しく配線することのテスト。
 

@@ -103,11 +103,23 @@ def _build_book_row(book: dict) -> str:
     asin = html.escape(book.get("asin") or "")
     price_text = html.escape(_format_price(book))
     history_svg = _build_price_history_svg(book.get("price_history") or [])
+
+    # data-price / data-ku はクライアント側の検索・並べ替え・フィルタ（JS）専用の数値/真偽値
+    # 属性で、title/asin のようなユーザー由来の自由文字列を複製しない（R2 のエスケープ件数を
+    # 変えないため）。KU本はsell_price/actual_priceが常に0で保存される（R4と同じ理由）ため、
+    # data-price は空にして価格ソート・価格帯フィルタの対象から除外する。
+    is_ku = bool(book.get("is_unlimited"))
+    actual_price = book.get("actual_price")
+    data_price = "" if is_ku or actual_price is None else str(actual_price)
+    data_ku = "1" if is_ku else "0"
+
     return (
-        f'<li class="book">'
+        f'<li class="book" data-price="{data_price}" data-ku="{data_ku}">'
+        f'<div class="book-main">'
         f'<span class="title">{title}</span>'
         f'<span class="asin">{asin}</span>'
         f'<span class="price">{price_text}</span>'
+        f"</div>"
         f'<div class="price-history">{history_svg}</div>'
         f"</li>"
     )
@@ -140,7 +152,97 @@ _FILTER_BAR_HTML = (
     "</div>"
 )
 
+# 検索・並べ替え・詳細フィルタ（KU対象のみ / 価格帯）用のコントロール群。
+# 値はすべて固定リテラルの id/属性のみで、ユーザー由来の値は含まない。
+_CONTROLS_BAR_HTML = (
+    '<div class="controls-bar">'
+    '<input type="search" id="search-input" class="search-input" placeholder="タイトル・ASINで検索">'
+    '<select id="sort-select" class="sort-select">'
+    '<option value="default">登録順</option>'
+    '<option value="price-asc">価格が安い順</option>'
+    '<option value="price-desc">価格が高い順</option>'
+    '<option value="title-asc">タイトル順</option>'
+    "</select>"
+    '<label class="ku-filter"><input type="checkbox" id="ku-only-checkbox"> Kindle Unlimited対象のみ</label>'
+    '<div class="price-range">'
+    '<input type="number" id="price-min" class="price-input" placeholder="下限" min="0" inputmode="numeric">'
+    "<span>〜</span>"
+    '<input type="number" id="price-max" class="price-input" placeholder="上限" min="0" inputmode="numeric">'
+    "</div>"
+    "</div>"
+)
+
 _FILTER_TOGGLE_SCRIPT = """<script>
+function applyControls() {
+  var searchInput = document.getElementById('search-input');
+  var sortSelect = document.getElementById('sort-select');
+  var kuOnlyCheckbox = document.getElementById('ku-only-checkbox');
+  var priceMinInput = document.getElementById('price-min');
+  var priceMaxInput = document.getElementById('price-max');
+  if (!searchInput || !sortSelect || !kuOnlyCheckbox || !priceMinInput || !priceMaxInput) {
+    return;
+  }
+
+  var searchTerm = searchInput.value.trim().toLowerCase();
+  var sortMode = sortSelect.value;
+  var kuOnly = kuOnlyCheckbox.checked;
+  var priceMin = parseFloat(priceMinInput.value);
+  var priceMax = parseFloat(priceMaxInput.value);
+
+  document.querySelectorAll('.book-section ul').forEach(function (ul) {
+    var items = Array.prototype.slice.call(ul.querySelectorAll('.book'));
+
+    items.forEach(function (li) {
+      var titleEl = li.querySelector('.title');
+      var asinEl = li.querySelector('.asin');
+      var title = titleEl ? titleEl.textContent.toLowerCase() : '';
+      var asin = asinEl ? asinEl.textContent.toLowerCase() : '';
+      var price = li.dataset.price === '' ? null : parseFloat(li.dataset.price);
+      var isKu = li.dataset.ku === '1';
+
+      var visible = true;
+      if (searchTerm && title.indexOf(searchTerm) === -1 && asin.indexOf(searchTerm) === -1) {
+        visible = false;
+      }
+      if (kuOnly && !isKu) {
+        visible = false;
+      }
+      if (!isNaN(priceMin) && (price === null || price < priceMin)) {
+        visible = false;
+      }
+      if (!isNaN(priceMax) && (price === null || price > priceMax)) {
+        visible = false;
+      }
+      li.classList.toggle('hidden', !visible);
+    });
+
+    if (sortMode !== 'default') {
+      var sorted = items.slice().sort(function (a, b) {
+        if (sortMode === 'title-asc') {
+          var titleA = a.querySelector('.title');
+          var titleB = b.querySelector('.title');
+          return (titleA ? titleA.textContent : '').localeCompare(titleB ? titleB.textContent : '', 'ja');
+        }
+        var pa = a.dataset.price === '' ? null : parseFloat(a.dataset.price);
+        var pb = b.dataset.price === '' ? null : parseFloat(b.dataset.price);
+        if (pa === null && pb === null) {
+          return 0;
+        }
+        if (pa === null) {
+          return 1;
+        }
+        if (pb === null) {
+          return -1;
+        }
+        return sortMode === 'price-asc' ? pa - pb : pb - pa;
+      });
+      sorted.forEach(function (li) {
+        ul.appendChild(li);
+      });
+    }
+  });
+}
+
 document.querySelectorAll('.filter-btn').forEach(function (btn) {
   btn.addEventListener('click', function () {
     var target = document.getElementById(btn.dataset.target);
@@ -156,6 +258,19 @@ document.querySelectorAll('.filter-btn').forEach(function (btn) {
     });
     btn.classList.add('active');
   });
+});
+
+['search-input', 'price-min', 'price-max'].forEach(function (id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('input', applyControls);
+  }
+});
+['sort-select', 'ku-only-checkbox'].forEach(function (id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', applyControls);
+  }
 });
 </script>"""
 
@@ -191,27 +306,43 @@ def build_html(books: list) -> str:
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>蔵書リスト</title>
 <style>
-  body {{ font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }}
-  ul {{ list-style: none; padding: 0; margin: 0; }}
-  .book {{ display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #ddd; }}
-  .title {{ flex: 1; }}
-  .asin {{ color: #888; font-size: 0.8rem; }}
-  .price {{ font-weight: bold; white-space: nowrap; }}
+  body {{ font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; background: #f7f7f9; color: #222; }}
+  h1 {{ margin-bottom: 1rem; }}
+  ul {{ list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }}
+  .book {{ display: flex; flex-direction: column; gap: 0.4rem; padding: 0.9rem 1rem; border-radius: 0.6rem; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.12); transition: transform 0.1s ease, box-shadow 0.1s ease; }}
+  .book:hover {{ transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }}
+  .book-main {{ display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem; }}
+  .title {{ flex: 1; font-weight: 600; min-width: 0; overflow-wrap: break-word; }}
+  .asin {{ color: #888; font-size: 0.75rem; }}
+  .price {{ font-weight: bold; white-space: nowrap; color: #d1401f; }}
   .empty {{ color: #888; }}
   .price-history {{ width: 100%; }}
   .price-history-svg {{ display: block; margin-top: 0.25rem; }}
   .price-history-empty {{ color: #888; font-size: 0.75rem; }}
   .hidden {{ display: none; }}
-  .filter-bar {{ display: flex; gap: 0.5rem; margin-bottom: 1rem; }}
-  .filter-btn {{ padding: 0.4rem 0.8rem; cursor: pointer; }}
-  .filter-btn.active {{ font-weight: bold; border-bottom: 2px solid #0074d9; }}
+  .filter-bar {{ display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }}
+  .filter-btn {{ padding: 0.4rem 0.8rem; cursor: pointer; border: 1px solid #ccc; border-radius: 999px; background: #fff; }}
+  .filter-btn.active {{ font-weight: bold; color: #fff; background: #0074d9; border-color: #0074d9; }}
+  .controls-bar {{ display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem; padding: 0.75rem; background: #fff; border-radius: 0.6rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }}
+  .search-input {{ flex: 1 1 200px; padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 0.4rem; }}
+  .sort-select {{ padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 0.4rem; }}
+  .ku-filter {{ display: flex; align-items: center; gap: 0.3rem; white-space: nowrap; font-size: 0.9rem; }}
+  .price-range {{ display: flex; align-items: center; gap: 0.4rem; }}
+  .price-input {{ width: 6rem; padding: 0.4rem 0.5rem; border: 1px solid #ccc; border-radius: 0.4rem; }}
+  @media (max-width: 480px) {{
+    ul {{ grid-template-columns: 1fr; }}
+    .controls-bar {{ flex-direction: column; align-items: stretch; }}
+    .price-input {{ width: auto; flex: 1; }}
+  }}
 </style>
 </head>
 <body>
 <h1>蔵書リスト</h1>
 {_FILTER_BAR_HTML}
+{_CONTROLS_BAR_HTML}
 {sections_html}
 {_FILTER_TOGGLE_SCRIPT}
 </body>
