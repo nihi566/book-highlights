@@ -14,6 +14,7 @@ Kindle for PC のローカルキャッシュXML（KindleSyncMetadataCache.xml）
 # テスト
 
 import xml.etree.ElementTree as ET
+import glob
 import os
 import sys
 import argparse
@@ -27,14 +28,33 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8")
 
 # ─── 定数 ──────────────────────────────────────────────────────────────────────
 # 環境変数 KINDLE_XML_PATH が設定されている場合はそれを優先する（Docker環境向け）
-# 設定されていない場合は Windows のデフォルトパスを使用する
-DEFAULT_CACHE_PATH = os.environ.get(
-    "KINDLE_XML_PATH",
-    os.path.join(
-        os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local"),
-        "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml"
-    )
-)
+# 設定されていない場合は Windows のデフォルトパスを使用する。
+# Kindle for PC には従来型インストーラー版と Microsoft Store（UWP）版があり、
+# キャッシュの保存先が異なる。UWP 版はパッケージフォルダ名にインストールごとの
+# ハッシュが付くため固定パスにできず、glob で存在するものを探す。
+def _resolve_default_cache_path() -> str:
+    env_path = os.environ.get("KINDLE_XML_PATH")
+    if env_path:
+        return env_path
+
+    local_app_data = os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local")
+
+    classic_path = os.path.join(local_app_data, "Amazon", "Kindle", "Cache", "KindleSyncMetadataCache.xml")
+    if os.path.isfile(classic_path):
+        return classic_path
+
+    uwp_matches = glob.glob(os.path.join(
+        local_app_data, "Packages", "AMZNKindle.AmazonKindleReadingApp_*",
+        "LocalState", "Classic", "Data", "Cache", "KindleSyncMetadataCache.xml"
+    ))
+    if uwp_matches:
+        return uwp_matches[0]
+
+    # どちらも見つからない場合は従来型のパスを返す（エラーメッセージで存在しないパスを示すため）
+    return classic_path
+
+
+DEFAULT_CACHE_PATH = _resolve_default_cache_path()
 
 # ─── コア処理 ──────────────────────────────────────────────────────────────────
 
