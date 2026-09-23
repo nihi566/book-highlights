@@ -140,9 +140,10 @@ class BuildHtmlTest(unittest.TestCase):
         # フィルタUI用の信頼済み<script>タグ自体は許容しつつ、asin由来の
         # 未エスケープペイロード("B0<script>")のみが混入していないことを確認する。
         self.assertNotIn("B0<script>", html)
-        # is_purchased=1のため「全部」「購入済み」の2セクションに表示される
+        # is_purchased=1のため「全部」「購入済み」の2セクションに表示され、各セクション内で
+        # asinは表示用セル（col-asin）とAmazonリンクのhrefの2箇所に出る（2セクション×2箇所=4）
         # （カウントを固定することでエスケープ漏れの検出力低下を防ぐ）。
-        self.assertEqual(html.count("&lt;script&gt;"), 2)
+        self.assertEqual(html.count("&lt;script&gt;"), 4)
 
 
 class CategorySectionsTest(unittest.TestCase):
@@ -234,6 +235,28 @@ class FilterUiTest(unittest.TestCase):
         for target in targets:
             self.assertIn(f'id="{target}"', html)
 
+    def test_initial_state_only_all_button_is_pressed(self):
+        """初期表示では「全部」ボタンだけaria-pressed="true"で、他はfalseであること。"""
+        html = report.build_html([])
+        self.assertIn(
+            'data-target="section-all" aria-pressed="true"', html
+        )
+        self.assertIn(
+            'data-target="section-wanted" aria-pressed="false"', html
+        )
+        self.assertIn(
+            'data-target="section-purchased" aria-pressed="false"', html
+        )
+
+    def test_empty_section_renders_no_table(self):
+        """本が0件のセクションには<table>を出さず、空状態メッセージだけを出すこと
+        （0件セクションに空のtableを出すと、JS側のcount/no-results処理が
+        意味のない空表を対象に動いてしまうため）。"""
+        html = report.build_html([])
+        all_section = _extract_section_html(html, "section-all")
+        self.assertNotIn("<table", all_section)
+        self.assertIn("本はまだ登録されていません。", all_section)
+
     def test_includes_toggle_script_without_page_navigation(self):
         """ページ遷移(XHR/location遷移)を発生させない素のJSでトグルすること。"""
         html = report.build_html([])
@@ -291,12 +314,34 @@ class ControlsUiTest(unittest.TestCase):
         html = report.build_html(books)
         self.assertIn('data-price="" data-ku="0"', html)
 
+    def test_book_rows_have_sequential_data_index_for_default_sort_restore(self):
+        """data-index は「登録順」への並べ替え復元(JS)専用の連番。1冊目は0、2冊目は1。
+        この値が消えると sortMode==='default' の再ソートが parseInt(undefined)=NaN
+        比較になり、登録順に戻せなくなる（JS側は静的検証できないためPython側で固定する）。"""
+        books = [
+            self._book("順序本1", "B0ORDER001", 100),
+            self._book("順序本2", "B0ORDER002", 200),
+        ]
+        html = report.build_html(books)
+        section_html = _extract_section_html(html, "section-all")
+        self.assertIn('data-index="0"', section_html)
+        self.assertIn('data-index="1"', section_html)
+
+    def test_asin_missing_omits_amazon_link_instead_of_broken_url(self):
+        """ASIN未確定(読書メーター経由で未クロール等)の本は、
+        'https://www.amazon.co.jp/dp/' という壊れたリンクを出さないこと。"""
+        books = [self._book("ASIN未確定本", "", None)]
+        html = report.build_html(books)
+        self.assertNotIn("amazon.co.jp/dp/\"", html)
+        self.assertNotIn('href=""', html)
+
     def test_data_price_attribute_does_not_duplicate_escaped_asin_count(self):
         """R2: data-price/data-ku は数値/真偽値のみを持ち、asin文字列を複製しないこと
-        （複製すると _build_book_row のエスケープ件数の契約(test_escapes_asin)が崩れる）。"""
+        （複製すると _build_book_row のエスケープ件数の契約(test_escapes_asin)が崩れる）。
+        asinはcol-asinセルとAmazonリンクのhrefの2箇所にのみ出る（1セクション×2箇所=2）。"""
         books = [self._book("普通の本2", "B0<script>2", 500)]
         html = report.build_html(books)
-        self.assertEqual(html.count("&lt;script&gt;"), 1)
+        self.assertEqual(html.count("&lt;script&gt;"), 2)
 
 
 class MainIntegrationTest(unittest.TestCase):
