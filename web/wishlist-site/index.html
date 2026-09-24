@@ -113,6 +113,9 @@ function applyControls() {
   var priceMaxInput = document.getElementById('price-max');
 
   var searchTerm = searchInput.value.trim().toLowerCase();
+  var searchWords = searchTerm.split(/[\s　]+/).filter(function (w) {
+    return w.length > 0;
+  });
   var sortMode = sortSelect.value;
   var kuOnly = kuOnlyCheckbox.checked;
   var priceMin = parseFloat(priceMinInput.value);
@@ -145,7 +148,10 @@ function applyControls() {
       var isKu = tr.dataset.ku === '1';
 
       var visible = true;
-      if (searchTerm && title.indexOf(searchTerm) === -1 && asin.indexOf(searchTerm) === -1) {
+      var matchesAllWords = searchWords.every(function (word) {
+        return title.indexOf(word) !== -1 || asin.indexOf(word) !== -1;
+      });
+      if (searchWords.length > 0 && !matchesAllWords) {
         visible = false;
       }
       if (kuOnly && !isKu) {
