@@ -493,7 +493,7 @@ async def crawl_price_info(
                 print(f"  {prefix}-> Unlimited判定エラー: {e}")
 
         except Exception as e:
-            print(f"  ページアクセスエラー: {e}")
+            print(f"  {prefix}ページアクセスエラー: {e}")
         finally:
             await browser.close()
 

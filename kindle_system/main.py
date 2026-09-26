@@ -101,6 +101,52 @@ def get_session_processed_asins(session_start: str) -> set:
         return set(results)
 
 
+# ─── ログ整形（1 冊単位の結果行・集計行） ────────────────────────────────────
+# 並列ワーカーの出力は行が混ざるため、1 冊ごとに必ず 1 行の結果行を出し、
+# 全ワーカー終了後に集計行を出す。scraping-hub 側のパーサがこの形式に依存するため、
+# 文言（「結果: 」「成功 / 失敗 / スキップ」「集計: 」）を変えるときは両側を揃えること。
+
+RESULT_SUCCESS = "成功"
+RESULT_FAILURE = "失敗"
+RESULT_SKIP = "スキップ"
+
+
+def format_price_summary(price_data: dict) -> str:
+    """クロール結果を `価格=¥2,695 ポイント=81pt` 形式にする。"""
+    sell_price = price_data.get("sell_price")
+    price_text = f"¥{sell_price:,}" if sell_price is not None else "取得不可"
+    return f"価格={price_text} ポイント={price_data.get('point_value') or 0}pt"
+
+
+def classify_crawl_result(price_data: dict) -> tuple:
+    """
+    クロール結果から (結果種別, 詳細) を返す。
+    crawl_price_info はページアクセスエラーや BAN 検知時に例外を投げず、
+    sell_price=None のまま返すため、価格が取れていないものは失敗として扱う。
+    """
+    if price_data.get("sell_price") is None:
+        return RESULT_FAILURE, "価格を取得できませんでした（ページアクセスエラーまたは BAN 検知の可能性）"
+    return RESULT_SUCCESS, format_price_summary(price_data)
+
+
+def format_result_line(worker_id: int, index: int, total: int, status: str, detail: str = "") -> str:
+    """1 冊の結果行 `[Worker-N][i/total] 結果: 成功 ...` を組み立てる。"""
+    line = f"[Worker-{worker_id}][{index}/{total}] 結果: {status}"
+    return f"{line} {detail}" if detail else line
+
+
+def format_summary_line(counts: dict, resumed: int = 0) -> str:
+    """全体の集計行 `集計: 成功 N 件 / 失敗 N 件 / スキップ N 件` を組み立てる。"""
+    line = (
+        f"集計: 成功 {counts.get(RESULT_SUCCESS, 0)} 件"
+        f" / 失敗 {counts.get(RESULT_FAILURE, 0)} 件"
+        f" / スキップ {counts.get(RESULT_SKIP, 0)} 件"
+    )
+    if resumed:
+        line += f"（前回処理済み {resumed} 件）"
+    return line
+
+
 # ─── メインロジック ──────────────────────────────────────────────────────────
 
 async def run_integration(xml_path: str = None, limit: int = None, is_test: bool = False, start: int = None, workers: int = 1) -> None:
@@ -162,6 +208,7 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
 
     # ── スキップを事前適用してワークリストを作成 ─────────────────────
     work_items = []  # (i, book) のリスト
+    resumed_count = 0  # Resume-Skip で前回処理済みとして飛ばした件数（集計行用）
     for i, book in enumerate(samples, 1):
         sample_asin = book["asin"]
 
@@ -179,6 +226,7 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         # レジューム判定スキップ
         if paid_asin and paid_asin in session_processed:
             print(f"  [Resume-Skip] 既に処理済みのためスキップします（ASIN: {paid_asin}）")
+            resumed_count += 1
             continue
 
         work_items.append((i, book))
@@ -191,15 +239,22 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     for item in work_items:
         queue.put_nowait(item)
 
-    async def process_book(i: int, book: dict, worker_id: int) -> None:
-        """1冊分の処理関数（セマフォ不要）"""
+    # 1 冊ごとの結果件数（集計行用）。ワーカーは同一イベントループ上で動くためロック不要
+    result_counts = {RESULT_SUCCESS: 0, RESULT_FAILURE: 0, RESULT_SKIP: 0}
+
+    async def process_book(i: int, book: dict, worker_id: int) -> tuple:
+        """
+        1冊分の処理関数（セマフォ不要）。
+        戻り値は (結果種別, 詳細)。結果行の出力は worker 側で 1 冊につき必ず 1 回行う。
+        """
         sample_asin = book["asin"]
         title       = book["title"]
         profile     = get_profile(worker_id)
+        wp          = f"[Worker-{worker_id}]"
 
-        print(f"\n[Worker-{worker_id}][{i}/{len(samples)}] {title}")
-        print(f"  Sample ASIN : {sample_asin}")
-        print(f"  Profile     : {profile['id']}")
+        print(f"\n{wp}[{i}/{len(samples)}] {title}")
+        print(f"  {wp} Sample ASIN : {sample_asin}")
+        print(f"  {wp} Profile     : {profile['id']}")
 
         # BAN 発生中は解除を待つ
         if ban_coordinator:
@@ -208,9 +263,9 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
         # 2. 本編 ASIN の解決
         paid_asin = get_paid_asin(sample_asin)
         if paid_asin:
-            print(f"  [OK] DB から本編 ASIN を取得しました: {paid_asin}")
+            print(f"  {wp}[OK] DB から本編 ASIN を取得しました: {paid_asin}")
         else:
-            print(f"  [2/4] 本編 ASIN 解決中...")
+            print(f"  {wp}[2/4] 本編 ASIN 解決中...")
             try:
                 paid_asin = await resolve_sample_to_paid(
                     sample_asin,
@@ -221,21 +276,22 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
                     request_pacer=request_pacer,
                 )
                 if paid_asin:
-                    print(f"  [OK] 本編 ASIN 解決成功: {paid_asin}")
+                    print(f"  {wp}[OK] 本編 ASIN 解決成功: {paid_asin}")
                     save_mapping(sample_asin, paid_asin, title)
                 else:
-                    print("  [✗] 本編 ASIN を解決できませんでした。スキップします。")
-                    return
+                    print(f"  {wp}[NG] 本編 ASIN を解決できませんでした。スキップします。")
+                    return RESULT_SKIP, "本編 ASIN を解決できませんでした"
             except Exception as e:
-                print(f"  [Error] ASIN 解決中にエラー発生: {e}")
-                return
+                print(f"  {wp}[Error] ASIN 解決中にエラー発生: {e}")
+                return RESULT_FAILURE, f"ASIN 解決中にエラー: {e}"
 
         # BAN 待機チェック（resolve 後）
         if ban_coordinator:
             await ban_coordinator.wait_if_banned(worker_id=worker_id)
 
         # 3. 価格情報をクロール
-        print(f"  [3/4] 価格情報をクロール中 (ASIN: {paid_asin})...")
+        print(f"  {wp}[3/4] 価格情報をクロール中 (ASIN: {paid_asin})...")
+        stage = "クロール中"
         try:
             price_data = await crawl_price_info(
                 paid_asin,
@@ -245,19 +301,26 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
                 ban_coordinator=ban_coordinator,
                 request_pacer=request_pacer,
             )
-            print(f"  [OK] クロール成功: 価格=¥{price_data.get('sell_price')}, ポイント={price_data.get('point_value')}pt")
+            outcome = classify_crawl_result(price_data)
+            if outcome[0] == RESULT_SUCCESS:
+                print(f"  {wp}[OK] クロール成功: {format_price_summary(price_data)}")
+            else:
+                print(f"  {wp}[NG] クロールは終了しましたが価格を取得できませんでした: {format_price_summary(price_data)}")
 
             # 4. DB に保存
+            stage = "DB 保存中"
             save_price_history(price_data)
-            print("  [4/4] データベースに保存しました。")
+            print(f"  {wp}[4/4] データベースに保存しました。")
 
         except Exception as e:
-            print(f"  [Error] クロール中にエラー発生: {e}")
+            print(f"  {wp}[Error] {stage}にエラー発生: {e}")
+            outcome = (RESULT_FAILURE, f"{stage}にエラー: {e}")
 
         # ループ再開までの小休止（Amazon向けの間隔調整は RequestPacer が担当）
         delay = random.uniform(0.5, 1.5)
-        print(f"  [Sleep] {delay:.1f} 秒待機します...")
+        print(f"  {wp}[Sleep] {delay:.1f} 秒待機します...")
         await asyncio.sleep(delay)
+        return outcome
 
     async def worker(worker_id: int) -> None:
         """常駐ワーカータスク"""
@@ -275,11 +338,14 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
             
             i, book = item
             try:
-                await process_book(i, book, worker_id)
+                status, detail = await process_book(i, book, worker_id)
             except Exception as e:
                 print(f"  [Worker-{worker_id}][Error] 処理エラーが発生しました: {e}")
+                status, detail = RESULT_FAILURE, f"処理エラー: {e}"
             finally:
                 queue.task_done()
+            result_counts[status] += 1
+            print(format_result_line(worker_id, i, len(samples), status, detail))
 
     # ── 全ワーカーを並列起動 ─────────────────────────────────────────
     worker_tasks = [
@@ -290,6 +356,7 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
 
     print("\n" + "=" * 60)
     print("  全処理が完了しました。")
+    print(format_summary_line(result_counts, resumed=resumed_count))
     print("=" * 60)
 
     # 全処理完了: セッションファイルを削除し、次回は新規セッションとして実行されるようにする
