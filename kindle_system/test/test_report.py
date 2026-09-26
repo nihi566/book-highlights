@@ -141,9 +141,10 @@ class BuildHtmlTest(unittest.TestCase):
         # 未エスケープペイロード("B0<script>")のみが混入していないことを確認する。
         self.assertNotIn("B0<script>", html)
         # is_purchased=1のため「全部」「購入済み」の2セクションに表示され、各セクション内で
-        # asinは表示用セル（col-asin）とAmazonリンクのhrefの2箇所に出る（2セクション×2箇所=4）
+        # asinは表示用セル（col-asin）の1箇所だけに出る（2セクション×1箇所=2。Amazon への
+        # 遷移はページ側の JS が col-asin を読んで行うため、行に href は出さない）
         # （カウントを固定することでエスケープ漏れの検出力低下を防ぐ）。
-        self.assertEqual(html.count("&lt;script&gt;"), 4)
+        self.assertEqual(html.count("&lt;script&gt;"), 2)
 
 
 class CategorySectionsTest(unittest.TestCase):
@@ -205,7 +206,7 @@ class CategorySectionsTest(unittest.TestCase):
         """price_history キーが無い本(未取得データ等)ではプレースホルダーになること。"""
         book = self._book("価格履歴なし本", "B0CATH2", is_wanted=0, is_purchased=0)
         html = report.build_html([book])
-        self.assertIn("価格履歴データなし", _extract_section_html(html, "section-all"))
+        self.assertIn('<td class="col-history">データなし</td>', _extract_section_html(html, "section-all"))
 
 
 class FilterUiTest(unittest.TestCase):
@@ -338,10 +339,57 @@ class ControlsUiTest(unittest.TestCase):
     def test_data_price_attribute_does_not_duplicate_escaped_asin_count(self):
         """R2: data-price/data-ku は数値/真偽値のみを持ち、asin文字列を複製しないこと
         （複製すると _build_book_row のエスケープ件数の契約(test_escapes_asin)が崩れる）。
-        asinはcol-asinセルとAmazonリンクのhrefの2箇所にのみ出る（1セクション×2箇所=2）。"""
+        asinはcol-asinセルの1箇所にのみ出る（1セクション×1箇所=1）。"""
         books = [self._book("普通の本2", "B0<script>2", 500)]
         html = report.build_html(books)
-        self.assertEqual(html.count("&lt;script&gt;"), 2)
+        self.assertEqual(html.count("&lt;script&gt;"), 1)
+
+
+class PublishedPageStructureTest(unittest.TestCase):
+    """公開ページ（kindle-wishlist-site の index.html）と同じ構造を出すことのテスト。
+
+    index.html を直接編集した変更は次の自動公開で report.py の出力に上書きされるため、
+    公開ページにある要素は report.py 側で出していることをここで固定する。
+    """
+
+    def _book(self, title="構造確認本", asin="B0STRUCT01"):
+        return {"title": title, "asin": asin, "actual_price": 1000, "is_unlimited": 0, "is_wanted": 0, "is_purchased": 0}
+
+    def test_head_links_favicon(self):
+        html = report.build_html([])
+        self.assertIn('<link rel="icon" type="image/svg+xml" href="favicon.svg">', html)
+
+    def test_marks_output_as_generated_file(self):
+        html = report.build_html([])
+        self.assertIn("report.py が生成する", html)
+
+    def test_page_starts_in_grid_view(self):
+        html = report.build_html([])
+        self.assertIn('<body class="view-grid">', html)
+
+    def test_includes_reset_button_and_notices(self):
+        html = report.build_html([])
+        self.assertIn('id="reset-controls-button"', html)
+        self.assertIn('id="price-range-error"', html)
+        self.assertIn('id="active-filter-notice"', html)
+
+    def test_book_row_has_no_link_cell(self):
+        """Amazon への遷移は行クリック（JS）で行い、行に <a> を出さないこと。"""
+        section_html = _extract_section_html(report.build_html([self._book()]), "section-all")
+        self.assertNotIn("<a ", section_html)
+        self.assertNotIn("col-link", section_html)
+
+    def test_table_header_has_tag_column_and_hidden_heading(self):
+        section_html = _extract_section_html(report.build_html([self._book()]), "section-all")
+        self.assertIn('<th scope="col">タグ</th>', section_html)
+        self.assertIn('<h2 class="visually-hidden">全部</h2>', section_html)
+        self.assertIn('<caption class="visually-hidden">蔵書一覧（全部）</caption>', section_html)
+
+    def test_script_adds_tags_covers_and_view_toggle(self):
+        html = report.build_html([self._book()])
+        self.assertIn("TAG_STORAGE_PREFIX", html)
+        self.assertIn("COVER_URL_PREFIX", html)
+        self.assertIn("VIEW_STORAGE_KEY", html)
 
 
 class MainIntegrationTest(unittest.TestCase):
@@ -425,7 +473,7 @@ class BuildPriceHistorySvgTest(unittest.TestCase):
         ]
         svg = report._build_price_history_svg(history)
         self.assertIn("<polyline", svg)
-        self.assertNotIn("価格履歴データなし", svg)
+        self.assertNotIn("データなし", svg)
         import re
 
         points = re.search(r'points="([^"]*)"', svg).group(1).split()
@@ -451,12 +499,12 @@ class BuildPriceHistorySvgTest(unittest.TestCase):
             {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
         ]
         svg = report._build_price_history_svg(history)
-        self.assertIn("価格履歴データなし", svg)
+        self.assertEqual(svg, "データなし")
         self.assertNotIn("<polyline", svg)
 
     def test_shows_placeholder_when_history_is_empty(self):
         svg = report._build_price_history_svg([])
-        self.assertIn("価格履歴データなし", svg)
+        self.assertEqual(svg, "データなし")
 
     def test_shows_placeholder_when_all_points_are_unlimited(self):
         history = [
@@ -464,7 +512,7 @@ class BuildPriceHistorySvgTest(unittest.TestCase):
             {"actual_price": 0, "is_unlimited": 1, "timestamp": "2026-01-02T00:00:00"},
         ]
         svg = report._build_price_history_svg(history)
-        self.assertIn("価格履歴データなし", svg)
+        self.assertEqual(svg, "データなし")
 
     def test_treats_missing_actual_price_as_invalid_point(self):
         history = [
@@ -472,21 +520,17 @@ class BuildPriceHistorySvgTest(unittest.TestCase):
             {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-02T00:00:00"},
         ]
         svg = report._build_price_history_svg(history)
-        self.assertIn("価格履歴データなし", svg)
+        self.assertEqual(svg, "データなし")
 
-    def test_flat_line_when_all_valid_prices_are_equal(self):
+    def test_returns_no_change_text_when_all_valid_prices_are_equal(self):
         """全有効点が同価格のとき、ゼロ除算(max_price == min_price)を起こさず
-        水平な折れ線(全点同じy座標)を返すこと。"""
+        横線だけのグラフではなく「変動なし」を返すこと（カード表示の狭い欄向け）。"""
         history = [
             {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
             {"actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-02T00:00:00"},
         ]
         svg = report._build_price_history_svg(history)
-        self.assertIn("<polyline", svg)
-        points = re.search(r'points="([^"]*)"', svg).group(1).split()
-        y0 = float(points[0].split(",")[1])
-        y1 = float(points[1].split(",")[1])
-        self.assertEqual(y0, y1)
+        self.assertEqual(svg, "変動なし")
 
     def test_polyline_points_are_numeric_only(self):
         """R1: 座標は数値のみで構成され、自由文字列(ユーザー由来の文字列)を含まないこと。"""

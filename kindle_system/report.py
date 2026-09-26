@@ -51,12 +51,13 @@ _PRICE_HISTORY_SVG_HEIGHT = 50
 
 def _build_price_history_svg(history: list) -> str:
     """
-    価格履歴（repository.get_price_history() の返り値形式）からインライン SVG の
-    折れ線グラフを組み立てる（外部グラフライブラリ不使用。R1/R3/R4 対策）。
+    価格履歴（repository.get_price_history() の返り値形式）を価格履歴欄の中身に変換する。
 
     is_unlimited=1 の点は src/crawler.py の KU 安全弁により価格が常に 0 で保存される
-    ため、折れ線の座標計算から除外する（R4）。有効な価格点が2点未満の場合は
-    プレースホルダー文言を返す（R3）。座標は数値のみで構成し、ユーザー由来の
+    ため、有効な価格点から除外する（R4）。有効な価格点が2点未満なら「データなし」、
+    全点が同じ価格なら「変動なし」の文言を返す（カード表示の狭い欄で横線だけの
+    グラフを出さないため）。価格が変動している場合だけインライン SVG の折れ線を返す
+    （外部グラフライブラリ不使用。R1/R3）。座標は数値のみで構成し、ユーザー由来の
     自由文字列を一切埋め込まない（R1: エスケープ対象自体が存在しない設計）。
     """
     valid_points = [
@@ -65,31 +66,27 @@ def _build_price_history_svg(history: list) -> str:
         if not point.get("is_unlimited") and point.get("actual_price") is not None
     ]
     if len(valid_points) < 2:
-        return '<p class="price-history-empty">価格履歴データなし</p>'
+        return "データなし"
 
     prices = [point["actual_price"] for point in valid_points]
     min_price = min(prices)
     max_price = max(prices)
+    if min_price == max_price:
+        return "変動なし"
     n = len(valid_points)
 
     coords = []
     for i, price in enumerate(prices):
         x = i * (_PRICE_HISTORY_SVG_WIDTH / (n - 1))
-        if max_price == min_price:
-            y = _PRICE_HISTORY_SVG_HEIGHT / 2
-        else:
-            y = _PRICE_HISTORY_SVG_HEIGHT - (
-                (price - min_price) / (max_price - min_price) * _PRICE_HISTORY_SVG_HEIGHT
-            )
+        y = _PRICE_HISTORY_SVG_HEIGHT - (
+            (price - min_price) / (max_price - min_price) * _PRICE_HISTORY_SVG_HEIGHT
+        )
         coords.append(f"{x:.1f},{y:.1f}")
     points_attr = " ".join(coords)
 
     # 折れ線は視覚情報のみのため、スクリーンリーダー向けに要約テキストを role="img" +
     # aria-label で持たせる（数値のみで構成しユーザー由来の自由文字列は含めない）。
-    if min_price == max_price:
-        summary = f"価格履歴: 変動なし（¥{prices[-1]:,}、{n}件）"
-    else:
-        summary = f"価格履歴: 最低¥{min_price:,}〜最高¥{max_price:,}、直近¥{prices[-1]:,}（{n}件）"
+    summary = f"価格履歴: 最低¥{min_price:,}〜最高¥{max_price:,}、直近¥{prices[-1]:,}（{n}件）"
     aria_label = html.escape(summary)
 
     return (
@@ -110,6 +107,9 @@ def _build_book_row(book: dict, index: int) -> str:
 
     data-index は「登録順」への並べ替え復元専用（JS側でsortMode==='default'のとき
     この値で再ソートする。並べ替え後にDOM順が入れ替わっても元の順序へ戻せるようにする）。
+
+    表紙・タグ欄・Amazon への遷移は、この行の ASIN を読んでページ側の JS が付け足す
+    （_PAGE_SCRIPT。行そのものには <a> も表紙の <img> も出さない）。
     """
     title = html.escape(book.get("title") or "(タイトル不明)")
     asin = html.escape(book.get("asin") or "")
@@ -125,25 +125,12 @@ def _build_book_row(book: dict, index: int) -> str:
     data_price = "" if is_ku or actual_price is None else str(actual_price)
     data_ku = "1" if is_ku else "0"
 
-    # Amazon商品ページへのリンク（P1: 本を見つけた後、手動でASIN検索しなくて済むように）。
-    # asin は上で既にエスケープ済みの値をそのまま使う（URLパス・可視テキストの両方で
-    # 同一の値なので二重生成しない）。読書メーター経由でASIN未確定の本は asin が空文字
-    # になるため、その場合は壊れたリンク（.../dp/ 単体）を出さずリンク自体を省略する。
-    if asin:
-        link_html = (
-            f'<a href="https://www.amazon.co.jp/dp/{asin}" target="_blank" rel="noopener noreferrer">'
-            f'Amazonで見る<span class="visually-hidden">（{title}）</span></a>'
-        )
-    else:
-        link_html = ""
-
     return (
         f'<tr class="book" data-price="{data_price}" data-ku="{data_ku}" data-index="{index}">'
         f'<td class="col-title">{title}</td>'
         f'<td class="col-asin">{asin}</td>'
         f'<td class="col-price">{price_text}</td>'
         f'<td class="col-history">{history_html}</td>'
-        f'<td class="col-link">{link_html}</td>'
         f"</tr>"
     )
 
@@ -153,19 +140,23 @@ def _build_category_section(section_id: str, heading: str, books: list, empty_me
     section_id / heading は呼び出し元(build_html)が固定リテラルのみを渡す前提
     （ここではエスケープしない。呼び出し元でユーザー由来の値を渡さないこと）。
     heading と empty_message は html.escape() を通す。行の内容は _build_book_row 側でエスケープ済み。
+
+    見出しは上部の分類ボタンと重複するため画面上は隠し、スクリーンリーダー向けにだけ残す。
+    タグ欄の <td> はページ側の JS が行ごとに付け足すため、見出し行にだけ「タグ」列がある。
     """
+    escaped_heading = html.escape(heading)
     if books:
         rows_html = "".join(_build_book_row(book, i) for i, book in enumerate(books))
         list_html = (
             f'<p class="result-count" id="count-{section_id}" aria-live="polite"></p>'
             f'<table class="book-table">'
-            f'<caption class="visually-hidden">{html.escape(heading)}の蔵書一覧</caption>'
+            f'<caption class="visually-hidden">蔵書一覧（{escaped_heading}）</caption>'
             f"<thead><tr>"
             f'<th scope="col">タイトル</th>'
             f'<th scope="col">ASIN</th>'
             f'<th scope="col">価格</th>'
             f'<th scope="col">価格履歴</th>'
-            f'<th scope="col"><span class="visually-hidden">リンク</span></th>'
+            f'<th scope="col">タグ</th>'
             f"</tr></thead>"
             f"<tbody>{rows_html}</tbody>"
             f"</table>"
@@ -177,60 +168,191 @@ def _build_category_section(section_id: str, heading: str, books: list, empty_me
     section_class = "book-section" if visible else "book-section hidden"
     return (
         f'<section id="{section_id}" class="{section_class}" data-category="{section_id}">'
-        f"<h2>{html.escape(heading)}</h2>"
+        f'<h2 class="visually-hidden">{escaped_heading}</h2>'
         f"{list_html}"
         f"</section>"
     )
 
 
-_FILTER_BAR_HTML = (
-    '<div class="filter-bar" role="group" aria-label="表示する分類">'
-    '<button type="button" class="filter-btn" data-target="section-all" aria-pressed="true">全部</button>'
-    '<button type="button" class="filter-btn" data-target="section-wanted" aria-pressed="false">読みたい</button>'
-    '<button type="button" class="filter-btn" data-target="section-purchased" aria-pressed="false">購入済み</button>'
-    "</div>"
-)
+# ページの CSS / 見出し・操作欄 / JS。値はすべて固定リテラルで、ユーザー由来の値は含まない。
+# 公開ページ（PUBLIC_SITE_DIR の index.html）はこの report.py の生成物なので、見た目や操作を
+# 変えるときはここを直してから生成し直す（index.html を直接編集すると次の自動公開で消える）。
+_PAGE_STYLE = r"""
+:root {
+  --color-bg: #f7f7f9;
+  --color-surface: #fff;
+  --color-text: #222;
+  --color-muted: #595959;
+  --color-accent: #0074d9;
+  --color-price: #d1401f;
+  --color-border: #ccc;
+  --color-border-light: #e3e3e8;
+  --color-accent-hover: #0063b8;
+  --space-xs: 0.25rem;
+  --space-sm: 0.4rem;
+  --space-md: 0.6rem;
+  --space-lg: 0.75rem;
+  --space-xl: 1rem;
+  --space-2xl: 1.25rem;
+  --radius-sm: 0.4rem;
+  --radius-md: 0.6rem;
+  --radius-pill: 999px;
+  --font-size-sm: 0.8rem;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --color-tag-wanted: var(--color-accent);
+  --color-tag-unwanted: #767676;
+  --color-tag-purchased: #2e8b57;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 var(--space-xl); background: var(--color-bg); color: var(--color-text); }
+h1 { margin-bottom: var(--space-xl); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.result-count { color: var(--color-muted); font-size: var(--font-size-sm); margin: 0 0 var(--space-sm); }
+.book-table { width: 100%; border-collapse: collapse; background: var(--color-surface); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
+.book-table caption { text-align: left; }
+.book-table th, .book-table td { padding: var(--space-md) var(--space-lg); text-align: left; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+.book-table th { font-size: var(--font-size-sm); color: var(--color-muted); font-weight: 600; }
+.book-table tbody tr:last-child td { border-bottom: none; }
+.book-table tbody tr:hover { background: #f0f4f9; }
+.book-table tbody tr.book { cursor: pointer; }
+.col-title { font-weight: 600; overflow-wrap: anywhere; }
+.col-asin { color: var(--color-muted); font-size: var(--font-size-sm); white-space: nowrap; }
+.col-price { font-weight: bold; white-space: nowrap; color: var(--color-price); }
+.col-history { color: var(--color-muted); font-size: var(--font-size-sm); white-space: nowrap; }
+.price-history-svg { display: block; max-width: 100%; height: auto; }
+.col-tag { white-space: nowrap; }
+.tag-group { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.tag-btn { padding: 0.2rem 0.55rem; font-size: 0.75rem; cursor: pointer; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-muted); white-space: nowrap; }
+.tag-btn:hover { background: var(--color-bg); }
+.tag-btn[aria-pressed="true"] { color: #fff; border-color: transparent; font-weight: 600; }
+.tag-btn-wanted[aria-pressed="true"] { background: var(--color-tag-wanted); }
+.tag-btn-unwanted[aria-pressed="true"] { background: var(--color-tag-unwanted); }
+.tag-btn-purchased[aria-pressed="true"] { background: var(--color-tag-purchased); }
+.empty { color: var(--color-muted); }
+.no-results { color: var(--color-muted); padding: var(--space-lg); text-align: center; }
+.hidden { display: none; }
+.filter-bar { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-lg); }
+.filter-btn { padding: var(--space-sm) 0.8rem; cursor: pointer; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); }
+.filter-btn[aria-pressed="true"] { font-weight: bold; color: #fff; background: var(--color-accent); border-color: var(--color-accent); }
+.controls-bar { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: center; gap: var(--space-sm) var(--space-md); margin-bottom: var(--space-2xl); padding: var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.controls-bar > .ku-filter, .controls-bar > .price-range, .controls-bar > .price-range-error, .controls-bar > .reset-btn { grid-column: 1 / -1; }
+.search-input { width: 100%; min-width: 0; padding: var(--space-sm) var(--space-md) var(--space-sm) 2rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23595959' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E") no-repeat 0.6rem center / 1rem; }
+.sort-select { width: 100%; min-width: 0; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.ku-filter { display: flex; align-items: center; gap: 0.3rem; font-size: var(--font-size-sm); }
+.price-range { display: flex; align-items: center; gap: var(--space-sm); }
+.price-input { flex: 1; min-width: 0; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.reset-btn { width: 100%; padding: var(--space-sm) 0.8rem; cursor: pointer; border: 1px solid var(--color-accent); border-radius: var(--radius-sm); background: var(--color-accent); color: #fff; font-weight: 600; }
+.reset-btn:hover { background: var(--color-accent-hover); }
+.price-range-error { color: var(--color-price); font-size: var(--font-size-sm); width: 100%; margin: 0; }
+.active-filter-notice { color: var(--color-text); font-size: var(--font-size-sm); margin: 0 0 var(--space-sm); }
+.section-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin: 0 0 var(--space-sm); }
+.section-toolbar .result-count { margin: 0; }
+.view-toggle { display: flex; gap: var(--space-xs); }
+.view-toggle-btn { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; padding: 0; cursor: pointer; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-muted); }
+.view-toggle-btn[aria-pressed="true"] { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.view-toggle-btn svg { width: 1rem; height: 1rem; }
+.col-cover img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.view-list .book-table td.col-cover { display: none; }
+.view-grid .book-table { display: block; background: none; border-radius: 0; overflow: visible; box-shadow: none; }
+.view-grid .book-table thead { display: none; }
+.view-grid .book-table tbody { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
+.view-grid .book-table tr.book { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; padding: 0.35rem; background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.view-grid .book-table tr.book:hover { background: #f0f4f9; }
+.view-grid .book-table tr.book.hidden,
+.view-grid .book-table.hidden { display: none; }
+.view-grid .book-table td { display: block; padding: 0; border: none; }
+.view-grid .book-table td.col-cover { display: flex; align-items: center; justify-content: center; height: 4.75rem; margin-bottom: var(--space-xs); }
+.view-grid .col-cover:empty { background: var(--color-bg); border-radius: var(--radius-sm); }
+.view-grid .book-table td.col-title { font-size: var(--font-size-sm); line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.view-grid .col-asin, .view-grid .col-history { font-size: 0.625rem; white-space: normal; overflow-wrap: anywhere; }
+.view-grid .col-asin::before { content: "ASIN: "; }
+.view-grid .col-history::before { content: "価格履歴: "; }
+.view-grid .col-price { font-size: 1rem; white-space: normal; overflow-wrap: anywhere; }
+.view-grid .col-tag { margin-top: auto; padding-top: var(--space-xs); white-space: normal; }
+.view-grid .tag-btn { min-height: 1.5rem; padding: 0.1rem 0.35rem; font-size: 0.65rem; }
+@media (min-width: 641px) {
+  .view-grid .book-table tbody { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+@media (max-width: 640px) {
+  body { margin: 1rem auto; padding: 0 var(--space-lg); }
+  h1 { font-size: 1.4rem; margin: 0 0 var(--space-lg); }
+  .filter-btn, .reset-btn { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
+  .search-input, .sort-select, .price-input { min-height: 2.75rem; }
+  .view-list .book-table thead { display: none; }
+  .view-list .book-table, .view-list .book-table tbody, .view-list .book-table tr, .view-list .book-table td { display: block; width: 100%; }
+  .view-list .book-table tr { border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0; }
+  .view-list .book-table td { border-bottom: none; padding: var(--space-xs) var(--space-sm); }
+  .view-list .col-asin::before { content: "ASIN: "; }
+  .view-list .col-history::before { content: "価格履歴: "; }
+  .view-list .col-tag { margin-top: var(--space-xs); }
+  .view-list .book-table .hidden,
+  .view-list .book-table.hidden { display: none; }
+}
 
-# 検索・並べ替え・詳細フィルタ（KU対象のみ / 価格帯）用のコントロール群。
-# 値はすべて固定リテラルの id/属性のみで、ユーザー由来の値は含まない。
-_CONTROLS_BAR_HTML = (
-    '<div class="controls-bar">'
-    '<label class="visually-hidden" for="search-input">タイトル・ASINで検索</label>'
-    '<input type="search" id="search-input" class="search-input" placeholder="タイトル・ASINで検索" aria-label="タイトル・ASINで検索">'
-    '<label class="visually-hidden" for="sort-select">並べ替え</label>'
-    '<select id="sort-select" class="sort-select" aria-label="並べ替え">'
-    '<option value="default">登録順</option>'
-    '<option value="price-asc">価格が安い順</option>'
-    '<option value="price-desc">価格が高い順</option>'
-    '<option value="title-asc">タイトル順</option>'
-    "</select>"
-    '<label class="ku-filter"><input type="checkbox" id="ku-only-checkbox"> Kindle Unlimited対象のみ</label>'
-    '<div class="price-range">'
-    '<label class="visually-hidden" for="price-min">価格下限</label>'
-    '<input type="number" id="price-min" class="price-input" placeholder="下限" min="0" inputmode="numeric" aria-label="価格下限">'
-    '<span aria-hidden="true">〜</span>'
-    '<label class="visually-hidden" for="price-max">価格上限</label>'
-    '<input type="number" id="price-max" class="price-input" placeholder="上限" min="0" inputmode="numeric" aria-label="価格上限">'
-    "</div>"
-    "</div>"
-)
+"""
 
-_FILTER_TOGGLE_SCRIPT = """<script>
+_PAGE_HEADER_HTML = r"""<h1>蔵書リスト</h1>
+<div class="filter-bar" role="group" aria-label="表示する分類">
+<button type="button" class="filter-btn" data-target="section-all" aria-pressed="true">全部</button>
+<button type="button" class="filter-btn" data-target="section-wanted" aria-pressed="false">読みたい</button>
+<button type="button" class="filter-btn" data-target="section-purchased" aria-pressed="false">購入済み</button>
+</div>
+<div class="controls-bar">
+<label class="visually-hidden" for="search-input">タイトル・ASINで検索</label>
+<input type="search" id="search-input" class="search-input" placeholder="タイトル・ASINで検索" aria-label="タイトル・ASINで検索">
+<label class="visually-hidden" for="sort-select">並べ替え</label>
+<select id="sort-select" class="sort-select" aria-label="並べ替え">
+<option value="default">登録順</option>
+<option value="price-asc">価格が安い順</option>
+<option value="price-desc">価格が高い順</option>
+<option value="title-asc">タイトル順</option>
+</select>
+<label class="ku-filter"><input type="checkbox" id="ku-only-checkbox"> Kindle Unlimited対象のみ</label>
+<div class="price-range">
+<label class="visually-hidden" for="price-min">価格下限</label>
+<input type="number" id="price-min" class="price-input" placeholder="下限" min="0" inputmode="numeric" aria-label="価格下限">
+<span aria-hidden="true">〜</span>
+<label class="visually-hidden" for="price-max">価格上限</label>
+<input type="number" id="price-max" class="price-input" placeholder="上限" min="0" inputmode="numeric" aria-label="価格上限">
+</div>
+<p id="price-range-error" class="price-range-error hidden" role="alert">価格の下限は上限以下にしてください（価格条件は一時的に無視されます）。</p>
+<button type="button" id="reset-controls-button" class="reset-btn">条件をクリア</button>
+</div>
+<p id="active-filter-notice" class="active-filter-notice hidden" role="status">検索・価格条件を適用中です（すべてのタブに共通で適用されます）。</p>"""
+
+_PAGE_SCRIPT = r"""
 function applyControls() {
   var searchInput = document.getElementById('search-input');
   var sortSelect = document.getElementById('sort-select');
   var kuOnlyCheckbox = document.getElementById('ku-only-checkbox');
   var priceMinInput = document.getElementById('price-min');
   var priceMaxInput = document.getElementById('price-max');
-  if (!searchInput || !sortSelect || !kuOnlyCheckbox || !priceMinInput || !priceMaxInput) {
-    return;
-  }
 
   var searchTerm = searchInput.value.trim().toLowerCase();
+  var searchWords = searchTerm.split(/[\s　]+/).filter(function (w) {
+    return w.length > 0;
+  });
   var sortMode = sortSelect.value;
   var kuOnly = kuOnlyCheckbox.checked;
   var priceMin = parseFloat(priceMinInput.value);
   var priceMax = parseFloat(priceMaxInput.value);
+
+  var priceRangeError = document.getElementById('price-range-error');
+  var priceRangeInvalid = !isNaN(priceMin) && !isNaN(priceMax) && priceMin > priceMax;
+  if (priceRangeError) {
+    priceRangeError.classList.toggle('hidden', !priceRangeInvalid);
+  }
+  var hasPriceFilter = !priceRangeInvalid && (!isNaN(priceMin) || !isNaN(priceMax));
+  if (priceRangeInvalid) {
+    priceMin = NaN;
+    priceMax = NaN;
+  }
+
+  var activeFilterNotice = document.getElementById('active-filter-notice');
+  if (activeFilterNotice) {
+    var hasActiveFilter = searchWords.length > 0 || kuOnly || hasPriceFilter;
+    activeFilterNotice.classList.toggle('hidden', !hasActiveFilter);
+  }
 
   document.querySelectorAll('.book-section table').forEach(function (table) {
     var tbody = table.querySelector('tbody');
@@ -249,7 +371,10 @@ function applyControls() {
       var isKu = tr.dataset.ku === '1';
 
       var visible = true;
-      if (searchTerm && title.indexOf(searchTerm) === -1 && asin.indexOf(searchTerm) === -1) {
+      var matchesAllWords = searchWords.every(function (word) {
+        return title.indexOf(word) !== -1 || asin.indexOf(word) !== -1;
+      });
+      if (searchWords.length > 0 && !matchesAllWords) {
         visible = false;
       }
       if (kuOnly && !isKu) {
@@ -267,8 +392,6 @@ function applyControls() {
       }
     });
 
-    // sortMode==='default' のときも常に並べ直すことで、一度他の並べ替えへ変えた後に
-    // 「登録順」へ戻した際、DOM順が変わったままにならないようにする（元の順序へ復元する）。
     var sorted = items.slice().sort(function (a, b) {
       if (sortMode === 'default') {
         return parseInt(a.dataset.index, 10) - parseInt(b.dataset.index, 10);
@@ -338,8 +461,201 @@ document.querySelectorAll('.filter-btn').forEach(function (btn) {
   }
 });
 
+var resetControlsButton = document.getElementById('reset-controls-button');
+if (resetControlsButton) {
+  resetControlsButton.addEventListener('click', function () {
+    document.getElementById('search-input').value = '';
+    document.getElementById('sort-select').value = 'default';
+    document.getElementById('ku-only-checkbox').checked = false;
+    document.getElementById('price-min').value = '';
+    document.getElementById('price-max').value = '';
+    applyControls();
+  });
+}
+
 applyControls();
-</script>"""
+
+var TAG_LABELS = { wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み' };
+var TAG_STORAGE_PREFIX = 'book-tag:';
+
+function getStoredTag(asin) {
+  try {
+    return localStorage.getItem(TAG_STORAGE_PREFIX + asin) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function setStoredTag(asin, tag) {
+  try {
+    if (tag) {
+      localStorage.setItem(TAG_STORAGE_PREFIX + asin, tag);
+    } else {
+      localStorage.removeItem(TAG_STORAGE_PREFIX + asin);
+    }
+  } catch (e) {}
+}
+
+function applyTagState(tr, tag) {
+  tr.dataset.tag = tag || '';
+  tr.querySelectorAll('.tag-btn').forEach(function (btn) {
+    btn.setAttribute('aria-pressed', btn.dataset.tag === tag ? 'true' : 'false');
+  });
+}
+
+document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
+  var asinEl = tr.querySelector('.col-asin');
+  var asin = asinEl ? asinEl.textContent.trim() : '';
+
+  var td = document.createElement('td');
+  td.className = 'col-tag';
+  var group = document.createElement('div');
+  group.className = 'tag-group';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'タグ');
+  Object.keys(TAG_LABELS).forEach(function (key) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tag-btn tag-btn-' + key;
+    btn.textContent = TAG_LABELS[key];
+    btn.dataset.tag = key;
+    btn.setAttribute('aria-pressed', 'false');
+    group.appendChild(btn);
+  });
+  td.appendChild(group);
+  tr.appendChild(td);
+
+  applyTagState(tr, getStoredTag(asin));
+
+  td.addEventListener('click', function (e) {
+    // タグ欄内のタップはボタンを外しても Amazon へ遷移させない（小さいボタンの押し損じ対策）
+    e.stopPropagation();
+    var btn = e.target.closest('.tag-btn');
+    if (!btn) {
+      return;
+    }
+    var next = tr.dataset.tag === btn.dataset.tag ? '' : btn.dataset.tag;
+    applyTagState(tr, next);
+    setStoredTag(asin, next);
+  });
+  td.addEventListener('keydown', function (e) {
+    if (e.target.closest('.tag-btn')) {
+      e.stopPropagation();
+    }
+  });
+});
+
+document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
+  var asinEl = tr.querySelector('.col-asin');
+  var asin = asinEl ? asinEl.textContent.trim() : '';
+  if (!asin) {
+    return;
+  }
+  var url = 'https://www.amazon.co.jp/dp/' + asin;
+  tr.tabIndex = 0;
+  tr.setAttribute('role', 'link');
+  tr.addEventListener('click', function () {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  });
+  tr.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  });
+});
+
+// 表紙は ASIN から Amazon の画像 URL を組み立てる。ASIN 形式に一致しない値は URL に埋め込まない。
+var ASIN_PATTERN = /^[A-Z0-9]{10}$/;
+var COVER_URL_PREFIX = 'https://images-na.ssl-images-amazon.com/images/P/';
+var COVER_URL_SUFFIX = '.09.MZZZZZZZ.jpg';
+
+document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
+  var asinEl = tr.querySelector('.col-asin');
+  var asin = asinEl ? asinEl.textContent.trim() : '';
+
+  var td = document.createElement('td');
+  td.className = 'col-cover';
+  td.setAttribute('aria-hidden', 'true');
+  if (ASIN_PATTERN.test(asin)) {
+    var img = document.createElement('img');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.referrerPolicy = 'no-referrer';
+    // 画像が無い ASIN では 1x1 の透明画像が返るため、読み込めても空扱いにしてプレースホルダを見せる
+    img.addEventListener('load', function () {
+      if (img.naturalWidth <= 1) {
+        img.remove();
+      }
+    });
+    img.addEventListener('error', function () {
+      img.remove();
+    });
+    img.src = COVER_URL_PREFIX + asin + COVER_URL_SUFFIX;
+    td.appendChild(img);
+  }
+  tr.insertBefore(td, tr.firstChild);
+});
+
+var VIEW_STORAGE_KEY = 'book-view';
+var VIEW_LABELS = { grid: 'グリッド表示', list: 'リスト表示' };
+var VIEW_ICONS = {
+  grid: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>',
+  list: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1"/><rect x="1" y="7" width="14" height="2" rx="1"/><rect x="1" y="12" width="14" height="2" rx="1"/></svg>'
+};
+
+function getStoredView() {
+  try {
+    return localStorage.getItem(VIEW_STORAGE_KEY) === 'list' ? 'list' : 'grid';
+  } catch (e) {
+    return 'grid';
+  }
+}
+
+function setStoredView(view) {
+  try {
+    localStorage.setItem(VIEW_STORAGE_KEY, view);
+  } catch (e) {}
+}
+
+function applyView(view) {
+  document.body.classList.toggle('view-grid', view === 'grid');
+  document.body.classList.toggle('view-list', view === 'list');
+  document.querySelectorAll('.view-toggle-btn').forEach(function (btn) {
+    btn.setAttribute('aria-pressed', btn.dataset.view === view ? 'true' : 'false');
+  });
+}
+
+document.querySelectorAll('.book-section .result-count').forEach(function (countEl) {
+  var toolbar = document.createElement('div');
+  toolbar.className = 'section-toolbar';
+  countEl.parentNode.insertBefore(toolbar, countEl);
+  toolbar.appendChild(countEl);
+
+  var group = document.createElement('div');
+  group.className = 'view-toggle';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', '表示形式');
+  Object.keys(VIEW_LABELS).forEach(function (view) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'view-toggle-btn';
+    btn.dataset.view = view;
+    btn.setAttribute('aria-label', VIEW_LABELS[view]);
+    btn.innerHTML = VIEW_ICONS[view];
+    btn.addEventListener('click', function () {
+      applyView(view);
+      setStoredView(view);
+    });
+    group.appendChild(btn);
+  });
+  toolbar.appendChild(group);
+});
+
+applyView(getStoredView());
+
+"""
 
 
 def build_html(books: list) -> str:
@@ -350,8 +666,8 @@ def build_html(books: list) -> str:
     books の各要素が is_wanted / is_purchased フラグを持つ場合、そのフラグに応じて
     「読みたい」「購入済み」セクションにも同じ本が重複して表示される（「全部」セクションは
     フラグに関わらず常に全件を表示する）。任意で book["price_history"]
-    （repository.get_price_history() と同形式の list）を持たせると価格履歴グラフが描画される
-    （持たない場合はプレースホルダー表示になる）。
+    （repository.get_price_history() と同形式の list）を持たせると価格履歴欄に反映される
+    （持たない場合は「データなし」になる）。
 
     タイトル・ASIN・価格表示・価格履歴グラフ座標のエスケープ/無害化は
     _build_book_row() / _build_price_history_svg() が担う（R2 対策）。
@@ -359,95 +675,37 @@ def build_html(books: list) -> str:
     wanted_books = [book for book in books if book.get("is_wanted")]
     purchased_books = [book for book in books if book.get("is_purchased")]
 
-    sections_html = (
-        _build_category_section("section-all", "全部", books, "本はまだ登録されていません。", visible=True)
-        + _build_category_section(
-            "section-wanted", "読みたい", wanted_books, "読みたい本はまだ登録されていません。", visible=False
-        )
-        + _build_category_section(
-            "section-purchased", "購入済み", purchased_books, "購入済みの本はまだ登録されていません。", visible=False
-        )
+    sections_html = "\n".join(
+        [
+            _build_category_section("section-all", "全部", books, "本はまだ登録されていません。", visible=True),
+            _build_category_section(
+                "section-wanted", "読みたい", wanted_books, "読みたい本はまだ登録されていません。", visible=False
+            ),
+            _build_category_section(
+                "section-purchased", "購入済み", purchased_books, "購入済みの本はまだ登録されていません。", visible=False
+            ),
+        ]
     )
 
-    return f"""<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>蔵書リスト</title>
-<style>
-  :root {{
-    --color-bg: #f7f7f9;
-    --color-surface: #fff;
-    --color-text: #222;
-    --color-muted: #595959;
-    --color-accent: #0074d9;
-    --color-price: #d1401f;
-    --color-border: #ccc;
-    --space-xs: 0.25rem;
-    --space-sm: 0.4rem;
-    --space-md: 0.6rem;
-    --space-lg: 0.75rem;
-    --space-xl: 1rem;
-    --space-2xl: 1.25rem;
-    --radius-sm: 0.4rem;
-    --radius-md: 0.6rem;
-    --radius-pill: 999px;
-    --font-size-sm: 0.8rem;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  }}
-  body {{ font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 var(--space-xl); background: var(--color-bg); color: var(--color-text); }}
-  h1 {{ margin-bottom: var(--space-xl); }}
-  .visually-hidden {{ position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }}
-  .result-count {{ color: var(--color-muted); font-size: var(--font-size-sm); margin: 0 0 var(--space-sm); }}
-  .book-table {{ width: 100%; border-collapse: collapse; background: var(--color-surface); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }}
-  .book-table caption {{ text-align: left; }}
-  .book-table th, .book-table td {{ padding: var(--space-md) var(--space-lg); text-align: left; border-bottom: 1px solid var(--color-border); vertical-align: middle; }}
-  .book-table th {{ font-size: var(--font-size-sm); color: var(--color-muted); font-weight: 600; }}
-  .book-table tbody tr:last-child td {{ border-bottom: none; }}
-  .book-table tbody tr:hover {{ background: #f0f4f9; }}
-  .col-title {{ font-weight: 600; }}
-  .col-asin {{ color: var(--color-muted); font-size: var(--font-size-sm); white-space: nowrap; }}
-  .col-price {{ font-weight: bold; white-space: nowrap; color: var(--color-price); }}
-  .col-history {{ color: var(--color-muted); font-size: var(--font-size-sm); white-space: nowrap; }}
-  .col-link a {{ white-space: nowrap; }}
-  .empty {{ color: var(--color-muted); }}
-  .price-history-svg {{ display: block; }}
-  .price-history-empty {{ color: var(--color-muted); font-size: var(--font-size-sm); }}
-  .no-results {{ color: var(--color-muted); padding: var(--space-lg); text-align: center; }}
-  .hidden {{ display: none; }}
-  .filter-bar {{ display: flex; gap: var(--space-sm); margin-bottom: var(--space-lg); }}
-  .filter-btn {{ padding: var(--space-sm) 0.8rem; cursor: pointer; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); }}
-  .filter-btn[aria-pressed="true"] {{ font-weight: bold; color: #fff; background: var(--color-accent); border-color: var(--color-accent); }}
-  .controls-bar {{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-md); margin-bottom: var(--space-2xl); padding: var(--space-lg); background: var(--color-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }}
-  .search-input {{ flex: 1 1 200px; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }}
-  .sort-select {{ padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }}
-  .ku-filter {{ display: flex; align-items: center; gap: 0.3rem; white-space: nowrap; font-size: 0.9rem; }}
-  .price-range {{ display: flex; align-items: center; gap: var(--space-sm); }}
-  .price-input {{ width: 5rem; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }}
-  @media (max-width: 480px) {{
-    .controls-bar {{ flex-direction: column; align-items: stretch; }}
-    .price-input {{ width: auto; flex: 1; }}
-    .book-table thead {{ display: none; }}
-    .book-table, .book-table tbody, .book-table tr, .book-table td {{ display: block; width: 100%; }}
-    .book-table tr {{ border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0; }}
-    .book-table td {{ border-bottom: none; padding: var(--space-xs) 0; }}
-    .col-asin::before {{ content: "ASIN: "; }}
-    .col-history::before {{ content: "価格履歴: "; }}
-    .book-table .hidden,
-    .book-table.hidden {{ display: none; }}
-  }}
-</style>
-</head>
-<body>
-<h1>蔵書リスト</h1>
-{_FILTER_BAR_HTML}
-{_CONTROLS_BAR_HTML}
-{sections_html}
-{_FILTER_TOGGLE_SCRIPT}
-</body>
-</html>
-"""
+    return (
+        "<!DOCTYPE html>\n"
+        "<!-- このファイルは kindle_system の report.py が生成する。直接編集すると次の自動公開で消えるため、変更は report.py に入れること -->\n"
+        '<html lang="ja">\n'
+        "<head>\n"
+        '<meta charset="UTF-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        "<title>蔵書リスト</title>\n"
+        '<link rel="icon" type="image/svg+xml" href="favicon.svg">\n'
+        f"<style>\n{_PAGE_STYLE}</style>\n"
+        "</head>\n"
+        '<body class="view-grid">\n'
+        f"{_PAGE_HEADER_HTML}\n"
+        f"{sections_html}\n"
+        "\n"
+        f"<script>\n{_PAGE_SCRIPT}</script>\n"
+        "</body>\n"
+        "</html>\n"
+    )
 
 
 def _load_env_file(env_path: str) -> None:
