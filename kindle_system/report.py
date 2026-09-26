@@ -161,7 +161,7 @@ def _build_category_section(section_id: str, heading: str, books: list, empty_me
             f"<tbody>{rows_html}</tbody>"
             f"</table>"
             f'<p class="no-results hidden" role="status">'
-            f"条件に一致する本がありません。検索語や価格条件を見直してください。</p>"
+            f"条件に一致する本がありません。検索語・タグ・価格の条件を見直してください。</p>"
         )
     else:
         list_html = f'<p class="empty">{html.escape(empty_message)}</p>'
@@ -235,9 +235,9 @@ h1 { margin-bottom: var(--space-xl); }
 .filter-btn { padding: var(--space-sm) 0.8rem; cursor: pointer; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); }
 .filter-btn[aria-pressed="true"] { font-weight: bold; color: #fff; background: var(--color-accent); border-color: var(--color-accent); }
 .controls-bar { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: center; gap: var(--space-sm) var(--space-md); margin-bottom: var(--space-2xl); padding: var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
-.controls-bar > .ku-filter, .controls-bar > .price-range, .controls-bar > .price-range-error, .controls-bar > .reset-btn { grid-column: 1 / -1; }
+.controls-bar > .ku-filter, .controls-bar > .tag-filter-select, .controls-bar > .price-range, .controls-bar > .price-range-error, .controls-bar > .reset-btn { grid-column: 1 / -1; }
 .search-input { width: 100%; min-width: 0; padding: var(--space-sm) var(--space-md) var(--space-sm) 2rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23595959' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E") no-repeat 0.6rem center / 1rem; }
-.sort-select { width: 100%; min-width: 0; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.sort-select, .tag-filter-select { width: 100%; min-width: 0; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
 .ku-filter { display: flex; align-items: center; gap: 0.3rem; font-size: var(--font-size-sm); }
 .price-range { display: flex; align-items: center; gap: var(--space-sm); }
 .price-input { flex: 1; min-width: 0; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
@@ -277,7 +277,7 @@ h1 { margin-bottom: var(--space-xl); }
   body { margin: 1rem auto; padding: 0 var(--space-lg); }
   h1 { font-size: 1.4rem; margin: 0 0 var(--space-lg); }
   .filter-btn, .reset-btn { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
-  .search-input, .sort-select, .price-input { min-height: 2.75rem; }
+  .search-input, .sort-select, .tag-filter-select, .price-input { min-height: 2.75rem; }
   .view-list .book-table thead { display: none; }
   .view-list .book-table, .view-list .book-table tbody, .view-list .book-table tr, .view-list .book-table td { display: block; width: 100%; }
   .view-list .book-table tr { border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0; }
@@ -308,6 +308,15 @@ _PAGE_HEADER_HTML = r"""<h1>蔵書リスト</h1>
 <option value="title-asc">タイトル順</option>
 </select>
 <label class="ku-filter"><input type="checkbox" id="ku-only-checkbox"> Kindle Unlimited対象のみ</label>
+<label class="visually-hidden" for="tag-filter-select">タグで絞り込み</label>
+<select id="tag-filter-select" class="tag-filter-select" aria-label="タグで絞り込み">
+<option value="all">タグ: すべて</option>
+<option value="hide-unwanted">タグ: 「読みたくない」を隠す</option>
+<option value="wanted">タグ: 読みたいのみ</option>
+<option value="unwanted">タグ: 読みたくないのみ</option>
+<option value="purchased">タグ: 購入済みのみ</option>
+<option value="untagged">タグ: タグなしのみ</option>
+</select>
 <div class="price-range">
 <label class="visually-hidden" for="price-min">価格下限</label>
 <input type="number" id="price-min" class="price-input" placeholder="下限" min="0" inputmode="numeric" aria-label="価格下限">
@@ -318,7 +327,7 @@ _PAGE_HEADER_HTML = r"""<h1>蔵書リスト</h1>
 <p id="price-range-error" class="price-range-error hidden" role="alert">価格の下限は上限以下にしてください（価格条件は一時的に無視されます）。</p>
 <button type="button" id="reset-controls-button" class="reset-btn">条件をクリア</button>
 </div>
-<p id="active-filter-notice" class="active-filter-notice hidden" role="status">検索・価格条件を適用中です（すべてのタブに共通で適用されます）。</p>"""
+<p id="active-filter-notice" class="active-filter-notice hidden" role="status">検索・タグ・価格の条件を適用中です（すべてのタブに共通で適用されます）。</p>"""
 
 _PAGE_SCRIPT = r"""
 function applyControls() {
@@ -327,6 +336,7 @@ function applyControls() {
   var kuOnlyCheckbox = document.getElementById('ku-only-checkbox');
   var priceMinInput = document.getElementById('price-min');
   var priceMaxInput = document.getElementById('price-max');
+  var tagFilterSelect = document.getElementById('tag-filter-select');
 
   var searchTerm = searchInput.value.trim().toLowerCase();
   var searchWords = searchTerm.split(/[\s　]+/).filter(function (w) {
@@ -336,6 +346,7 @@ function applyControls() {
   var kuOnly = kuOnlyCheckbox.checked;
   var priceMin = parseFloat(priceMinInput.value);
   var priceMax = parseFloat(priceMaxInput.value);
+  var tagFilter = tagFilterSelect ? tagFilterSelect.value : 'all';
 
   var priceRangeError = document.getElementById('price-range-error');
   var priceRangeInvalid = !isNaN(priceMin) && !isNaN(priceMax) && priceMin > priceMax;
@@ -350,7 +361,7 @@ function applyControls() {
 
   var activeFilterNotice = document.getElementById('active-filter-notice');
   if (activeFilterNotice) {
-    var hasActiveFilter = searchWords.length > 0 || kuOnly || hasPriceFilter;
+    var hasActiveFilter = searchWords.length > 0 || kuOnly || hasPriceFilter || tagFilter !== 'all';
     activeFilterNotice.classList.toggle('hidden', !hasActiveFilter);
   }
 
@@ -378,6 +389,9 @@ function applyControls() {
         visible = false;
       }
       if (kuOnly && !isKu) {
+        visible = false;
+      }
+      if (!matchesTagFilter(tr.dataset.tag || '', tagFilter)) {
         visible = false;
       }
       if (!isNaN(priceMin) && (price === null || price < priceMin)) {
@@ -431,6 +445,19 @@ function applyControls() {
   });
 }
 
+function matchesTagFilter(tag, filter) {
+  if (filter === 'hide-unwanted') {
+    return tag !== 'unwanted';
+  }
+  if (filter === 'untagged') {
+    return tag === '';
+  }
+  if (filter === 'wanted' || filter === 'unwanted' || filter === 'purchased') {
+    return tag === filter;
+  }
+  return true;
+}
+
 document.querySelectorAll('.filter-btn').forEach(function (btn) {
   btn.addEventListener('click', function () {
     var target = document.getElementById(btn.dataset.target);
@@ -469,6 +496,11 @@ if (resetControlsButton) {
     document.getElementById('ku-only-checkbox').checked = false;
     document.getElementById('price-min').value = '';
     document.getElementById('price-max').value = '';
+    var tagFilterSelect = document.getElementById('tag-filter-select');
+    if (tagFilterSelect) {
+      tagFilterSelect.value = 'all';
+    }
+    setStoredTagFilter('all');
     applyControls();
   });
 }
@@ -477,6 +509,27 @@ applyControls();
 
 var TAG_LABELS = { wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み' };
 var TAG_STORAGE_PREFIX = 'book-tag:';
+var TAG_FILTER_STORAGE_KEY = 'book-tag-filter';
+// 同じ本は「全部」と「読みたい」等の複数タブに行があるため、タグの変更は同じ ASIN の全行へ反映する
+var rowsByAsin = {};
+
+function getStoredTagFilter() {
+  try {
+    return localStorage.getItem(TAG_FILTER_STORAGE_KEY) || 'all';
+  } catch (e) {
+    return 'all';
+  }
+}
+
+function setStoredTagFilter(filter) {
+  try {
+    if (filter && filter !== 'all') {
+      localStorage.setItem(TAG_FILTER_STORAGE_KEY, filter);
+    } else {
+      localStorage.removeItem(TAG_FILTER_STORAGE_KEY);
+    }
+  } catch (e) {}
+}
 
 function getStoredTag(asin) {
   try {
@@ -526,6 +579,9 @@ document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
   tr.appendChild(td);
 
   applyTagState(tr, getStoredTag(asin));
+  if (asin) {
+    (rowsByAsin[asin] = rowsByAsin[asin] || []).push(tr);
+  }
 
   td.addEventListener('click', function (e) {
     // タグ欄内のタップはボタンを外しても Amazon へ遷移させない（小さいボタンの押し損じ対策）
@@ -535,8 +591,15 @@ document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
       return;
     }
     var next = tr.dataset.tag === btn.dataset.tag ? '' : btn.dataset.tag;
-    applyTagState(tr, next);
+    (asin ? rowsByAsin[asin] : [tr]).forEach(function (row) {
+      applyTagState(row, next);
+    });
     setStoredTag(asin, next);
+    // 並べ替えで行を入れ直すとフォーカスが外れるため、押したボタンが見えたままなら戻す（キーボード操作向け）
+    applyControls();
+    if (!btn.closest('.hidden')) {
+      btn.focus();
+    }
   });
   td.addEventListener('keydown', function (e) {
     if (e.target.closest('.tag-btn')) {
@@ -544,6 +607,21 @@ document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
     }
   });
 });
+
+var tagFilterSelectEl = document.getElementById('tag-filter-select');
+if (tagFilterSelectEl) {
+  var storedTagFilter = getStoredTagFilter();
+  var isKnownTagFilter = Array.prototype.some.call(tagFilterSelectEl.options, function (option) {
+    return option.value === storedTagFilter;
+  });
+  tagFilterSelectEl.value = isKnownTagFilter ? storedTagFilter : 'all';
+  tagFilterSelectEl.addEventListener('change', function () {
+    setStoredTagFilter(tagFilterSelectEl.value);
+    applyControls();
+  });
+}
+// タグは上で各行に付けたので、保存済みのタグ絞り込みを含めてもう一度適用する
+applyControls();
 
 document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
   var asinEl = tr.querySelector('.col-asin');

@@ -391,6 +391,28 @@ class PublishedPageStructureTest(unittest.TestCase):
         self.assertIn("COVER_URL_PREFIX", html)
         self.assertIn("VIEW_STORAGE_KEY", html)
 
+    def test_tag_filter_select_has_all_options(self):
+        """付けたタグ（ブラウザ保存）で一覧を絞り込む選択欄があり、初期値は「すべて」であること。"""
+        html = report.build_html([])
+        self.assertIn('<select id="tag-filter-select"', html)
+        values = re.findall(
+            r'<option value="([^"]+)">タグ: ',
+            re.search(r'<select id="tag-filter-select".*?</select>', html, re.S).group(0),
+        )
+        self.assertEqual(values, ["all", "hide-unwanted", "wanted", "unwanted", "purchased", "untagged"])
+
+    def test_script_applies_tag_filter_and_remembers_it(self):
+        html = report.build_html([self._book()])
+        self.assertIn("function matchesTagFilter(", html)
+        self.assertIn("TAG_FILTER_STORAGE_KEY", html)
+        self.assertIn("rowsByAsin", html)  # 同じ本の別タブの行にもタグを反映する
+
+    def test_notice_and_no_results_mention_tag_condition(self):
+        """タグで絞り込んで 0 件になったとき、見直す条件にタグが含まれると分かること。"""
+        html = report.build_html([self._book()])
+        self.assertIn("検索・タグ・価格の条件を適用中です", html)
+        self.assertIn("検索語・タグ・価格の条件を見直してください。", _extract_section_html(html, "section-all"))
+
 
 class MainIntegrationTest(unittest.TestCase):
     """main() が get_books/get_price_history の結果をbuild_htmlへ正しく配線することのテスト。
