@@ -2,7 +2,7 @@
 import { html } from '../html.js';
 import { bookHighlights, dailyPicks, libraryStats, listBooks, searchHighlights, SOURCES } from '../../core/model.js';
 import { vaultPaths } from '../../core/obsidian.js';
-import { bookRow, highlightCard, lineIndex, sourceBadge, spineColor } from '../ui.js';
+import { bookRow, highlightCard, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
 
 const flow = html`<div class="flow" aria-label="点から立体へ">
   <div class="f-point"><b>点</b>線を引いた一文</div>
@@ -84,6 +84,7 @@ export const books = {
       return html`<a class="chip ${on ? 'on' : ''}" href="#/books?${params}">${label}</a>`;
     };
     return html`<div class="page-head"><div><h1>本</h1><div class="sub">${list.length} 冊</div></div><a class="btn small" href="#/import">＋ 取り込む</a></div>
+      ${shelfSwitch('books')}
       <form class="search-box" data-form="book-filter" role="search"><input type="search" name="q" value="${query.get('q') || ''}" placeholder="書名・著者で絞り込む" aria-label="書名・著者で絞り込む"></form>
       <div class="chips">${chip('source', '', 'すべて')}${chip('source', 'kindle', 'Kindle')}${chip('source', 'playbooks', 'Play Books')}</div>
       <div class="chips" style="margin-top:6px">${chip('sort', 'recent', '最近')}${chip('sort', 'title', '書名')}${chip('sort', 'count', '点の数')}</div>
