@@ -39,12 +39,13 @@ from src.book_kind import KIND_BOOK, KIND_MANGA
 from src.bookmeter_sync import sync_bookmeter_wishlist
 from src.repository import get_book_marks, get_books, import_marks, set_wanted, set_purchased
 
-# 公開ページの「見た・評価を書き出す」が作るファイル（report.py の MARKS_FILE_FORMAT / ファイル名と揃える）
+# 欲しい本の画面（book-highlights の web/core/wishlist.js の marksFile）の「見た・評価を書き出す」が作るファイル
 MARKS_FILE_FORMAT = "kindle-marks"
 MARKS_FILE_GLOB = "kindle-marks-*.json"
 
-# report.main() が PUBLIC_SITE_DIR に書き出し、publish() が公開するファイル
-PUBLISHED_FILES = ["index.html", "wishlist.json"]
+# report.main() が PUBLIC_SITE_DIR に書き出し、publish() が公開するファイル。
+# 公開リポジトリの index.html は book-highlights の欲しい本の画面へ移動する静的ページなので触らない。
+PUBLISHED_FILES = ["wishlist.json"]
 
 
 def publish() -> None:

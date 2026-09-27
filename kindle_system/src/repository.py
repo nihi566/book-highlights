@@ -718,9 +718,9 @@ def get_or_create_by_paid_asin(
     return new_book
 
 
-# 公開ページのタグ（report.py の TAG_LABELS と同じキー）。"seen" は「見た」。
+# 欲しい本の画面のタグ（book-highlights の web/core/wishlist.js の TAG_LABELS と同じキー）。"seen" は「見た」。
 MARK_TAGS = ("wanted", "unwanted", "purchased", "seen")
-# タイトルが無い本に公開ページが出す表示（report.py）。書き出しファイルに載っても題名として扱わない
+# タイトルが無い本に wishlist.json が載せる題名（report.py）。書き出しファイルに載っても題名として扱わない
 UNKNOWN_TITLE = "(タイトル不明)"
 _MARK_ASIN_PATTERN = re.compile(r"[A-Z0-9]{10}")
 _MARK_TITLE_MAX_LENGTH = 300

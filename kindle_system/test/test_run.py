@@ -131,9 +131,9 @@ class PublishGitSequenceTest(unittest.TestCase):
         self.assertEqual(
             called_cmds,
             [
-                ["git", "add", "index.html", "wishlist.json"],
-                ["git", "diff", "--cached", "--quiet", "--", "index.html", "wishlist.json"],
-                ["git", "commit", "-m", "chore: update wishlist", "-q", "--", "index.html", "wishlist.json"],
+                ["git", "add", "wishlist.json"],
+                ["git", "diff", "--cached", "--quiet", "--", "wishlist.json"],
+                ["git", "commit", "-m", "chore: update wishlist", "-q", "--", "wishlist.json"],
                 ["git", "push", "-q"],
             ],
         )
@@ -156,8 +156,8 @@ class PublishGitSequenceTest(unittest.TestCase):
         self.assertEqual(
             called_cmds,
             [
-                ["git", "add", "index.html", "wishlist.json"],
-                ["git", "diff", "--cached", "--quiet", "--", "index.html", "wishlist.json"],
+                ["git", "add", "wishlist.json"],
+                ["git", "diff", "--cached", "--quiet", "--", "wishlist.json"],
                 ["git", "push", "-q"],
             ],
         )
@@ -175,7 +175,7 @@ class PublishGitSequenceTest(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
         called_cmds = [call.args[0] for call in mock_subprocess_run.call_args_list]
-        self.assertEqual(called_cmds, [["git", "add", "index.html", "wishlist.json"]])
+        self.assertEqual(called_cmds, [["git", "add", "wishlist.json"]])
 
     @patch("run.subprocess.run")
     @patch("run.report.main")
@@ -195,9 +195,9 @@ class PublishGitSequenceTest(unittest.TestCase):
         self.assertEqual(
             called_cmds,
             [
-                ["git", "add", "index.html", "wishlist.json"],
-                ["git", "diff", "--cached", "--quiet", "--", "index.html", "wishlist.json"],
-                ["git", "commit", "-m", "chore: update wishlist", "-q", "--", "index.html", "wishlist.json"],
+                ["git", "add", "wishlist.json"],
+                ["git", "diff", "--cached", "--quiet", "--", "wishlist.json"],
+                ["git", "commit", "-m", "chore: update wishlist", "-q", "--", "wishlist.json"],
             ],
         )
 

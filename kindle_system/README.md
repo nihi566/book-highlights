@@ -52,7 +52,7 @@ python run.py purchase <asin> --off
 
 `run.py sync` は内部でレポート生成と公開（git commit・push）の両方を行うが、
 `report.py` は単体でも実行できる。ただし **`report.py` 単体では公開は行われない**
-（`PUBLIC_SITE_DIR` 直下に `index.html` を書き出すだけで git 操作はしない）。
+（`PUBLIC_SITE_DIR` 直下に `wishlist.json` を書き出すだけで git 操作はしない）。
 クロールをやり直さずに公開だけをやり直す CLI コマンドは現状無いため、
 再公開が必要な場合は `python run.py sync` を実行する。
 
@@ -60,10 +60,17 @@ python run.py purchase <asin> --off
 python report.py
 ```
 
-蔵書一覧（読みたい本 / 購入済み本 / 全部）と価格履歴を `PUBLIC_SITE_DIR` 直下の
-`index.html` として書き出す。
+蔵書一覧（読みたい本 / 購入済み本 / 全部）を `PUBLIC_SITE_DIR` 直下の
+`wishlist.json`（データだけ。形式 `kindle-wishlist` v1）として書き出す。
+
+画面は持たない。欲しい本の一覧は book-highlights アプリの本タブ「欲しい本」
+（https://nihi566.github.io/book-highlights/#/wishlist）が同じオリジンからこの `wishlist.json` を読んで表示する。
+見た目・操作を変えるときは book-highlights を直す。公開リポジトリの `index.html` はその画面へ移動する
+静的ページで、`report.py` / `run.py sync` は触らない。
 
 ### 「見た」・★評価とローカル LLM のおすすめ
+
+以下の「公開ページ」は、book-highlights アプリの欲しい本の画面を指す（タグの保存先・書き出しファイルの形式は旧画面と同じ）。
 
 公開ページのカードでは、タグ（読みたい / 読みたくない / 購入済み / **見た**）に加えて、
 「見た」を選んだ本に **★1〜5 の評価** を付けられる（同じ★をもう一度押すと取り消し）。
