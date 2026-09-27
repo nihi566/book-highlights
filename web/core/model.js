@@ -28,9 +28,12 @@ export function highlightIdFor(bookId, text) {
   return 'h' + hash(bookId + '|' + normalizeText(text));
 }
 
-/** パース結果をライブラリに取り込む。ユーザーの編集（お気に入り・タグ・メモ・削除）は保持する */
-export function mergeParsed(library, parsedBooks, { now = new Date().toISOString() } = {}) {
-  const stats = { books: 0, booksAdded: 0, added: 0, updated: 0, unchanged: 0, skippedDeleted: 0 };
+/**
+ * パース結果をライブラリに取り込む。ユーザーの編集（お気に入り・タグ・メモ・削除）は保持する
+ * reviveDeleted: 削除済みの本を復活させるか（自動取り込みでは false。消した本が勝手に戻らないように）
+ */
+export function mergeParsed(library, parsedBooks, { now = new Date().toISOString(), reviveDeleted = true } = {}) {
+  const stats = { books: 0, booksAdded: 0, added: 0, updated: 0, unchanged: 0, skippedDeleted: 0, skippedDeletedBooks: 0 };
   for (const pb of parsedBooks) {
     // 書名・著者は 1 行にする（改行入りの書名で Markdown の見出しが崩れないように）
     const title = cleanText(pb.title).replace(/\s+/g, ' ');
@@ -48,6 +51,10 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
       };
       stats.booksAdded++;
     } else if (book.deleted) {
+      if (!reviveDeleted) {
+        stats.skippedDeletedBooks++;
+        continue;
+      }
       // 削除済みの本に再取り込みがあった場合は、本と一緒に消した点ごと復活させる（明示的な取り込み操作のため）
       delete book.deleted;
       book.updatedAt = now;

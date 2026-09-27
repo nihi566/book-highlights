@@ -5,7 +5,8 @@
 //   bh obsidian                    Obsidian の Vault に書き出す
 //   bh analyze                     ローカル LLM で 点→線→面→立体 を分析し、おすすめの本を選ぶ
 //   bh recommend                   おすすめの本だけ選び直す
-//   bh serve                       コンパニオンサーバを起動（Web アプリ + 同期 + LLM 中継）
+//   bh serve                       コンパニオンサーバを起動（Web アプリ + 同期 + LLM 中継 + Play ブックスの自動取り込み）
+//   bh google login|sync|logout    Play ブックスのメモ（Google ドライブ）との連携
 //   bh list / bh search <語>       一覧・検索
 //   bh config [キー 値]            設定の表示・変更
 
@@ -13,6 +14,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createStore, writeVault } from './store.js';
 import { createCompanionServer, summarizePlan } from './server.js';
+import { createGoogleClient, describeSync, isFolderId, MIN_INTERVAL_SEC, startDriveWatcher } from './google.js';
 import { SOURCES, listBooks, libraryStats, mergeLibraries, mergeParsed, searchHighlights } from '../web/core/model.js';
 import { parseFiles } from '../web/core/parsers/index.js';
 import { createLlmClient } from '../web/core/analysis/llm.js';
@@ -26,7 +28,10 @@ const HELP = `使い方: bh <コマンド> [オプション]
   obsidian [--dry-run]                Obsidian の Vault に書き出す
   analyze [--no-recommend]            ローカル LLM で 点→線→面→立体 を分析（結果は Vault にも書き出す）
   recommend                           おすすめの本を選び直す
-  serve [--port 8787] [--host 127.0.0.1]  コンパニオンサーバを起動
+  serve [--port 8787] [--host 127.0.0.1]  コンパニオンサーバを起動（Google にログイン済みなら Play ブックスの線を自動で取り込む）
+  google login                        Google にログインする（ドライブの読み取りだけを許可）
+  google sync                         Play ブックスのメモを今すぐ取り込む
+  google logout                       ログアウトする（Google 側の許可も取り消す）
   list                                本の一覧
   search <語...>                       ハイライトを検索
   config                              設定を表示
@@ -37,6 +42,9 @@ const HELP = `使い方: bh <コマンド> [オプション]
   config embed <名前>                 埋め込みモデル（例: bge-m3。空なら文字 n-gram で代用）
   config origin <URL>                 接続を許可する Web アプリのオリジン（GitHub Pages など）を追加
   config token <文字列>               API にトークンを要求する（インターネットに公開する場合は必須）
+  config google-client <ID> <シークレット>  Google Cloud で作った OAuth クライアント（種類: デスクトップ アプリ）
+  config google-folder <フォルダ ID>  「Play ブックスのメモ」フォルダを名前で探せないときに指定（空で自動に戻す）
+  config google-interval <秒>         ドライブを確認する間隔（既定: 60、最短 ${MIN_INTERVAL_SEC}）
 
 環境変数 BH_DATA でデータの保存先（既定: リポジトリの data/）を変えられます。`;
 
@@ -122,13 +130,32 @@ async function main() {
       const cfg = await store.config();
       const port = Number(args.port || cfg.port);
       const host = args.host || cfg.host;
-      const server = createCompanionServer({ store });
+      const drive = startDriveWatcher({ store, client: createGoogleClient({ store }) });
+      const server = createCompanionServer({ store, drive });
       server.listen(port, host, () => {
         console.log(`コンパニオンサーバ: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
         console.log(`  LLM: ${cfg.llm.baseUrl}（チャット: ${cfg.llm.chatModel || '未設定'} / 埋め込み: ${cfg.llm.embedModel || '文字 n-gram'}）`);
         console.log(`  Vault: ${cfg.vault || '未設定'}`);
+        console.log(`  Play ブックス: ${cfg.google.clientId ? `${Math.max(MIN_INTERVAL_SEC, cfg.google.intervalSec)} 秒ごとに Google ドライブを確認` : '未設定（docs/setup.md の「Play ブックスの自動取り込み」）'}`);
         console.log(`  スマホから使うには: tailscale serve --bg ${port}`);
       });
+      break;
+    }
+    case 'google': {
+      const client = createGoogleClient({ store });
+      const [sub] = rest;
+      if (sub === 'login') {
+        // 取り込みはここでは行わない（動いている bh serve と同時に library.json を書くと、片方の更新が消えるため）
+        await client.login();
+        console.log('ログインしました。bh serve が次の確認から Play ブックスの線を取り込みます（bh serve を使わない場合は bh google sync）');
+      } else if (sub === 'sync') {
+        const r = await client.sync();
+        console.log(describeSync(r));
+        for (const e of r.errors) console.log(`  ! ${e}`);
+      } else if (sub === 'logout') {
+        await client.logout();
+        console.log('ログアウトしました');
+      } else throw new Error('使い方: bh google login | sync | logout');
       break;
     }
     case 'list': {
@@ -150,7 +177,8 @@ async function main() {
       const [key, ...vals] = rest;
       const value = vals.join(' ');
       if (!key) {
-        console.log(JSON.stringify({ ...cfg, token: cfg.token ? '(設定済み)' : '' }, null, 2));
+        const hidden = (v) => (v ? '(設定済み)' : '');
+        console.log(JSON.stringify({ ...cfg, token: hidden(cfg.token), google: { ...cfg.google, clientSecret: hidden(cfg.google.clientSecret) } }, null, 2));
         console.log(`データ: ${store.dataDir}`);
         break;
       }
@@ -164,6 +192,20 @@ async function main() {
         token: () => (cfg.token = value),
         port: () => (cfg.port = Number(value)),
         host: () => (cfg.host = value),
+        'google-client': () => {
+          const [clientId, clientSecret = ''] = vals;
+          if (!clientId) throw new Error('使い方: bh config google-client <クライアント ID> <クライアント シークレット>');
+          Object.assign(cfg.google, { clientId, clientSecret });
+        },
+        'google-folder': () => {
+          if (value && !isFolderId(value)) throw new Error('フォルダ ID の形式ではありません（ドライブでフォルダを開いた URL の folders/ の後ろの文字列）');
+          cfg.google.folderId = value;
+        },
+        'google-interval': () => {
+          const sec = Number(value);
+          if (!Number.isFinite(sec) || sec < MIN_INTERVAL_SEC) throw new Error(`${MIN_INTERVAL_SEC} 秒以上を指定してください`);
+          cfg.google.intervalSec = sec;
+        },
       };
       if (!setters[key]) throw new Error(`不明な設定: ${key}`);
       setters[key]();

@@ -50,13 +50,50 @@ node cli/bh.js serve
 | `bh obsidian [--dry-run]` | Vault に書き出し |
 | `bh analyze [--no-recommend]` | 点→線→面→立体の分析とおすすめ（結果は Vault にも書き出し） |
 | `bh recommend` | おすすめだけ選び直す |
-| `bh serve [--port 8787] [--host 127.0.0.1]` | コンパニオンサーバ |
+| `bh serve [--port 8787] [--host 127.0.0.1]` | コンパニオンサーバ（Google にログイン済みなら Play ブックスを自動取り込み。3.5 節） |
 | `bh list` / `bh search <語>` | 一覧・検索 |
 | `bh config` | 設定の表示（`data/config.json`） |
 
 データは既定でリポジトリの `data/`（`.gitignore` 済み）に保存されます。`BH_DATA=/path` で変更できます。
 
 常駐させたい場合は、macOS なら launchd、Windows ならタスク スケジューラ、Linux なら systemd のユーザーサービスで `node /path/to/cli/bh.js serve` を起動します。
+
+## 3.5 Play ブックスの自動取り込み（Google ドライブ）
+
+Play ブックスで線を引くと、Google がドライブの「Play ブックスのメモ」フォルダにある本ごとのドキュメントを書き換えます。`bh serve` がそのフォルダを定期的に確認し、更新されたドキュメントだけを取り込みます（Vault が設定されていれば Obsidian にも書き出します）。スマホの Web アプリには PC との同期で届きます（開いている間は、PC に新しい線が入ったときに自動で同期します）。
+
+```
+Play ブックスで線を引く
+  → Google がドキュメントを更新（数分かかることがある。間隔は Google 次第）
+  → bh serve が確認（既定 60 秒ごと）して取り込み・Obsidian へ書き出し
+  → Web アプリが PC と同期
+```
+
+### 準備（1 回だけ）
+
+1. Play ブックスの設定で「**メモ、ハイライト、しおりを Google ドライブに保存**」をオンにする
+2. [Google Cloud コンソール](https://console.cloud.google.com/) でプロジェクトを作り、「API とサービス → ライブラリ」で **Google Drive API** を有効にする
+3. 「Google Auth Platform（OAuth 同意画面）」を作る
+   - 対象: **外部**。テストユーザーに自分の Google アカウントを追加する
+   - 公開ステータスが「**テスト**」のままだと、ログインが **7 日で切れます**。自分だけで使うなら「**アプリを公開**」で「本番」にしてください（ログイン時に「Google で確認されていないアプリ」と出るので、「詳細 → （安全ではないページ）に移動」で進みます）
+4. 「クライアント」で **OAuth クライアント ID** を作る。種類は「**デスクトップ アプリ**」
+5. PC で:
+   ```sh
+   node cli/bh.js config google-client <クライアント ID> <クライアント シークレット>
+   node cli/bh.js google login     # ブラウザが開くので、ドライブの「表示」を許可する
+   node cli/bh.js serve            # 以後、60 秒ごとに確認
+   ```
+
+- 求める権限は「ドライブのファイルの表示」（`drive.readonly`）だけです。ドライブには何も書き込みません
+- ログインの鍵（リフレッシュトークン）は `data/google-token.json` に保存されます。このファイルを人に渡さないでください。やめるときは `bh google logout`（Google 側の許可も取り消します）
+- 取り込みの状況は `bh serve` のログと、Web アプリの「設定 → AI → 接続を確認」に出ます
+
+| コマンド | 内容 |
+| --- | --- |
+| `bh google login` / `logout` | ログイン・ログアウト |
+| `bh google sync` | 今すぐ 1 回確認して取り込む（`bh serve` を使わない場合） |
+| `bh config google-interval <秒>` | 確認の間隔（既定 60、最短 15） |
+| `bh config google-folder <フォルダ ID>` | フォルダ名が「Play ブックスのメモ」「Play Books Notes」以外（表示言語が違う等）のとき。ドライブでフォルダを開いた URL の `folders/` の後ろ |
 
 ## 4. スマホから PC につなぐ（Tailscale）
 
@@ -112,3 +149,6 @@ Web アプリの「設定 → AI → トークン」に同じ文字列を入れ�
 | 「JSON 形式の応答を得られませんでした」 | モデルが小さすぎる可能性。大きめのモデルに変える |
 | Play ブックスのファイルでハイライトが 0 件 | ドライブの「Play ブックスのメモ」のドキュメントか確認。.docx / .html / .md で保存する（.txt / .pdf は非対応） |
 | ブックマークレットで「本が見つかりませんでした」 | read.amazon.co.jp/notebook にログインした状態で実行する |
+| 「Google のログインが無効になりました」 | OAuth 同意画面が「テスト」のままだと 7 日で切れる。「本番」に切り替えてから `bh google login` |
+| 「Play ブックスのメモ」フォルダが見つかりません | Play ブックスの「Google ドライブに保存」がオンか。フォルダ名が違えば `bh config google-folder <ID>` |
+| 線を引いたのに取り込まれない | Google がドキュメントを更新するまで数分かかることがある。ドライブでドキュメントを開いて線が載っているか確認する |

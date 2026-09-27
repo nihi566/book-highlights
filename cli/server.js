@@ -30,7 +30,8 @@ const MIME = {
 const MAX_BODY = 50 * 1024 * 1024;
 
 // catalogFetch: おすすめの本を探す書誌 DB への fetch（テストで差し替える）
-export function createCompanionServer({ store, log = console.log, catalogFetch }) {
+// drive: Play ブックスのメモ（Google ドライブ）の見張り役（startDriveWatcher の戻り値。無ければ null）
+export function createCompanionServer({ store, log = console.log, catalogFetch, drive = null }) {
   const job = { running: false, stage: '', message: '', done: 0, total: 0, error: '', startedAt: null, finishedAt: null, vault: null, controller: null };
 
   function isAllowedOrigin(origin, host, cfg) {
@@ -84,10 +85,13 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
         return send(res, 200, {
           app: 'book-highlights',
           stats: libraryStats(lib),
+          // Web アプリはこれが自分の持つものより新しいときだけ同期する
+          updatedAt: lib.updatedAt,
           llm: { chatModel: cfg.llm.chatModel, embedModel: cfg.llm.embedModel, configured: Boolean(cfg.llm.chatModel) },
           vault: Boolean(cfg.vault),
-          analysis: analysis ? { createdAt: analysis.createdAt, ...analysis.stats } : null,
+          analysis: analysis ? { createdAt: analysis.createdAt, recommendedAt: analysis.recommendedAt, ...analysis.stats } : null,
           job: publicJob(),
+          google: drive ? publicDrive(drive.status) : null,
         });
       }
       case 'GET /api/library':
@@ -140,6 +144,10 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
       default:
         return send(res, 404, { error: `不明な API: ${route}` });
     }
+  }
+
+  function publicDrive({ active, lastCheck, lastImport, error }) {
+    return { active, lastCheck, lastImport, error };
   }
 
   function publicJob() {

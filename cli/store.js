@@ -18,6 +18,8 @@ export const DEFAULT_CONFIG = {
   host: '127.0.0.1',
   allowedOrigins: ['https://nihi566.github.io'],
   token: '',
+  // Play ブックスのメモ（Google ドライブ）の自動取り込み。clientId が空なら使わない
+  google: { clientId: '', clientSecret: '', folderId: '', intervalSec: 60 },
 };
 
 export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT, 'data')) {
@@ -32,10 +34,10 @@ export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT
     }
   }
 
-  async function writeJson(name, data) {
+  async function writeJson(name, data, { mode } = {}) {
     await mkdir(dataDir, { recursive: true });
     const tmp = file(`${name}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`);
-    await writeFile(tmp, JSON.stringify(data, null, 1));
+    await writeFile(tmp, JSON.stringify(data, null, 1), { mode });
     await rename(tmp, file(name));
   }
 
@@ -52,7 +54,7 @@ export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT
     lock,
     async config() {
       const c = await readJson('config.json', {});
-      return { ...DEFAULT_CONFIG, ...c, llm: { ...DEFAULT_CONFIG.llm, ...(c.llm || {}) } };
+      return { ...DEFAULT_CONFIG, ...c, llm: { ...DEFAULT_CONFIG.llm, ...(c.llm || {}) }, google: { ...DEFAULT_CONFIG.google, ...(c.google || {}) } };
     },
     saveConfig: (c) => writeJson('config.json', c),
     library: () => readJson('library.json', emptyLibrary()),
@@ -63,6 +65,13 @@ export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT
       return deserializeCache(await readJson('cache.json', null));
     },
     saveCache: (c) => writeJson('cache.json', serializeCache(c)),
+    // Google のリフレッシュトークン（ドライブを読む鍵なので本人だけが読めるように保存する）
+    googleToken: () => readJson('google-token.json', null),
+    saveGoogleToken: (t) => writeJson('google-token.json', t, { mode: 0o600 }),
+    removeGoogleToken: () => rm(file('google-token.json'), { force: true }),
+    // 取り込み済みのドキュメントと、その時点の更新日時
+    googleSync: () => readJson('google-sync.json', { files: {} }),
+    saveGoogleSync: (s) => writeJson('google-sync.json', s),
   };
 }
 
