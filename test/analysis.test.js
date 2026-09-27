@@ -5,7 +5,8 @@ import { SAMPLE_BOOKS } from '../web/core/sample.js';
 import { createLlmClient, extractJson } from '../web/core/analysis/llm.js';
 import { analyzeLibrary, deserializeCache, emptyCache, serializeCache } from '../web/core/analysis/pipeline.js';
 import { dot, groupPoints, kmeans, tfidfEmbed } from '../web/core/analysis/vectors.js';
-import { matchVolume, verifyBooks } from '../web/core/analysis/recommend.js';
+import { matchVolume, parseNdlRss, verifyBooks } from '../web/core/analysis/recommend.js';
+import { recommendBooks } from '../web/core/analysis/pipeline.js';
 import { renderVault } from '../web/core/obsidian.js';
 import { startFakeLlm } from './helpers/fake-llm.js';
 
@@ -68,9 +69,11 @@ test('analyzeLibrary: 点→線→面→立体→おすすめ。キャッシュ�
   try {
     const lib = sampleLibrary();
     const llm = createLlmClient({ baseUrl: fake.url, chatModel: 'fake-chat', embedModel: 'fake-embed' });
+    // Google Books の検索: 「習慣 科学」では既読の本（除かれる）と実在する候補を返す
     const verifyFetch = async (url) => {
-      const q = decodeURIComponent(new URL(url).searchParams.get('q'));
-      const items = q.includes('実在する本') ? [{ id: 'v1', volumeInfo: { title: '実在する本', authors: ['著者 A'], publishedDate: '2020', infoLink: 'https://books.google.com/?id=v1' } }] : [];
+      const q = decodeURIComponent(new URL(url).searchParams.get('q') || '');
+      const vol = (id, title, authors) => ({ id, volumeInfo: { title, authors, publishedDate: '2020', infoLink: `https://books.google.com/?id=${id}`, description: '説明' } });
+      const items = q.includes('習慣') ? [vol('r', '小さな習慣の力', ['山田 太郎']), vol('a', '習慣の科学', ['著者 A']), vol('b', '行動を変える技術', ['著者 B'])] : q.includes('哲学') ? [vol('c', '哲学の入口', ['著者 C'])] : [];
       return new Response(JSON.stringify({ items }));
     };
     const stages = new Set();
@@ -89,16 +92,16 @@ test('analyzeLibrary: 点→線→面→立体→おすすめ。キャッシュ�
     // 立体: 存在しない面 (P9) への関係は捨てる
     assert.ok(analysis.solid.relations.every((r) => analysis.planes.some((p) => p.id === r.from) && analysis.planes.some((p) => p.id === r.to)));
     assert.equal(analysis.solid.principles.length, 2);
-    // おすすめ: 既読の本は除き、実在確認の結果を付ける
-    const titles = analysis.recommendations.map((r) => r.title);
-    assert.ok(!titles.includes('小さな習慣の力'));
-    assert.equal(analysis.recommendations.find((r) => r.title === '実在する本').verified.title, '実在する本');
-    assert.equal(analysis.recommendations.find((r) => r.title === '架空の本').verified, false);
-    // 既読の本を挙げたら、それを伝えてもう一度だけ頼む
-    const recCalls = fake.calls.bodies.filter((b) => b.response_format?.json_schema?.name === 'recommendations');
-    assert.equal(recCalls.length, 2);
-    assert.match(recCalls[1].messages[1].content, /次の本も挙げてはいけない: 小さな習慣の力/);
-    assert.deepEqual(recCalls[0].response_format.json_schema.schema.properties.books.items.properties.kind.enum, ['deepen', 'broaden', 'challenge']);
+    // おすすめ: 書誌 DB で見つけた実在の候補から選ぶ（既読の本は候補から除く・存在しない番号は捨てる）
+    assert.deepEqual(analysis.recommendations.map((r) => [r.title, r.kind, r.query]), [
+      ['行動を変える技術', 'deepen', '習慣 科学'],
+      ['哲学の入口', 'challenge', '哲学 入門'],
+    ]);
+    assert.equal(analysis.recommendations[0].verified.source, 'Google Books');
+    assert.equal(analysis.recommendations[0].verified.link, 'https://books.google.com/?id=b');
+    const picks = fake.calls.bodies.find((b) => b.response_format?.json_schema?.name === 'picks');
+    assert.match(picks.messages[1].content, /\[1\] 『習慣の科学』/);
+    assert.doesNotMatch(picks.messages[1].content, /小さな習慣の力』/);
     assert.equal(analysis.recommendationNote, '');
 
     // キャッシュの保存と復元 → 2 回目は線・面・立体の LLM 呼び出しも埋め込みも無し（おすすめだけ）
@@ -132,10 +135,74 @@ test('analyzeLibrary: 埋め込みモデル無し（文字 n-gram）でも動く
   }
 });
 
-test('おすすめの実在確認: 書名・著者の照合、通信エラーは未確認のまま', async () => {
-  const items = [{ id: '1', volumeInfo: { title: '別の本', authors: ['X'] } }, { id: '2', volumeInfo: { title: '深い集中 新版', authors: ['佐藤 花子'], infoLink: 'https://x' } }];
+test('おすすめ: 書誌 DB で検索できないときは LLM の書名を Google Books → 国立国会図書館サーチで確認する', async () => {
+  const fake = await startFakeLlm();
+  try {
+    const lib = sampleLibrary();
+    const llm = createLlmClient({ baseUrl: fake.url, chatModel: 'fake-chat' });
+    const analysis = { planes: [{ id: 'p1', name: '面1', summary: 's' }, { id: 'p2', name: '面2', summary: 's' }], solid: { core: 'c', questions: [] } };
+    const ndl = `<rss><channel><item><title>実在する本</title><link>https://ndlsearch.ndl.go.jp/books/R1</link><category>図書</category><dc:title>実在する本</dc:title><dc:creator>著者, A, 1970-</dc:creator><dc:date xsi:type="dcterms:W3CDTF">2019</dc:date><dc:identifier xsi:type="dcndl:ISBN">978-4-00-000000-0</dc:identifier></item></channel></rss>`;
+    const fetchImpl = async (url) => {
+      if (url.startsWith('https://www.googleapis.com')) return new Response('rate limited', { status: 429 });
+      const title = new URL(url).searchParams.get('title');
+      return new Response(title === '実在する本' ? ndl : '<rss><channel></channel></rss>');
+    };
+    const recs = await recommendBooks({ library: lib, analysis, llm, fetchImpl });
+    assert.ok(!recs.some((r) => r.title === '小さな習慣の力'), '既読は除く');
+    assert.deepEqual(recs.map((r) => r.title), ['実在する本', '架空の本'], '確認できた本が先');
+    assert.equal(recs[0].verified.source, '国立国会図書館サーチ');
+    assert.equal(recs[0].verified.isbn, '9784000000000');
+    assert.equal(recs[1].verified, false);
+    // 既読の本を挙げたら、それを伝えてもう一度だけ頼む
+    const recCalls = fake.calls.bodies.filter((b) => b.response_format?.json_schema?.name === 'recommendations');
+    assert.equal(recCalls.length, 2);
+    assert.match(recCalls[1].messages[1].content, /次の本も挙げてはいけない: 小さな習慣の力/);
+  } finally {
+    await fake.close();
+  }
+});
+
+test('おすすめの失敗で分析全体は失われない', async () => {
+  const fake = await startFakeLlm();
+  try {
+    const llm = createLlmClient({ baseUrl: fake.url, chatModel: 'fake-chat' });
+    const broken = { ...llm, chatJson: async (p) => (p.name === 'searches' || p.name === 'recommendations' ? Promise.reject(new Error('JSON 形式の応答を得られませんでした')) : llm.chatJson(p)) };
+    const { analysis } = await analyzeLibrary({ library: sampleLibrary(), llm: broken, options: { fetchImpl: async () => new Response('{}') } });
+    assert.ok(analysis.lines.length > 0);
+    assert.deepEqual(analysis.recommendations, []);
+    assert.match(analysis.recommendationNote, /JSON 形式の応答を得られませんでした/);
+  } finally {
+    await fake.close();
+  }
+});
+
+test('おすすめの実在確認: 書名・著者の照合、NDL の RSS、通信エラーは未確認のまま', async () => {
+  const items = [{ title: '別の本', authors: 'X' }, { title: '深い集中 新版', authors: '佐藤 花子', link: 'https://x' }];
   assert.equal(matchVolume(items, { title: '深い集中', author: '佐藤花子' }).title, '深い集中 新版');
   assert.equal(matchVolume(items, { title: '深い集中', author: '別人' }), null);
+  const rss = '<rss><item><category>記事</category><dc:title>記事は除く</dc:title></item><item><category>図書</category><dc:title>本 &amp; 本</dc:title><link>javascript:alert(1)</link><dc:creator>渡部, 昇一, 1930-2017</dc:creator></item></rss>';
+  const parsed = parseNdlRss(rss);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].title, '本 & 本');
+  assert.equal(parsed[0].authors, '渡部 昇一');
+  assert.equal(parsed[0].link, '', 'https 以外のリンクは捨てる');
   const recs = await verifyBooks([{ title: 'a', author: 'b' }], { fetchImpl: async () => { throw new Error('offline'); } });
   assert.equal(recs[0].verified, undefined);
+});
+
+test('本の検索: Google Books が使えないときは国立国会図書館サーチで探す（ISBN あり・新しい順）', async () => {
+  const { searchBooks } = await import('../web/core/analysis/recommend.js');
+  const item = (title, date, isbn) => `<item><category>図書</category><dc:title>${title}</dc:title><link>https://ndlsearch.ndl.go.jp/books/${title}</link><dc:date>${date}</dc:date>${isbn ? `<dc:identifier xsi:type="dcndl:ISBN">${isbn}</dc:identifier>` : ''}</item>`;
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(url);
+    if (url.startsWith('https://www.googleapis.com')) return new Response('', { status: 429 });
+    const title = new URL(url).searchParams.get('title');
+    if (title === '集中力 科学') return new Response('<rss></rss>');
+    return new Response(`<rss>${item('古い本', '1999', '4-00-000000-0')}${item('ISBN の無い資料', '2024', '')}${item('新しい本', '2024', '978-4-00-000000-1')}</rss>`);
+  };
+  const books = await searchBooks('集中力 科学', { fetchImpl });
+  assert.deepEqual(books.map((b) => b.title), ['新しい本', '古い本']);
+  assert.equal(books[0].source, '国立国会図書館サーチ');
+  assert.equal(urls.length, 3, 'Google → NDL（全ての語）→ NDL（最初の語）');
 });

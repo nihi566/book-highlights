@@ -29,15 +29,24 @@ export function html(strings, ...values) {
   return new Raw(out);
 }
 
-/** 検索語をハイライト表示（エスケープ済み HTML を返す） */
+/** 検索語をハイライト表示（エスケープ済み HTML を返す）。元の文字列で照合してから区間ごとにエスケープする */
 export function mark(text, query) {
+  const src = String(text ?? '');
   const terms = String(query || '')
     .normalize('NFKC')
     .split(/\s+/)
     .filter((t) => t && !t.startsWith('#'));
-  let s = esc(text);
-  if (!terms.length) return raw(s);
-  const re = new RegExp(`(${terms.map((t) => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
-  s = s.replace(re, '<mark>$1</mark>');
-  return raw(s);
+  if (!terms.length) return raw(esc(src));
+  const re = new RegExp(`(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
+  return raw(src.split(re).map((part, i) => (i % 2 ? `<mark>${esc(part)}</mark>` : esc(part))).join(''));
+}
+
+/** 外部由来の URL は https のものだけ通す（javascript: などを防ぐ） */
+export function safeUrl(url) {
+  try {
+    const u = new URL(String(url || ''));
+    return u.protocol === 'https:' ? u.href : '';
+  } catch {
+    return '';
+  }
 }

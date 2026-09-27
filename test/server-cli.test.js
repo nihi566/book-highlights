@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import http from 'node:http';
 import { mkdtempSync, readFileSync, existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -23,7 +24,9 @@ async function withServer(fn, configure = {}) {
   const fake = await startFakeLlm();
   const store = createStore(dataDir);
   await store.saveConfig({ vault, llm: { baseUrl: fake.url, chatModel: 'fake-chat', embedModel: 'fake-embed' }, allowedOrigins: ['https://example.github.io'], ...configure });
-  const server = createCompanionServer({ store, log: () => {} });
+  // 書誌 DB には実際に接続しない（テストがネットワークに依存しないように）
+  const catalogFetch = async () => new Response(JSON.stringify({ items: [] }));
+  const server = createCompanionServer({ store, log: () => {}, catalogFetch });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
@@ -35,6 +38,19 @@ async function withServer(fn, configure = {}) {
 }
 
 const b64 = async (file) => (await readFile(file)).toString('base64');
+
+/** fetch では Host を変えられないので http.request で送る */
+function statusWith(base, headers) {
+  const u = new URL(`${base}/api/info`);
+  return new Promise((resolve, reject) => {
+    const req = http.request({ host: u.hostname, port: u.port, path: u.pathname, headers }, (res) => {
+      res.resume();
+      resolve(res.statusCode);
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
 
 test('コンパニオンサーバ: 取り込み → 分析ジョブ → Vault 書き出し', async () => {
   await withServer(async ({ base, vault }) => {
@@ -77,8 +93,11 @@ test('コンパニオンサーバ: CORS・Host・トークンの制限', async (
     assert.equal(pre.headers.get('access-control-allow-private-network'), 'true');
     const evil = await fetch(`${base}/api/library`, { headers: { Origin: 'https://evil.example.com' } });
     assert.equal(evil.status, 403);
-    const tsnet = await fetch(`${base}/api/info`, { headers: { Origin: 'https://my-pc.tail1234.ts.net' } });
-    assert.equal(tsnet.status, 200);
+    // Tailscale Serve 経由: 画面と同じ ts.net からのリクエストは通し、他の ts.net（公開 Funnel など）は拒否
+    assert.equal(await statusWith(base, { Origin: 'https://my-pc.tail1234.ts.net', Host: 'my-pc.tail1234.ts.net' }), 200);
+    assert.equal(await statusWith(base, { Origin: 'https://evil.tail9999.ts.net', Host: 'my-pc.tail1234.ts.net' }), 403);
+    assert.equal(await statusWith(base, { Host: 'evil.example.com' }), 403, 'DNS リバインディング対策');
+    assert.equal((await fetch(`${base}/%E0%A4%A`)).status, 400);
   });
   await withServer(
     async ({ base }) => {

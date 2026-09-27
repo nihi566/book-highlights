@@ -15,6 +15,7 @@ import { createZip } from '../core/zip.js';
 import { createLlmClient } from '../core/analysis/llm.js';
 import { analyzeLibrary, recommendBooks, recommendationNote } from '../core/analysis/pipeline.js';
 import { SAMPLE_BOOKS } from '../core/sample.js';
+import { safeFileName } from '../core/text.js';
 
 const ROUTES = [
   [/^\/$/, home, 'home'],
@@ -129,11 +130,14 @@ async function importFiles(files) {
   }
 }
 
+// Kindle ノートブックのあるドメインだけ（read.amazon.evil.com などは通さない）
+const AMAZON_ORIGIN = /^https:\/\/read\.amazon\.(com|co\.jp|co\.uk|de|fr|it|es|nl|ca|in|com\.au|com\.br|com\.mx)$/;
+
 /** ブックマークレットから postMessage でデータを受け取る */
 function listenBookmarklet() {
   if (!location.hash.includes('from=bookmarklet') || !window.opener) return;
   window.addEventListener('message', async (e) => {
-    if (!/^https:\/\/read\.amazon\.[a-z.]+$/.test(e.origin) || e.data?.type !== 'bh-import' || !isNotebookJson(e.data.data)) return;
+    if (!AMAZON_ORIGIN.test(e.origin) || e.data?.type !== 'bh-import' || !isNotebookJson(e.data.data)) return;
     const stats = mergeParsed(state.library, parseNotebookJson(e.data.data));
     await persistLibrary();
     toast(`Kindle から取り込みました: 新しい点 ${stats.added} 件`, 5000);
@@ -164,6 +168,11 @@ function setJob(patch) {
 
 let abort = null;
 
+/** ブラウザから直接 LLM を呼ぶときの設定。トークンはコンパニオンの /llm 中継を使うときだけ送る */
+function directLlmOptions(ai) {
+  return { ...ai, token: /\/llm\/?$/.test(ai.baseUrl) ? ai.token : '' };
+}
+
 async function runAnalysis(mode = 'analyze') {
   if (state.job?.running) return;
   const ai = state.settings.ai;
@@ -172,7 +181,7 @@ async function runAnalysis(mode = 'analyze') {
     abort = new AbortController();
     setJob({ running: true, where: 'browser', stage: 'embed', message: '開始しています', done: 0, total: 0, error: '' });
     try {
-      const llm = createLlmClient(ai);
+      const llm = createLlmClient(directLlmOptions(ai));
       const onProgress = (p) => setJob(p);
       if (mode === 'recommend') {
         state.analysis.recommendations = await recommendBooks({ library: state.library, analysis: state.analysis, llm, signal: abort.signal, onProgress });
@@ -180,9 +189,12 @@ async function runAnalysis(mode = 'analyze') {
         state.analysis.recommendationNote = recommendationNote(state.analysis.recommendations);
       } else {
         const cache = await loadCache();
-        const { analysis } = await analyzeLibrary({ library: state.library, llm, cache, signal: abort.signal, onProgress });
-        await saveCache(cache);
-        state.analysis = analysis;
+        try {
+          const { analysis } = await analyzeLibrary({ library: state.library, llm, cache, signal: abort.signal, onProgress });
+          state.analysis = analysis;
+        } finally {
+          await saveCache(cache);
+        }
       }
       await save.analysis();
       setJob({ running: false, stage: 'done', message: '完了しました' });
@@ -404,7 +416,7 @@ const forms = {
   },
   async 'export-settings'(form) {
     const d = new FormData(form);
-    state.settings.root = String(d.get('root') || 'Highlights').trim() || 'Highlights';
+    state.settings.root = safeFileName(String(d.get('root') || '').trim() || 'Highlights');
     state.settings.vaultName = String(d.get('vaultName') || '').trim();
     await save.settings();
     toast('保存しました');
@@ -430,7 +442,7 @@ const forms = {
     out.innerHTML = '<p class="loading">確認中…</p>';
     try {
       if (ai.mode === 'direct') {
-        const models = await createLlmClient({ ...ai, timeoutMs: 15000 }).listModels();
+        const models = await createLlmClient({ ...directLlmOptions(ai), timeoutMs: 15000 }).listModels();
         view.querySelector('#model-list').innerHTML = models.map((m) => `<option value="${m.replace(/"/g, '&quot;')}">`).join('');
         out.innerHTML = String(html`<p class="notice ok">接続できました。モデル: ${models.join('、') || '（なし）'}</p>`);
       } else {

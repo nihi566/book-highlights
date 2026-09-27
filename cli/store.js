@@ -34,13 +34,22 @@ export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT
 
   async function writeJson(name, data) {
     await mkdir(dataDir, { recursive: true });
-    const tmp = file(name + '.tmp');
+    const tmp = file(`${name}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`);
     await writeFile(tmp, JSON.stringify(data, null, 1));
     await rename(tmp, file(name));
   }
 
+  // 読み込み → 変更 → 保存 を直列に行うためのロック（同時リクエストで更新が消えないように）
+  let chain = Promise.resolve();
+  const lock = (fn) => {
+    const run = chain.then(fn, fn);
+    chain = run.catch(() => {});
+    return run;
+  };
+
   return {
     dataDir,
+    lock,
     async config() {
       const c = await readJson('config.json', {});
       return { ...DEFAULT_CONFIG, ...c, llm: { ...DEFAULT_CONFIG.llm, ...(c.llm || {}) } };

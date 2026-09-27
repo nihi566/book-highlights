@@ -96,8 +96,13 @@ async function main() {
         printRecommendations(analysis);
       } else {
         const cache = await store.cache();
-        const { analysis } = await analyzeLibrary({ library, llm, cache, onProgress, options: { recommend: !args['no-recommend'] } });
-        await store.saveCache(cache);
+        let analysis;
+        try {
+          ({ analysis } = await analyzeLibrary({ library, llm, cache, onProgress, options: { recommend: !args['no-recommend'] } }));
+        } finally {
+          // 途中で失敗しても、済んだ部分の LLM の結果は次回に使えるよう保存する
+          await store.saveCache(cache);
+        }
         await store.saveAnalysis(analysis);
         process.stdout.write('\n');
         console.log(`\n■ 立体: ${analysis.solid.title}\n${analysis.solid.core}\n`);
@@ -183,7 +188,7 @@ async function exportVault(store, { dryRun = false } = {}) {
 function progressPrinter() {
   let last = '';
   return ({ message, done, total }) => {
-    const line = total > 1 ? `${message} ${done}/${total}` : message;
+    const line = total > 1 && !/\d+\/\d+/.test(message) ? `${message} ${done}/${total}` : message;
     if (line === last) return;
     last = line;
     if (process.stdout.isTTY) process.stdout.write(`\r\x1b[K${line}`);
@@ -192,11 +197,12 @@ function progressPrinter() {
 }
 
 function printRecommendations(analysis) {
+  if (analysis.recommendationNote) console.log(`\n! ${analysis.recommendationNote}`);
   if (!analysis.recommendations?.length) return;
-  console.log('\n■ おすすめの本');
+  console.log('\n■ おすすめの本（✓ = 書誌データベースで実在を確認 / ? = 見つからず）');
   for (const r of analysis.recommendations) {
     const mark = r.verified ? '✓' : r.verified === false ? '?' : ' ';
-    console.log(` ${mark} ${r.title}${r.author ? ' — ' + r.author : ''}\n     ${r.reason}`);
+    console.log(` ${mark} ${r.title}${r.author ? ' — ' + r.author : ''}${r.verified?.publishedDate ? `（${String(r.verified.publishedDate).slice(0, 4)}）` : ''}\n     ${r.reason}`);
   }
 }
 

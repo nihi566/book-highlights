@@ -201,3 +201,54 @@ test('zip: 書き出しと読み込みの往復、system unzip でも検証', as
     assert.match(out, /No errors detected/);
   }
 });
+
+test('レビュー指摘の回帰: 削除した本の再取り込み・改行入りの書名・コードフェンスの無害化', () => {
+  const lib = emptyLibrary();
+  const parsed = [{ title: '本\n# 見出しの注入', author: '著者\nX', source: 'kindle', highlights: [{ text: '点A' }, { text: '```dataviewjs\nalert(1)\n```' }] }];
+  mergeParsed(lib, parsed, { now: T1 });
+  const [b] = listBooks(lib);
+  assert.equal(b.title, '本 # 見出しの注入');
+  assert.equal(b.author, '著者 X');
+  const note = renderVault(lib, null).find((f) => f.path.includes('/Books/')).content;
+  assert.ok(!/^```dataviewjs/m.test(note.replace(/^> /gm, '')), 'コードフェンスがそのまま残らない');
+  assert.match(note, /> `​``dataviewjs/);
+  // 本を削除してから再取り込みすると、本と一緒に消えた点も戻る（個別に消した点は戻らない）
+  const [h1, h2] = bookHighlights(lib, b.id);
+  updateHighlight(lib, h2.id, { deleted: true }, T1);
+  deleteBook(lib, b.id, T2);
+  mergeParsed(lib, parsed, { now: T2 });
+  assert.deepEqual(bookHighlights(lib, b.id).map((h) => h.id), [h1.id]);
+});
+
+test('レビュー指摘の回帰: 同名の本のノートは並び順が変わっても入れ替わらない', () => {
+  const lib = emptyLibrary();
+  const long = 'あ'.repeat(90);
+  mergeParsed(lib, [{ title: long + '上', source: 'kindle', highlights: [{ text: 'x', createdAt: '2024-01-01T00:00:00Z' }] }, { title: long + '下', source: 'kindle', highlights: [{ text: 'y', createdAt: '2024-02-01T00:00:00Z' }] }], { now: T1 });
+  const before = renderVault(lib, null).filter((f) => f.path.includes('/Books/')).map((f) => [f.path, f.content.includes('\n> x\n')]);
+  mergeParsed(lib, [{ title: long + '上', source: 'kindle', highlights: [{ text: 'z', createdAt: '2024-03-01T00:00:00Z' }] }], { now: T2 });
+  const after = renderVault(lib, null).filter((f) => f.path.includes('/Books/')).map((f) => [f.path, f.content.includes('\n> x\n')]);
+  assert.deepEqual(after.sort(), before.sort());
+});
+
+test('レビュー指摘の回帰: 見出しの下や frontmatter に書き足したノートは、分析から外れても削除しない', async () => {
+  const lib = sampleLibrary();
+  const analysis = fakeAnalysis(lib);
+  const disk = new Map();
+  const read = async (p) => disk.get(p) ?? null;
+  for (const w of (await planVaultWrite(renderVault(lib, analysis), read)).writes) disk.set(w.path, w.content);
+  const a = 'Highlights/Lines/仕組み 環境.md';
+  const b = 'Highlights/Lines/注意の管理.md';
+  disk.set(a, disk.get(a).replace('# 仕組み: 環境\n', '# 仕組み: 環境\n\n見出しの下に書いたメモ\n'));
+  disk.set(b, disk.get(b).replace('tags:', 'my_rating: 5\ntags:'));
+  const plan = await planVaultWrite(renderVault(lib, { ...analysis, lines: [], planes: [] }), read);
+  assert.deepEqual(plan.deletes.filter((p) => p.includes('/Lines/')), []);
+  assert.deepEqual(plan.orphaned.sort(), [a, b].sort());
+});
+
+test('HTML: 検索語の強調はエスケープを壊さない・外部 URL は https のみ', async () => {
+  const { mark, safeUrl } = await import('../web/js/html.js');
+  assert.equal(String(mark('a < b & lt', 'lt')), 'a &lt; b &amp; <mark>lt</mark>');
+  assert.equal(String(mark('<script>', 'script')), '&lt;<mark>script</mark>&gt;');
+  assert.equal(safeUrl('javascript:alert(1)'), '');
+  assert.equal(safeUrl('https://books.google.com/x'), 'https://books.google.com/x');
+});

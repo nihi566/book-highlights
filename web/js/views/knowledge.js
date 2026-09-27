@@ -1,5 +1,5 @@
 // 知識（AI 分析）の画面: 点 → 線 → 面 → 立体、おすすめの本
-import { html, raw, esc } from '../html.js';
+import { html, raw, esc, safeUrl } from '../html.js';
 import { libraryStats } from '../../core/model.js';
 import { layoutKnowledgeMap } from '../../core/obsidian.js';
 import { isoDate, truncate } from '../../core/text.js';
@@ -80,7 +80,7 @@ export const knowledge = {
         ? html`<div class="section"><h2>おすすめの本</h2><span class="small muted">${isoDate(a.recommendedAt || a.createdAt)}</span></div>
           ${a.recommendationNote ? html`<p class="notice">${a.recommendationNote}</p>` : ''}
           ${recs.map((r) => recCard(a, r))}
-          ${recs.length ? html`<p class="small muted">ローカル LLM は実在しない本を挙げることがあります。「確認済み」は Google Books で書名と著者が一致したものです。</p>` : ''}`
+          ${recs.length ? html`<p class="small muted">AI は書誌データベース（Google Books）で見つけた実在の本から選びます。検索できないときは AI が挙げた書名を Google Books・国立国会図書館サーチで確認します（✓ が確認済み）。</p>` : ''}`
         : ''}
 
       ${a.isolated?.length ? html`<div class="section"><h2>まだつながっていない点</h2><span class="small muted">${a.isolated.length}</span></div>
@@ -102,14 +102,17 @@ function planeCard(a, p) {
 function recCard(a, r) {
   const plane = a.planes.find((p) => p.id === r.planeId);
   const v = r.verified;
+  const link = safeUrl(v?.link);
+  const thumb = safeUrl(v?.thumbnail);
   return html`<article class="card rec">
-    ${v?.thumbnail ? html`<img src="${v.thumbnail}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+    ${thumb ? html`<img src="${thumb}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
     <div class="grow">
       <div class="kind kind-${r.kind}">${KIND[r.kind] || r.kind}${plane ? html` ・ <a href="#/knowledge/plane/${plane.id}">${plane.name}</a>` : ''}</div>
       <h3>${r.title}</h3>
       <div class="small muted">${r.author}</div>
       <p class="small">${r.reason}</p>
-      ${v ? html`<a class="small" href="${v.link}" target="_blank" rel="noopener">✓ 確認済み: ${v.title}${v.publishedDate ? `（${v.publishedDate.slice(0, 4)}）` : ''}</a>` : r.verified === false ? html`<p class="small" style="color:var(--warn)">⚠ 書誌データベースで見つかりませんでした</p>` : html`<p class="small muted">未確認</p>`}
+      ${r.query ? html`<p class="small muted">「${r.query}」で探した本</p>` : ''}
+      ${v ? html`<a class="small" href="${link || '#'}" target="_blank" rel="noopener noreferrer">✓ ${v.source || '書誌データベース'}: ${v.title}${v.publishedDate ? `（${String(v.publishedDate).slice(0, 4)}）` : ''}</a>` : r.verified === false ? html`<p class="small" style="color:var(--warn)">⚠ 書誌データベースで見つかりませんでした</p>` : html`<p class="small muted">未確認</p>`}
     </div>
   </article>`;
 }
@@ -118,13 +121,21 @@ function recCard(a, r) {
 function mapSvg(a) {
   const { nodes, edges } = layoutKnowledgeMap(a);
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const xs = nodes.map((n) => n.x);
+  // ラベルの幅も含めて表示範囲を決める（全角 1 文字 ≒ フォントサイズ）
+  const extent = (n) => {
+    if (n.kind !== 'line') {
+      const half = (Math.min([...n.label].length, 13) * (n.kind === 'core' ? 96 : 84)) / 2;
+      return [n.x - half, n.x + half];
+    }
+    const width = Math.min([...n.label].length, 10) * 66 + 60;
+    return n.x < -1 ? [n.x - width, n.x] : n.x > 1 ? [n.x, n.x + width] : [n.x - width / 2, n.x + width / 2];
+  };
+  const xs = nodes.flatMap(extent);
   const ys = nodes.map((n) => n.y);
-  const pad = 420;
-  const minX = Math.min(...xs) - pad;
-  const minY = Math.min(...ys) - pad / 2;
-  const w = Math.max(...xs) - minX + pad;
-  const h = Math.max(...ys) - minY + pad / 2;
+  const minX = Math.min(...xs) - 40;
+  const minY = Math.min(...ys) - 120;
+  const w = Math.max(...xs) - minX + 40;
+  const h = Math.max(...ys) - minY + 200;
   const edgeSvg = edges
     .map((e) => {
       const f = byId.get(e.from);
@@ -135,7 +146,7 @@ function mapSvg(a) {
         const my = (f.y + t.y) / 2 * 0.55;
         return `<path class="edge-relation" d="M${f.x},${f.y} Q${mx},${my} ${t.x},${t.y}"><title>${esc(e.label)}</title></path>`;
       }
-      return `<line class="edge-${e.kind}" x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}"/>`;
+      return `<line class="edge-${e.kind === 'core' ? 'core' : 'plane'}" x1="${+f.x}" y1="${+f.y}" x2="${+t.x}" y2="${+t.y}"/>`;
     })
     .join('');
   const nodeSvg = nodes
@@ -145,8 +156,8 @@ function mapSvg(a) {
       const anchor = n.kind === 'line' ? (n.x < -1 ? 'end' : n.x > 1 ? 'start' : 'middle') : 'middle';
       const tx = n.kind === 'line' ? n.x + (anchor === 'end' ? -r - 16 : anchor === 'start' ? r + 16 : 0) : n.x;
       const ty = n.kind === 'line' ? n.y + 22 : n.y + r + 92;
-      const href = n.kind === 'plane' ? `#/knowledge/plane/${n.ref}` : n.kind === 'line' ? `#/knowledge/line/${n.ref}` : '#/knowledge';
-      return `<a href="${href}" class="n-${n.kind}"><circle cx="${n.x}" cy="${n.y}" r="${r}"/><text x="${tx}" y="${ty}" text-anchor="${anchor}">${label}</text><title>${esc(n.label)}</title></a>`;
+      const href = n.kind === 'plane' ? `#/knowledge/plane/${encodeURIComponent(n.ref)}` : n.kind === 'line' ? `#/knowledge/line/${encodeURIComponent(n.ref)}` : '#/knowledge';
+      return `<a href="${esc(href)}" class="n-${n.kind}"><circle cx="${+n.x}" cy="${+n.y}" r="${+r}"/><text x="${+tx}" y="${+ty}" text-anchor="${anchor}">${label}</text><title>${esc(n.label)}</title></a>`;
     })
     .join('');
   return html`<div class="map-wrap" id="map-wrap">

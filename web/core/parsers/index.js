@@ -47,10 +47,11 @@ function isLibraryBackup(data) {
 /** 1 ファイル → { format, books?, library?, error? } */
 async function parseOne(name, bytes) {
   const e = ext(name);
+  const base = String(name).split('/').pop();
   if (isZip(bytes)) {
     const entries = await readZip(bytes);
     if (e === 'docx' || entries.some((x) => x.name === 'word/document.xml')) {
-      return { format: 'playbooks', books: await parsePlayBooksDocx(entries, titleFromFileName(name)) };
+      return { format: 'playbooks', books: await parsePlayBooksDocx(entries, titleFromFileName(base)) };
     }
     return { format: 'zip', entries };
   }
@@ -74,12 +75,12 @@ async function parseOne(name, bytes) {
   }
   if (/<html|<body|<div|<table|<p[\s>]/i.test(text)) {
     if (looksLikeKindleExport(text)) return { format: 'kindle-export', books: parseKindleExportHtml(text) };
-    const books = parsePlayBooksHtml(text, titleFromFileName(name));
+    const books = parsePlayBooksHtml(text, titleFromFileName(base));
     if (books.length) return { format: 'playbooks', books };
     return { error: 'ハイライトが見つからない HTML です（Kindle のエクスポートか Play ブックスのメモを選んでください）' };
   }
   if (looksLikeClippings(text)) return { format: 'kindle-clippings', books: parseKindleClippings(text) };
-  if (looksLikePlayBooksMarkdown(text)) return { format: 'playbooks', books: parsePlayBooksMarkdown(text, titleFromFileName(name)) };
+  if (looksLikePlayBooksMarkdown(text)) return { format: 'playbooks', books: parsePlayBooksMarkdown(text, titleFromFileName(base)) };
   if (e === 'txt') return { error: 'My Clippings.txt の形式ではありません（Play ブックスのメモは .docx か .html で書き出してください）' };
   return { error: '対応していない形式です' };
 }

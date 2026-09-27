@@ -28,12 +28,14 @@ export function vaultPaths(library, analysis, root = 'Highlights') {
     used.add(p.toLowerCase());
     return p;
   };
+  // 同名になったときの「 (2)」は ID 順で決める（並び順が変わってもノートが入れ替わらないように）
+  const byId = (a, b) => a.id.localeCompare(b.id);
   const books = {};
-  for (const b of listBooks(library)) books[b.id] = unique('Books', b.title);
+  for (const b of listBooks(library).sort(byId)) books[b.id] = unique('Books', b.title);
   const lines = {};
   const planes = {};
-  for (const l of analysis?.lines || []) lines[l.id] = unique('Lines', l.name);
-  for (const p of analysis?.planes || []) planes[p.id] = unique('Planes', p.name);
+  for (const l of [...(analysis?.lines || [])].sort(byId)) lines[l.id] = unique('Lines', l.name);
+  for (const p of [...(analysis?.planes || [])].sort(byId)) planes[p.id] = unique('Planes', p.name);
   return {
     root,
     index: `${root}/Index`,
@@ -74,7 +76,12 @@ function locationLabel(h) {
 }
 
 function quoteLines(text) {
-  return text.split('\n').map((l) => (l.trim() ? `> ${l}` : '>')).join('\n');
+  // 引用文中のコードフェンス（```dataviewjs など）が Obsidian で実行されないよう無害化する
+  return String(text)
+    .replace(/^(\s*)(`{3,}|~{3,})/gm, (m, sp, fence) => sp + fence[0] + '\u200b' + fence.slice(1))
+    .split('\n')
+    .map((l) => (l.trim() ? `> ${l}` : '>'))
+    .join('\n');
 }
 
 export function renderHighlight(h) {
@@ -224,7 +231,7 @@ export function renderRecommendations(analysis, paths) {
   const recs = analysis.recommendations || [];
   const kinds = { deepen: '深める', broaden: '広げる', challenge: '揺さぶる' };
   const fm = frontmatter({ generated_at: isoDate(analysis.recommendedAt || analysis.createdAt), tags: ['book-highlights/recommendations'] });
-  const body = [`${link(paths.map, '知識マップ')}をもとに AI が選んだ本です。ローカル LLM は実在しない本を挙げることがあるため、「確認済み」は書誌データベースで見つかったものです。`, ''];
+  const body = [`${link(paths.map, '知識マップ')}をもとに AI が選んだ本です。書誌データベースで見つけた実在の本から選び、見つけられなかったときは AI が挙げた書名を確認しています（「確認済み」が実在を確かめたもの）。`, ''];
   if (analysis.recommendationNote) body.push(`> [!warning] ${analysis.recommendationNote}`, '');
   for (const r of recs) {
     const plane = analysis.planes.find((p) => p.id === r.planeId);
@@ -232,7 +239,9 @@ export function renderRecommendations(analysis, paths) {
     body.push(`## ${r.title}${r.author ? ` — ${r.author}` : ''}`, '');
     body.push(`- 種類: ${kinds[r.kind] || r.kind || '-'}${plane ? ` ｜ 面: ${link(paths.planes[plane.id], plane.name)}` : ''}`);
     body.push(`- 理由: ${r.reason}`);
-    if (v) body.push(`- 確認済み: [${v.title}${v.authors ? ' / ' + v.authors : ''}](${v.link})${v.publishedDate ? `（${v.publishedDate}）` : ''}`);
+    if (r.query) body.push(`- 探した言葉: ${r.query}`);
+    const url = /^https:\/\/[^\s()<>]+$/.test(v?.link || '') ? v.link : '';
+    if (v) body.push(`- 確認済み（${v.source || '書誌データベース'}）: ${url ? `[${v.title.replace(/[[\]]/g, '')}](${url})` : v.title}${v.authors ? ' / ' + v.authors : ''}${v.publishedDate ? `（${v.publishedDate}）` : ''}${v.isbn ? ` ISBN ${v.isbn}` : ''}`);
     else if (r.verified === false) body.push('- ⚠ 書誌データベースで見つかりませんでした（実在を確認してください）');
     body.push('');
   }
@@ -395,9 +404,17 @@ export async function planVaultWrite(files, readExisting, root = 'Highlights') {
   return { writes: [...writes, manifest], deletes, skipped, orphaned, unchanged };
 }
 
+// このツールが frontmatter に書くキー（これ以外のキーがあればユーザーが足したもの）
+const GENERATED_KEYS = new Set(['title', 'author', 'sources', 'highlights', 'last_highlighted', 'asin', 'bh_id', 'tags', 'bh_layer', 'plane', 'points', 'books', 'keywords', 'lines', 'planes', 'analyzed_at', 'model', 'generated_at']);
+
+/** 自動生成部分の外に、ユーザーが書いたものが残っているか（あれば削除しない） */
 function hasUserContent(text) {
-  const i = text.indexOf(END);
-  if (i < 0) return true;
-  const after = text.slice(i + END.length).replace('## 自分のメモ', '').trim();
-  return after.length > 0;
+  const { fm, body } = splitNote(text);
+  const start = body.search(START_RE);
+  const end = body.indexOf(END);
+  if (start < 0 || end < 0) return true;
+  if (fmEntries(fm).some((e) => e.key && !GENERATED_KEYS.has(e.key))) return true;
+  const before = body.slice(0, start).replace(/^# .*$/m, '').trim();
+  const after = body.slice(end + END.length).replace('## 自分のメモ', '').trim();
+  return before.length > 0 || after.length > 0;
 }

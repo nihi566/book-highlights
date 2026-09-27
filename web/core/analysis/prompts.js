@@ -3,7 +3,7 @@
 
 import { truncate } from '../text.js';
 
-export const PROMPT_VERSION = 2;
+export const PROMPT_VERSION = 3;
 
 const SYSTEM = `あなたは読書の知識を構造化する編集者です。
 ユーザーが本に引いた線（ハイライト）を「点」と呼びます。点どうしの共通項を抽象化して「線（概念）」を作り、線を束ねて「面（テーマ）」を作り、面の関係から知識の全体像「立体」を組み立てます。
@@ -142,6 +142,86 @@ ${list}
         },
       },
       required: ['books'],
+      additionalProperties: false,
+    },
+  };
+}
+
+/** おすすめ（書誌 DB を使う版）1: 本を探すための検索語を決める */
+export function searchPrompt({ solid, planes, count = 5 }) {
+  const refs = planes.map((_, i) => `P${i + 1}`);
+  const list = planes.map((p, i) => `P${i + 1}「${p.name}」: ${truncate(p.summary, 160)}`).join('\n');
+  return {
+    system: SYSTEM,
+    name: 'searches',
+    user: `読者の知識の全体像は次のとおりです。
+
+核: ${solid?.core || '(なし)'}
+面:
+${list}
+まだ答えが無い問い: ${(solid?.questions || []).join(' / ') || '(なし)'}
+
+この読者が次に読む本を書店で探すための検索語を ${count} 個考えてください。
+- query は本のテーマを表す短い日本語（1〜3 語。例: 「習慣 行動科学」「ストア哲学」）
+- kind は「deepen」（既存の面を掘り下げる）、「broaden」（隣の分野へつなぐ）、「challenge」（反対の立場・盲点を突く）をバランスよく
+
+出力する JSON:
+{"searches": [{"query": "検索語", "plane": "P1", "kind": "deepen"}]}`,
+    schema: {
+      type: 'object',
+      properties: {
+        searches: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { query: str, plane: { type: 'string', enum: refs }, kind: { type: 'string', enum: RECOMMEND_KINDS } },
+            required: ['query', 'plane', 'kind'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['searches'],
+      additionalProperties: false,
+    },
+  };
+}
+
+/** おすすめ（書誌 DB を使う版）2: 実在する候補の中から選ばせる */
+export function pickPrompt({ solid, planes, candidates, count = 6 }) {
+  const refs = planes.map((_, i) => `P${i + 1}`);
+  const list = planes.map((p, i) => `P${i + 1}「${p.name}」: ${truncate(p.summary, 120)}`).join('\n');
+  const books = candidates.map((c, i) => `[${i + 1}] 『${truncate(c.title, 60)}』${c.authors ? ` ${truncate(c.authors, 40)}` : ''}${c.publishedDate ? `（${String(c.publishedDate).slice(0, 4)}）` : ''}${c.description ? ` — ${truncate(c.description, 100)}` : ''}`).join('\n');
+  return {
+    system: SYSTEM,
+    name: 'picks',
+    user: `読者の知識の全体像:
+核: ${solid?.core || '(なし)'}
+面:
+${list}
+
+書店で見つけた本の候補:
+${books}
+
+候補の中から、この読者に次に読んでほしい本を最大 ${count} 冊選び、読者の知識に照らした理由を書いてください。
+- candidate は候補の番号
+- kind は「deepen」（既存の面を掘り下げる）、「broaden」（隣の分野へつなぐ）、「challenge」（反対の立場・盲点を突く）
+
+出力する JSON:
+{"picks": [{"candidate": 1, "plane": "P1", "kind": "deepen", "reason": "推薦理由（1〜2文）"}]}`,
+    schema: {
+      type: 'object',
+      properties: {
+        picks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { candidate: { type: 'integer' }, plane: { type: 'string', enum: refs }, kind: { type: 'string', enum: RECOMMEND_KINDS }, reason: str },
+            required: ['candidate', 'plane', 'kind', 'reason'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['picks'],
       additionalProperties: false,
     },
   };

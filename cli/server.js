@@ -29,14 +29,16 @@ const MIME = {
 };
 const MAX_BODY = 50 * 1024 * 1024;
 
-export function createCompanionServer({ store, log = console.log }) {
+// catalogFetch: おすすめの本を探す書誌 DB への fetch（テストで差し替える）
+export function createCompanionServer({ store, log = console.log, catalogFetch }) {
   const job = { running: false, stage: '', message: '', done: 0, total: 0, error: '', startedAt: null, finishedAt: null, vault: null, controller: null };
 
-  async function isAllowedOrigin(origin) {
+  function isAllowedOrigin(origin, host, cfg) {
     if (!origin) return true;
-    const cfg = await store.config();
     if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin)) return true;
-    if (/^https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/i.test(origin)) return true;
+    // Tailscale Serve で配信した画面からの同一オリジンのリクエストだけ許可する
+    // （*.ts.net を丸ごと許すと、公開されている他人の Funnel サイトからも読めてしまう）
+    if (host && origin === `https://${host}` && /\.ts\.net$/i.test(host)) return true;
     return (cfg.allowedOrigins || []).some((o) => o.replace(/\/+$/, '') === origin);
   }
 
@@ -51,7 +53,7 @@ export function createCompanionServer({ store, log = console.log }) {
     const url = new URL(req.url, 'http://localhost');
     const origin = req.headers.origin;
     const cfg = await store.config();
-    if (origin && (await isAllowedOrigin(origin))) {
+    if (origin && isAllowedOrigin(origin, req.headers.host, cfg)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-BH-Token');
@@ -92,8 +94,11 @@ export function createCompanionServer({ store, log = console.log }) {
         return send(res, 200, await store.library());
       case 'POST /api/library/merge': {
         const incoming = await readBody(req);
-        const merged = mergeLibraries(await store.library(), incoming);
-        await store.saveLibrary(merged);
+        const merged = await store.lock(async () => {
+          const m = mergeLibraries(await store.library(), incoming);
+          await store.saveLibrary(m);
+          return m;
+        });
         return send(res, 200, merged);
       }
       case 'POST /api/import': {
@@ -101,10 +106,13 @@ export function createCompanionServer({ store, log = console.log }) {
         const body = await readBody(req);
         const files = (body.files || []).map((f) => ({ name: f.name, bytes: Buffer.from(f.base64, 'base64') }));
         const { books, libraries, results } = await parseFiles(files);
-        let lib = await store.library();
-        for (const backup of libraries) lib = mergeLibraries(lib, backup);
-        const stats = mergeParsed(lib, books);
-        await store.saveLibrary(lib);
+        const stats = await store.lock(async () => {
+          let lib = await store.library();
+          for (const backup of libraries) lib = mergeLibraries(lib, backup);
+          const st = mergeParsed(lib, books);
+          await store.saveLibrary(lib);
+          return st;
+        });
         return send(res, 200, { stats, results });
       }
       case 'GET /api/analysis': {
@@ -150,14 +158,18 @@ export function createCompanionServer({ store, log = console.log }) {
       if (mode === 'recommend') {
         const analysis = await store.analysis();
         if (!analysis) throw new Error('先に分析を実行してください');
-        analysis.recommendations = await recommendBooks({ library, analysis, llm, onProgress, signal: job.controller.signal });
+        analysis.recommendations = await recommendBooks({ library, analysis, llm, onProgress, signal: job.controller.signal, fetchImpl: catalogFetch });
         analysis.recommendedAt = new Date().toISOString();
         analysis.recommendationNote = recommendationNote(analysis.recommendations);
         await store.saveAnalysis(analysis);
       } else {
         const cache = await store.cache();
-        const { analysis } = await analyzeLibrary({ library, llm, cache, onProgress, signal: job.controller.signal });
-        await store.saveCache(cache);
+        let analysis;
+        try {
+          ({ analysis } = await analyzeLibrary({ library, llm, cache, onProgress, signal: job.controller.signal, options: { fetchImpl: catalogFetch } }));
+        } finally {
+          await store.saveCache(cache);
+        }
         await store.saveAnalysis(analysis);
       }
       if (cfg.vault) {
@@ -192,7 +204,12 @@ export function createCompanionServer({ store, log = console.log }) {
   }
 
   async function serveStatic(res, pathname) {
-    let p = decodeURIComponent(pathname);
+    let p;
+    try {
+      p = decodeURIComponent(pathname);
+    } catch {
+      return send(res, 400, { error: 'bad request' });
+    }
     if (p.endsWith('/')) p += 'index.html';
     const full = path.join(WEB_ROOT, p);
     if (!full.startsWith(WEB_ROOT + path.sep)) return send(res, 403, { error: 'forbidden' });

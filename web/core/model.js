@@ -32,7 +32,8 @@ export function highlightIdFor(bookId, text) {
 export function mergeParsed(library, parsedBooks, { now = new Date().toISOString() } = {}) {
   const stats = { books: 0, booksAdded: 0, added: 0, updated: 0, unchanged: 0, skippedDeleted: 0 };
   for (const pb of parsedBooks) {
-    const title = cleanText(pb.title);
+    // 書名・著者は 1 行にする（改行入りの書名で Markdown の見出しが崩れないように）
+    const title = cleanText(pb.title).replace(/\s+/g, ' ');
     if (!title) continue;
     const bookId = bookIdFor(title);
     let book = library.books[bookId];
@@ -40,19 +41,26 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
       book = library.books[bookId] = {
         id: bookId,
         title,
-        author: cleanText(pb.author) || '',
+        author: cleanText(pb.author).replace(/\s+/g, ' '),
         sources: [],
         createdAt: now,
         updatedAt: now,
       };
       stats.booksAdded++;
     } else if (book.deleted) {
-      // 削除済みの本に再取り込みがあった場合は復活させる（明示的な取り込み操作のため）
+      // 削除済みの本に再取り込みがあった場合は、本と一緒に消した点ごと復活させる（明示的な取り込み操作のため）
       delete book.deleted;
       book.updatedAt = now;
+      for (const h of Object.values(library.highlights)) {
+        if (h.bookId === bookId && h.deletedWithBook) {
+          delete h.deleted;
+          delete h.deletedWithBook;
+          h.updatedAt = now;
+        }
+      }
     }
     stats.books++;
-    if (!book.author && pb.author) book.author = cleanText(pb.author);
+    if (!book.author && pb.author) book.author = cleanText(pb.author).replace(/\s+/g, ' ');
     if (pb.asin && !book.asin) book.asin = pb.asin;
     if (!book.sources.includes(pb.source)) book.sources.push(pb.source);
 
@@ -255,6 +263,7 @@ export function deleteBook(library, bookId, now = new Date().toISOString()) {
   for (const h of Object.values(library.highlights)) {
     if (h.bookId === bookId && !h.deleted) {
       h.deleted = true;
+      h.deletedWithBook = true;
       h.updatedAt = now;
     }
   }

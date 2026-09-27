@@ -5,7 +5,7 @@
 - **静的サイト + PC のコンパニオン**：画面は GitHub Pages に置ける静的ファイルだけで作り、AI（ローカル LLM）と Obsidian の Vault への書き込みは PC 側が受け持つ
 - **同じコードをブラウザと PC で使う**：`web/core/` はブラウザと Node の両方で動く純粋な ES モジュール（DOM や `fs` に依存しない）。パーサ・モデル・Obsidian 出力・分析パイプラインは 1 か所にしかない
 - **依存ライブラリなし**：zip の読み書き、docx の解析、HTML の分解、k-means まで自前。ビルド不要で `web/` をそのまま公開できる
-- **データは手元だけ**：ハイライトは端末の IndexedDB と PC の `data/*.json` にだけ置く。外に出るのは、ローカル LLM への依頼と、おすすめの本の実在確認（書名・著者だけを Google Books に問い合わせる）のみ
+- **データは手元だけ**：ハイライトは端末の IndexedDB と PC の `data/*.json` にだけ置く。外に出るのは、ローカル LLM への依頼と、おすすめの本を探す検索語・書名（Google Books / 国立国会図書館サーチ）のみ。ハイライトの本文は外部に送らない
 
 ## ブラウザからローカル LLM に届かせる方法の比較
 
@@ -17,7 +17,7 @@
 
 コンパニオンサーバ（`cli/server.js`）は次を吸収する：
 
-- **CORS**：許可したオリジン（`bh config origin`）・localhost・`*.ts.net` だけに応答。Chrome の Private/Local Network Access のプリフライト（`Access-Control-Allow-Private-Network`）にも応える
+- **CORS**：許可したオリジン（`bh config origin`）・localhost・「Tailscale Serve で配信した自分自身（Origin と Host が同じ `*.ts.net`）」だけに応答。`*.ts.net` を丸ごと許すと公開されている他人の Funnel サイトから読めてしまうので許さない。Chrome の Private/Local Network Access のプリフライト（`Access-Control-Allow-Private-Network`）にも応える
 - **Ollama の Host チェック**：Tailscale Serve は元の `*.ts.net` の Host ヘッダを渡すため、Ollama に直接向けると 403 になる。コンパニオンは `fetch` で中継するので Host が `127.0.0.1:11434` に揃う
 - **DNS リバインディング対策**：既定で 127.0.0.1 にだけ待ち受け、Host が localhost / `*.ts.net` / 許可リスト以外なら拒否（トークン設定時はトークンで判定）
 
@@ -54,12 +54,28 @@ Analysis = { createdAt, model: { chat, embed }, stats,
 - `response_format` は `json_schema` → `json_object` → なし の順に自動で緩める（LM Studio は `json_object` 非対応、古いサーバは `json_schema` 非対応）。壊れた JSON は 1 回だけ言い直させる
 - LLM の結果は「メンバー構成 + モデル + プロンプト版」のハッシュでキャッシュ。埋め込みも点ごとにキャッシュ
 
+## おすすめの本（`web/core/analysis/recommend.js`）
+
+ローカル LLM（特に 7B 以下）は本の知識があいまいで、書名を挙げさせると実在しない本をもっともらしく作る（実機の検証でも 1.5B・7B とも架空の書名が出た）。そこで:
+
+1. **書誌 DB を使う版（通常）**：LLM は「検索語」だけを決める → Google Books（関連度順）で実在する候補を集める（既読の本は除く）→ LLM が番号で選び、理由を書く。選ばれる本は必ず実在する
+2. **検索できないとき**：LLM に書名を挙げさせ、Google Books → 国立国会図書館サーチ（タイトル + 著者で照合。CORS 対応でブラウザからも使える）で確認。見つからない本には印を付け、確認できた本を先に並べる
+3. おすすめの段階で失敗しても、線・面・立体の結果は捨てない（`recommendationNote` に理由を残し、「おすすめを選び直す」で再実行できる）
+
+## 画面の安全性
+
+- すべての埋め込みはエスケープする（`web/js/html.js` の `html` タグ付きテンプレート）。知識マップの SVG も ID・座標・ラベルをエスケープ／数値化して組み立てる
+- 外部由来の URL（書誌 DB のリンク・表紙画像）は `https:` だけ通す
+- ブックマークレットからの `postMessage` は Kindle ノートブックのドメイン（`read.amazon.com` / `.co.jp` など）の完全一致だけ受け付ける
+- Obsidian に書き出す引用文中のコードフェンス（```` ```dataviewjs ```` など）は無害化する
+
 ## Obsidian 出力（`web/core/obsidian.js`）
 
 - 自動生成部分を `<!-- bh:start -->`〜`<!-- bh:end -->` で囲み、外側（自分のメモ）は残す。frontmatter は生成するキーだけ差し替える
 - 線のノートは点を `![[Highlights/Books/書名#^hxxxx]]` で埋め込むので、元の本のノートと常に一致する
 - `Knowledge Map.canvas` の配置（中心 = 核、内側の輪 = 面、外側の輪 = 線）は Web アプリの知識マップと同じ関数（`layoutKnowledgeMap`）
-- `.bh-manifest.json` に前回書き出したファイルを記録し、分析から外れたノートは自分のメモが無ければ削除、あれば残す
+- `.bh-manifest.json` に前回書き出したファイルを記録し、分析から外れたノートは自分の書き込み（見出しの下・`bh:end` の下・frontmatter に足したキー）が無ければ削除、あれば残す
+- 同名になるノートの「 (2)」は ID 順で決めるので、並び順が変わってもノートが入れ替わらない
 
 ## パーサ（`web/core/parsers/`）
 

@@ -19,6 +19,10 @@ function answer(name, prompt) {
       return { name: `テーマ${tag}`, summary: `線が束になったテーマ（${tag}）。` };
     case 'solid':
       return { title: '知識の核', core: '小さな仕組みが大きな変化を生む。', relations: [{ from: 'P1', to: 'P2', type: '支える', description: 'P1 が P2 を支える' }, { from: 'P1', to: 'P9', type: '対立する', description: '存在しない面' }], principles: ['仕組みを先に作る', '注意を守る'], questions: ['どうすれば続くのか'] };
+    case 'searches':
+      return { searches: [{ query: '習慣 科学', plane: 'P1', kind: 'deepen' }, { query: '哲学 入門', plane: 'P2', kind: 'challenge' }] };
+    case 'picks':
+      return { picks: [{ candidate: 2, plane: 'P1', kind: 'deepen', reason: '習慣を深める' }, { candidate: 99, plane: 'P1', kind: 'deepen', reason: '存在しない番号' }, { candidate: 3, plane: 'P2', kind: 'challenge', reason: '揺さぶる' }] };
     case 'recommendations':
       return { books: [{ title: '実在する本', author: '著者 A', plane: 'P1', kind: 'deepen', reason: '核を深める' }, { title: '小さな習慣の力', author: '山田 太郎', plane: 'P1', kind: 'deepen', reason: '既読なので除かれるべき' }, { title: '架空の本', author: '誰か', plane: 'P2', kind: 'broaden', reason: '広げる' }] };
     default:
@@ -48,7 +52,7 @@ export async function startFakeLlm({ rejectJsonSchema = false, wrapInThink = fal
       if (rejectJsonSchema && json.response_format?.type === 'json_schema') return send(400, { error: 'unsupported response_format' });
       const prompt = json.messages.map((m) => m.content).join('\n');
       let name = json.response_format?.json_schema?.name;
-      if (!name) name = /立体/.test(prompt) && /relations/.test(prompt) ? 'solid' : /"books"/.test(prompt) ? 'recommendations' : /面の名前/.test(prompt) ? 'plane' : 'line';
+      if (!name) name = /"searches"/.test(prompt) ? 'searches' : /"picks"/.test(prompt) ? 'picks' : /立体/.test(prompt) && /relations/.test(prompt) ? 'solid' : /"books"/.test(prompt) ? 'recommendations' : /面の名前/.test(prompt) ? 'plane' : 'line';
       let content = JSON.stringify(answer(name, prompt));
       if (wrapInThink) content = `<think>考え中</think>\n\`\`\`json\n${content}\n\`\`\``;
       return send(200, { choices: [{ message: { role: 'assistant', content } }] });

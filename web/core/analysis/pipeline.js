@@ -10,9 +10,9 @@
 
 import { liveHighlights } from '../model.js';
 import { bookKey, hash } from '../text.js';
-import { PROMPT_VERSION, RECOMMEND_KINDS, RELATION_TYPES, linePrompt, planePrompt, recommendPrompt, solidPrompt } from './prompts.js';
+import { PROMPT_VERSION, RECOMMEND_KINDS, RELATION_TYPES, linePrompt, pickPrompt, planePrompt, recommendPrompt, searchPrompt, solidPrompt } from './prompts.js';
 import { centroid, dot, groupLines, groupPoints, l2normalize, tfidfEmbed } from './vectors.js';
-import { verifyBooks } from './recommend.js';
+import { searchBooks, verifyBooks } from './recommend.js';
 
 export const ANALYSIS_VERSION = 1;
 
@@ -152,21 +152,74 @@ export async function analyzeLibrary({ library, llm, cache = emptyCache(), onPro
 
   // 5. おすすめの本
   if (recommend) {
-    analysis.recommendations = await recommendBooks({ library, analysis, llm, signal, onProgress, verify, count: recommendCount, fetchImpl });
+    // おすすめで失敗しても、ここまでの分析（線・面・立体）は捨てない
+    try {
+      analysis.recommendations = await recommendBooks({ library, analysis, llm, signal, onProgress, verify, count: recommendCount, fetchImpl });
+      analysis.recommendationNote = recommendationNote(analysis.recommendations);
+    } catch (e) {
+      if (signal?.aborted) throw e;
+      analysis.recommendations = [];
+      analysis.recommendationNote = `おすすめを選べませんでした（${e.message}）。「おすすめを選び直す」で再実行できます。`;
+    }
     analysis.recommendedAt = new Date().toISOString();
-    analysis.recommendationNote = recommendationNote(analysis.recommendations);
   }
   return { analysis, cache };
 }
 
-/** 分析済みの立体をもとにおすすめの本を選ぶ（単独でも再実行できる） */
+/**
+ * 分析済みの立体をもとにおすすめの本を選ぶ（単独でも再実行できる）
+ * 1. 書誌 DB を使う版: LLM が検索語を決め → Google Books で実在する候補を集め → LLM が選んで理由を書く
+ * 2. 書誌 DB で検索できないとき: LLM が書名を挙げ → Google Books / 国立国会図書館サーチで実在を確認
+ */
 export async function recommendBooks({ library, analysis, llm, signal, onProgress = () => {}, verify = true, count = 6, fetchImpl }) {
-  onProgress({ stage: 'recommend', done: 0, total: 1, message: 'おすすめの本を選んでいます' });
   const readTitles = Object.values(library.books)
     .filter((b) => !b.deleted)
     .map((b) => b.title);
   const readKeys = new Set(readTitles.map(bookKey));
   const planeRef = (ref) => analysis.planes[parseInt(String(ref).replace(/[^\d]/g, ''), 10) - 1]?.id || null;
+  const kindOf = (k) => (RECOMMEND_KINDS.includes(k) ? k : 'deepen');
+
+  if (verify) {
+    onProgress({ stage: 'recommend', done: 0, total: 3, message: '本を探す方向を考えています' });
+    const s = await llm.chatJson({ ...searchPrompt({ solid: analysis.solid, planes: analysis.planes, count: Math.min(6, count) }), signal });
+    const searches = (Array.isArray(s?.searches) ? s.searches : []).map((x) => ({ query: clean(x.query, 40), plane: x.plane, kind: kindOf(x.kind) })).filter((x) => x.query).slice(0, 6);
+    const candidates = [];
+    const seen = new Set(readKeys);
+    let reached = false;
+    for (const [i, q] of searches.entries()) {
+      onProgress({ stage: 'recommend', done: 1, total: 3, message: `書誌データベースで探しています（${i + 1}/${searches.length}: ${q.query}）` });
+      try {
+        const found = await searchBooks(q.query, { fetchImpl, signal });
+        reached = true;
+        for (const b of found.slice(0, 5)) {
+          const key = bookKey(b.title);
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          candidates.push({ ...b, search: q });
+        }
+      } catch (e) {
+        if (signal?.aborted) throw e;
+      }
+    }
+    if (reached && candidates.length) {
+      onProgress({ stage: 'recommend', done: 2, total: 3, message: `見つかった ${candidates.length} 冊から選んでいます` });
+      const r = await llm.chatJson({ ...pickPrompt({ solid: analysis.solid, planes: analysis.planes, candidates, count }), signal, temperature: 0.3 });
+      const picked = new Set();
+      const recs = [];
+      for (const p of Array.isArray(r?.picks) ? r.picks : []) {
+        const c = candidates[Number(p.candidate) - 1];
+        if (!c || picked.has(c)) continue;
+        picked.add(c);
+        const { search, description, ...verified } = c;
+        recs.push({ title: c.title, author: c.authors, planeId: planeRef(p.plane) || planeRef(search.plane), kind: kindOf(p.kind || search.kind), reason: clean(p.reason, 400), query: search.query, verified });
+      }
+      onProgress({ stage: 'recommend', done: 3, total: 3, message: `おすすめの本を ${recs.length} 冊選びました` });
+      if (recs.length) return recs.slice(0, count);
+    }
+  }
+
+  // 書誌 DB で候補を集められなかったとき: LLM に書名を挙げさせ、あとで実在を確認する
+  onProgress({ stage: 'recommend', done: 0, total: 1, message: 'おすすめの本を選んでいます' });
   const seen = new Set();
   const rejected = [];
   let recs = [];
@@ -175,7 +228,7 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
     const p = recommendPrompt({ solid: analysis.solid, planes: analysis.planes, readTitles, count: count + 2, avoid: rejected });
     const r = await llm.chatJson({ ...p, signal, temperature: 0.5 + round * 0.2 });
     for (const b of Array.isArray(r?.books) ? r.books : []) {
-      const rec = { title: clean(b.title, 120), author: clean(b.author, 80), planeId: planeRef(b.plane), kind: RECOMMEND_KINDS.includes(b.kind) ? b.kind : 'deepen', reason: clean(b.reason, 400) };
+      const rec = { title: clean(b.title, 120), author: clean(b.author, 80), planeId: planeRef(b.plane), kind: kindOf(b.kind), reason: clean(b.reason, 400) };
       const key = bookKey(rec.title);
       if (!rec.title || seen.has(key)) continue;
       seen.add(key);
@@ -187,6 +240,8 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
   if (verify) {
     onProgress({ stage: 'recommend', done: 0, total: 1, message: '書誌データベースで実在を確認しています' });
     recs = await verifyBooks(recs, { fetchImpl, signal });
+    // 確認できた本を先に
+    recs.sort((a, b) => (b.verified ? 1 : 0) - (a.verified ? 1 : 0));
   }
   onProgress({ stage: 'recommend', done: 1, total: 1, message: `おすすめの本を ${recs.length} 冊選びました` });
   return recs;

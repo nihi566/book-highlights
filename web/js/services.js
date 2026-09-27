@@ -67,12 +67,14 @@ export async function syncWithPc() {
   await save.library();
   const remote = await companion.analysis();
   const local = state.analysis;
+  // 分析し直した時刻とおすすめを選び直した時刻の新しい方で比べる
+  const stamp = (a) => [a?.createdAt || '', a?.recommendedAt || ''].sort().pop();
   let analysisDir = '';
-  if (remote && (!local || (remote.createdAt || '') > (local.createdAt || '') || (remote.recommendedAt || '') > (local.recommendedAt || ''))) {
+  if (remote && stamp(remote) > stamp(local)) {
     state.analysis = remote;
     await save.analysis();
     analysisDir = 'pc→この端末';
-  } else if (local && (!remote || (local.createdAt || '') > (remote.createdAt || ''))) {
+  } else if (local && stamp(local) > stamp(remote)) {
     await companion.putAnalysis(local);
     analysisDir = 'この端末→pc';
   }

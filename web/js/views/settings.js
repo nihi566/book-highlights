@@ -66,7 +66,7 @@ export const exportView = {
     return html`<a class="back" href="#/settings">‹ 設定</a>
       <div class="page-head"><div><h1>Obsidian に写す</h1><div class="sub">本ごとのノート・線・面・立体（Canvas）・おすすめ</div></div></div>
       <form class="card" data-form="export-settings">
-        <label class="field"><span>Vault 内のフォルダ名</span><input type="text" name="root" value="${state.settings.root}" required pattern="[^/\\\\:*?&quot;<>|]+"></label>
+        <label class="field"><span>Vault 内のフォルダ名</span><input type="text" name="root" value="${state.settings.root}" required></label>
         <label class="field"><span>Vault の名前（「Obsidian で開く」リンク用・任意）</span><input type="text" name="vaultName" value="${state.settings.vaultName}" placeholder="例: MyVault"></label>
         <button class="btn small" type="submit">保存</button>
       </form>
