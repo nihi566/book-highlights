@@ -2,6 +2,7 @@
 import { html } from '../html.js';
 import { bookHighlights, dailyPicks, libraryStats, listBooks, searchHighlights, SOURCES } from '../../core/model.js';
 import { vaultPaths } from '../../core/obsidian.js';
+import { normalizeText } from '../../core/text.js';
 import { formatPrice, searchWishlist } from '../../core/wishlist.js';
 import { loadWishlist } from '../wishlist-data.js';
 import { bookRow, highlightCard, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
@@ -185,7 +186,8 @@ function renderWishlistHits(root, q) {
   const box = root.querySelector('#search-wishlist');
   const token = ++wishlistToken;
   // #タグはハイライト用なので、欲しい本の画面へ渡す語から外す
-  const words = String(q || '').split(/\s+/).filter((w) => w && !w.startsWith('#')).join(' ');
+  // 全角の「＃」もタグとして外すため、searchWishlist と同じ正規化をしてから分ける
+  const words = normalizeText(q).split(' ').filter((w) => w && !w.startsWith('#')).join(' ');
   if (!words) {
     box.innerHTML = '';
     return;

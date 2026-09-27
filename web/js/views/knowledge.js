@@ -96,11 +96,13 @@ export const knowledge = {
     loadWishlist()
       .then((w) => {
         for (const card of cards) {
-          const b = findWishlistBook(w.books, [card.dataset.title, card.dataset.vtitle]);
+          const found = findWishlistBook(w.books, [card.dataset.title, card.dataset.vtitle]);
           const slot = card.querySelector('.rec-wish');
-          if (!b || !slot?.isConnected) continue;
-          const q = b.asin || b.title;
-          slot.innerHTML = String(html`<a class="badge wish" href="#/wishlist?q=${encodeURIComponent(q)}">${b.purchased ? '購入済み' : '欲しい本に登録済み'}</a>`);
+          if (!found || !slot?.isConnected) continue;
+          const b = found.book;
+          // 前方一致は続編・派生本のこともあるので言い切らず、欲しい本側の書名を見せる
+          const label = found.exact ? (b.purchased ? '購入済み' : '欲しい本に登録済み') : `欲しい本に似た書名: ${b.title}`;
+          slot.innerHTML = String(html`<a class="badge wish ${found.exact ? '' : 'similar'}" href="#/wishlist?q=${encodeURIComponent(b.asin || b.title)}">${label}</a>`);
         }
       })
       .catch(() => {});
