@@ -46,13 +46,14 @@ node cli/bh.js serve
 
 | コマンド | 内容 |
 | --- | --- |
-| `bh import <ファイル...> [--obsidian]` | 取り込み（`--obsidian` で続けて Vault に書き出し） |
+| `bh import <ファイル...> [--no-obsidian]` | 取り込み（Vault を設定していれば続けて書き出す。`--no-obsidian` で止める）。このアプリのバックアップ（.json）も取り込め、手元より新しい分析結果なら反映する |
 | `bh obsidian [--dry-run]` | Vault に書き出し |
 | `bh analyze [--no-recommend]` | 点→線→面→立体の分析とおすすめ（結果は Vault にも書き出し） |
 | `bh recommend` | おすすめだけ選び直す |
 | `bh serve [--port 8787] [--host 127.0.0.1]` | コンパニオンサーバ |
 | `bh list` / `bh search <語>` | 一覧・検索 |
-| `bh config` | 設定の表示（`data/config.json`） |
+| `bh config` | 設定と、最後に Vault に書き出した時刻の表示（`data/config.json`・`data/state.json`） |
+| `bh config autoexport on\|off` | 同期・取り込み・分析のあとに Vault を自動で書き出すか（既定: on） |
 
 データは既定でリポジトリの `data/`（`.gitignore` 済み）に保存されます。`BH_DATA=/path` で変更できます。
 

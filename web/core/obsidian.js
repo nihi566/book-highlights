@@ -11,7 +11,7 @@
 //
 // 自動生成部分は <!-- bh:start --> 〜 <!-- bh:end --> で囲み、その外側に書いた自分のメモは再出力しても残る。
 
-import { SOURCES, bookHighlights, listBooks } from './model.js';
+import { FEEDBACK_LABELS, SOURCES, bookHighlights, feedbackByStatus, feedbackFor, listBooks } from './model.js';
 import { isoDate, safeFileName, yamlString } from './text.js';
 
 export const START = '<!-- bh:start 自動生成（この区間は再出力で上書きされます。自分のメモは bh:end の下へ） -->';
@@ -19,32 +19,68 @@ export const END = '<!-- bh:end -->';
 const START_RE = /<!-- bh:start[^>]*-->/;
 const MANIFEST = '.bh-manifest.json';
 
-export function vaultPaths(library, analysis, root = 'Highlights') {
+/**
+ * 各ノートのファイル名を決める。owners（前回の書き出しで「どのファイルがどの本・線・面のものか」）があれば
+ * 同じファイルを使い続けるので、書名の先頭が同じ本が後から増えても、ノートと自分のメモが別の本に付け替わらない。
+ */
+export function vaultPaths(library, analysis, root = 'Highlights', owners = {}) {
+  const stem = (p) => p.replace(/\.(md|canvas)$/, '');
+  const reservedBy = new Map();
+  const previousOf = new Map();
+  for (const [path, id] of Object.entries(owners || {})) {
+    reservedBy.set(stem(path).toLowerCase(), id);
+    if (!previousOf.has(id)) previousOf.set(id, []);
+    previousOf.get(id).push(stem(path));
+  }
   const used = new Set();
-  const unique = (dir, name) => {
-    let base = safeFileName(name);
-    let p = `${root}/${dir}/${base}`;
-    for (let i = 2; used.has(p.toLowerCase()); i++) p = `${root}/${dir}/${base} (${i})`;
-    used.add(p.toLowerCase());
-    return p;
+  const take = (p) => used.add(p.toLowerCase()) && p;
+  // 本の ID は変わらないので、前回の持ち主の予約は（削除した本のメモ付きノートでも）守る。
+  // 線・面の ID は分析し直すと変わるので、予約は持ち主が今も存在するときだけ有効（同じ名前なら同じノートを使い続ける）
+  const books = listBooks(library);
+  const current = new Set([...books, ...(analysis?.lines || []), ...(analysis?.planes || [])].map((x) => x.id));
+  const blocks = (p, id, dir) => {
+    const owner = reservedBy.get(p.toLowerCase());
+    if (!owner || owner === id) return false;
+    return dir === 'Books' || current.has(owner);
   };
-  // 同名になったときの「 (2)」は ID 順で決める（並び順が変わってもノートが入れ替わらないように）
-  const byId = (a, b) => a.id.localeCompare(b.id);
-  const books = {};
-  for (const b of listBooks(library).sort(byId)) books[b.id] = unique('Books', b.title);
-  const lines = {};
-  const planes = {};
-  for (const l of [...(analysis?.lines || [])].sort(byId)) lines[l.id] = unique('Lines', l.name);
-  for (const p of [...(analysis?.planes || [])].sort(byId)) planes[p.id] = unique('Planes', p.name);
+  const assign = (dir, items, nameOf) => {
+    const out = {};
+    const sorted = [...items].sort((a, b) => a.id.localeCompare(b.id));
+    const baseOf = (it) => `${root}/${dir}/${safeFileName(nameOf(it))}`;
+    // 1) 前回と同じファイル（今の名前、または今の名前 + 連番）を使い続ける
+    for (const it of sorted) {
+      const base = baseOf(it);
+      const prev = (previousOf.get(it.id) || []).find((p) => (p === base || (p.startsWith(base + ' (') && /^ \(\d+\)$/.test(p.slice(base.length)))) && !used.has(p.toLowerCase()));
+      if (prev) out[it.id] = take(prev);
+    }
+    // 2) 新しいものは、使われていない・他の本などの予約が無い名前にする
+    for (const it of sorted) {
+      if (out[it.id]) continue;
+      const base = baseOf(it);
+      let p = base;
+      for (let i = 2; used.has(p.toLowerCase()) || blocks(p, it.id, dir); i++) p = `${base} (${i})`;
+      out[it.id] = take(p);
+    }
+    return out;
+  };
   return {
     root,
     index: `${root}/Index`,
     map: `${root}/Knowledge Map`,
     recommendations: `${root}/Recommendations`,
-    books,
-    lines,
-    planes,
+    books: assign('Books', books, (b) => b.title),
+    lines: assign('Lines', analysis?.lines || [], (l) => l.name),
+    planes: assign('Planes', analysis?.planes || [], (p) => p.name),
   };
+}
+
+/** 前回の書き出しのマニフェストから「ファイル → 本・線・面の ID」を読む */
+export async function loadVaultOwners(readExisting, root = 'Highlights') {
+  try {
+    return JSON.parse((await readExisting(`${root}/${MANIFEST}`)) || '{}').owners || {};
+  } catch {
+    return {};
+  }
 }
 
 const link = (path, label) => `[[${path}|${String(label).replace(/[[\]|]/g, ' ')}]]`;
@@ -227,7 +263,7 @@ export function renderMapNote(library, analysis, paths) {
   return `${fm}# 知識マップ（立体）\n\n${managed(body.join('\n'))}`;
 }
 
-export function renderRecommendations(analysis, paths) {
+export function renderRecommendations(analysis, paths, library = null) {
   const recs = analysis.recommendations || [];
   const kinds = { deepen: '深める', broaden: '広げる', challenge: '揺さぶる' };
   const fm = frontmatter({ generated_at: isoDate(analysis.recommendedAt || analysis.createdAt), tags: ['book-highlights/recommendations'] });
@@ -240,11 +276,15 @@ export function renderRecommendations(analysis, paths) {
     body.push(`- 種類: ${kinds[r.kind] || r.kind || '-'}${plane ? ` ｜ 面: ${link(paths.planes[plane.id], plane.name)}` : ''}`);
     body.push(`- 理由: ${r.reason}`);
     if (r.query) body.push(`- 探した言葉: ${r.query}`);
+    const reaction = library && feedbackFor(library, r.title);
+    if (reaction) body.push(`- あなたの反応: ${FEEDBACK_LABELS[reaction.status]}`);
     const url = /^https:\/\/[^\s()<>]+$/.test(v?.link || '') ? v.link : '';
     if (v) body.push(`- 確認済み（${v.source || '書誌データベース'}）: ${url ? `[${v.title.replace(/[[\]]/g, '')}](${url})` : v.title}${v.authors ? ' / ' + v.authors : ''}${v.publishedDate ? `（${v.publishedDate}）` : ''}${v.isbn ? ` ISBN ${v.isbn}` : ''}`);
     else if (r.verified === false) body.push('- ⚠ 書誌データベースで見つかりませんでした（実在を確認してください）');
     body.push('');
   }
+  const want = library ? feedbackByStatus(library).want : [];
+  if (want.length) body.push('## 読みたい本', '', ...want.map((f) => `- ${f.title}${f.author ? ` — ${f.author}` : ''}`), '');
   return `${fm}# おすすめの本\n\n${managed(body.join('\n'))}`;
 }
 
@@ -300,18 +340,18 @@ export function renderCanvas(analysis, paths) {
 }
 
 /** Vault に書き出す全ファイル [{ path, content }]（path は .md/.canvas を含む Vault 相対パス） */
-export function renderVault(library, analysis, { root = 'Highlights' } = {}) {
+export function renderVault(library, analysis, { root = 'Highlights', owners = {} } = {}) {
   const hasAnalysis = analysis && analysis.lines?.length;
   const a = hasAnalysis ? analysis : null;
-  const paths = vaultPaths(library, a, root);
+  const paths = vaultPaths(library, a, root, owners);
   const files = [{ path: paths.index + '.md', content: renderIndex(library, paths, a) }];
-  for (const b of listBooks(library)) files.push({ path: paths.books[b.id] + '.md', content: renderBookNote(library, b, paths, a) });
+  for (const b of listBooks(library)) files.push({ path: paths.books[b.id] + '.md', content: renderBookNote(library, b, paths, a), id: b.id });
   if (a) {
-    for (const l of a.lines) files.push({ path: paths.lines[l.id] + '.md', content: renderLineNote(library, a, l, paths) });
-    for (const p of a.planes) files.push({ path: paths.planes[p.id] + '.md', content: renderPlaneNote(library, a, p, paths) });
+    for (const l of a.lines) files.push({ path: paths.lines[l.id] + '.md', content: renderLineNote(library, a, l, paths), id: l.id });
+    for (const p of a.planes) files.push({ path: paths.planes[p.id] + '.md', content: renderPlaneNote(library, a, p, paths), id: p.id });
     files.push({ path: paths.map + '.md', content: renderMapNote(library, a, paths) });
     files.push({ path: paths.map + '.canvas', content: renderCanvas(a, paths) });
-    if (a.recommendations?.length || a.recommendationNote) files.push({ path: paths.recommendations + '.md', content: renderRecommendations(a, paths) });
+    if (a.recommendations?.length || a.recommendationNote || feedbackByStatus(library).want.length) files.push({ path: paths.recommendations + '.md', content: renderRecommendations(a, paths, library) });
   }
   return files;
 }
@@ -324,42 +364,98 @@ export function renderVault(library, analysis, { root = 'Highlights' } = {}) {
  */
 export function mergeManaged(existing, generated) {
   if (existing == null) return generated;
-  if (!existing.includes(END) || !START_RE.test(existing)) return null;
+  const { text, restore } = normalizeNote(existing);
+  if (!text.includes(END) || !START_RE.test(text)) return null;
   const gen = splitNote(generated);
-  const cur = splitNote(existing);
+  const cur = splitNote(text);
   const gStart = gen.body.search(START_RE);
   const gEnd = gen.body.indexOf(END) + END.length;
   const cStart = cur.body.search(START_RE);
   const cEnd = cur.body.indexOf(END) + END.length;
   const body = cur.body.slice(0, cStart) + gen.body.slice(gStart, gEnd) + cur.body.slice(cEnd);
   const fm = mergeFrontmatter(cur.fm, gen.fm);
-  return (fm ? `---\n${fm}\n---\n` : '') + body;
+  return restore((fm ? `---\n${fm}\n---\n` : '') + body);
+}
+
+/** 改行コード（CRLF）と BOM を外して読み、書き戻すときに元の形へ戻す */
+function normalizeNote(text) {
+  const bom = text.startsWith('\uFEFF') ? '\uFEFF' : '';
+  const raw = bom ? text.slice(1) : text;
+  const crlf = raw.includes('\r\n');
+  return { text: raw.replace(/\r\n?/g, '\n'), restore: (s) => bom + (crlf ? s.replace(/\n/g, '\r\n') : s) };
 }
 
 function splitNote(text) {
-  const m = text.match(/^---\n([\s\S]*?)\n---\n/);
+  const m = text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
   if (!m) return { fm: '', body: text };
   return { fm: m[1], body: text.slice(m[0].length) };
 }
 
+/**
+ * frontmatter の最上位のキーを取り出す。Obsidian のプロパティ名は空白や記号を含められる
+ * （例: `date read: 2024-05-01`、`"my rating": 5`）。字下げ・リスト・コメント・空行はキーではない
+ */
+function topLevelKey(line) {
+  if (!line.trim() || /^[\s#-]/.test(line)) return null;
+  const quoted = line.match(/^"((?:[^"\\]|\\.)*)"\s*:(?:\s|$)/) || line.match(/^'((?:[^']|'')*)'\s*:(?:\s|$)/);
+  if (quoted) return quoted[1];
+  const plain = line.match(/^(.+?)\s*:(?:\s|$)/);
+  return plain ? plain[1] : null;
+}
+
+/** frontmatter を「キー 1 つ分の行のまとまり」に分ける。コメント行は独立したまとまりにして残す */
 function fmEntries(fm) {
   const entries = [];
   for (const line of fm.split('\n')) {
-    const m = line.match(/^([A-Za-z0-9_\-\p{L}]+):/u);
-    if (m || !entries.length) entries.push({ key: m ? m[1] : '', lines: [line] });
+    const key = topLevelKey(line);
+    const comment = /^#/.test(line);
+    if (key !== null || comment || !entries.length) entries.push({ key: key ?? '', comment, lines: [line] });
     else entries[entries.length - 1].lines.push(line);
   }
   return entries;
+}
+
+/** `key: [a, "b"]` / `key: a` / 次の行からの `- a` のどれでも値の配列にする */
+function yamlList(entry) {
+  const unquote = (v) => {
+    const t = v.trim();
+    if (/^".*"$/.test(t)) {
+      try {
+        return JSON.parse(t);
+      } catch {
+        return t.slice(1, -1);
+      }
+    }
+    if (/^'.*'$/.test(t)) return t.slice(1, -1).replace(/''/g, "'");
+    return t;
+  };
+  const line0 = entry.lines[0];
+  const first = line0.slice(line0.search(/:(?:\s|$)/) + 1).trim();
+  const values = [];
+  const items = (str) => [...str.matchAll(/\s*("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,]+)/g)].map((m) => unquote(m[1]));
+  if (first.startsWith('[')) values.push(...items(first.replace(/^\[|\]$/g, '')));
+  else if (first) values.push(...items(first));
+  for (const line of entry.lines.slice(1)) {
+    const item = line.match(/^\s*-\s+(.*)$/);
+    if (item) values.push(unquote(item[1]));
+  }
+  return values.filter(Boolean);
 }
 
 function mergeFrontmatter(current, generated) {
   if (!current) return generated;
   const gen = fmEntries(generated);
   const cur = fmEntries(current);
-  const genKeys = new Map(gen.map((e) => [e.key, e]));
-  const out = cur.filter((e) => !genKeys.has(e.key) || !e.key).map((e) => e.lines.join('\n'));
-  // 生成キーは生成順で先頭に置き、ユーザーのキーは後ろに残す
-  return [...gen.map((e) => e.lines.join('\n')), ...out].join('\n');
+  const genKeys = new Set(gen.map((e) => e.key).filter(Boolean));
+  const curTags = cur.find((e) => e.key === 'tags');
+  // 生成キーは生成順で先頭に置き、ユーザーのキー・コメントは後ろに残す。tags は自分で足したタグと合わせる
+  const head = gen.map((e) => {
+    if (e.key !== 'tags' || !curTags) return e.lines.join('\n');
+    const tags = [...new Set([...yamlList(e), ...yamlList(curTags)])];
+    return `tags: [${tags.map(yamlString).join(', ')}]`;
+  });
+  const rest = cur.filter((e) => !e.key || !genKeys.has(e.key)).map((e) => e.lines.join('\n'));
+  return [...head, ...rest].join('\n');
 }
 
 /**
@@ -370,8 +466,11 @@ function mergeFrontmatter(current, generated) {
 export async function planVaultWrite(files, readExisting, root = 'Highlights') {
   const manifestPath = `${root}/${MANIFEST}`;
   let previous = [];
+  let previousOwners = {};
   try {
-    previous = JSON.parse((await readExisting(manifestPath)) || '{}').files || [];
+    const m = JSON.parse((await readExisting(manifestPath)) || '{}');
+    previous = m.files || [];
+    previousOwners = m.owners || {};
   } catch {
     previous = [];
   }
@@ -400,20 +499,45 @@ export async function planVaultWrite(files, readExisting, root = 'Highlights') {
     if (p.endsWith('.canvas') || !hasUserContent(existing)) deletes.push(p);
     else orphaned.push(p);
   }
-  const manifest = { path: manifestPath, content: JSON.stringify({ generator: 'book-highlights', files: [...current, ...orphaned].sort() }, null, 2) };
-  return { writes: [...writes, manifest], deletes, skipped, orphaned, unchanged };
+  // どのファイルがどの本・線・面のものかも残す（次回も同じファイルを使うため。残したノートの持ち主も覚えておく）
+  const owners = {};
+  for (const p of orphaned) if (previousOwners[p]) owners[p] = previousOwners[p];
+  for (const f of files) if (f.id) owners[f.path] = f.id;
+  const sortedOwners = Object.fromEntries(Object.entries(owners).sort(([a], [b]) => a.localeCompare(b)));
+  const manifest = { path: manifestPath, content: JSON.stringify({ generator: 'book-highlights', files: [...current, ...orphaned].sort(), owners: sortedOwners }, null, 2) };
+  return { writes: [...writes, manifest], deletes, skipped, orphaned, unchanged, owners: sortedOwners };
 }
 
-// このツールが frontmatter に書くキー（これ以外のキーがあればユーザーが足したもの）
-const GENERATED_KEYS = new Set(['title', 'author', 'sources', 'highlights', 'last_highlighted', 'asin', 'bh_id', 'tags', 'bh_layer', 'plane', 'points', 'books', 'keywords', 'lines', 'planes', 'analyzed_at', 'model', 'generated_at']);
+// このツールがノートの種類ごとに frontmatter に書くキー（これ以外のキーがあればユーザーが足したもの）
+const GENERATED_KEYS = {
+  book: new Set(['title', 'author', 'sources', 'highlights', 'last_highlighted', 'asin', 'bh_id', 'tags']),
+  line: new Set(['bh_layer', 'plane', 'points', 'books', 'keywords', 'tags']),
+  plane: new Set(['bh_layer', 'lines', 'books', 'tags']),
+  map: new Set(['bh_layer', 'analyzed_at', 'model', 'planes', 'lines', 'points', 'tags']),
+  other: new Set(['generated_at', 'tags']),
+};
+
+function generatedKeysFor(entries) {
+  const value = (key) => {
+    const e = entries.find((x) => x.key === key);
+    return e ? yamlList(e)[0] || '' : '';
+  };
+  if (entries.some((e) => e.key === 'bh_id')) return GENERATED_KEYS.book;
+  return { 線: GENERATED_KEYS.line, 面: GENERATED_KEYS.plane, 立体: GENERATED_KEYS.map }[value('bh_layer')] || GENERATED_KEYS.other;
+}
 
 /** 自動生成部分の外に、ユーザーが書いたものが残っているか（あれば削除しない） */
-function hasUserContent(text) {
-  const { fm, body } = splitNote(text);
+function hasUserContent(raw) {
+  const { fm, body } = splitNote(normalizeNote(raw).text);
   const start = body.search(START_RE);
   const end = body.indexOf(END);
   if (start < 0 || end < 0) return true;
-  if (fmEntries(fm).some((e) => e.key && !GENERATED_KEYS.has(e.key))) return true;
+  const entries = fmEntries(fm);
+  const generated = generatedKeysFor(entries);
+  for (const e of entries) {
+    if (e.comment || (e.key && !generated.has(e.key))) return true;
+    if (e.key === 'tags' && yamlList(e).some((t) => !String(t).startsWith('book-highlights/'))) return true;
+  }
   const before = body.slice(0, start).replace(/^# .*$/m, '').trim();
   const after = body.slice(end + END.length).replace('## 自分のメモ', '').trim();
   return before.length > 0 || after.length > 0;

@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { emptyLibrary } from '../web/core/model.js';
-import { planVaultWrite, renderVault } from '../web/core/obsidian.js';
+import { loadVaultOwners, planVaultWrite, renderVault } from '../web/core/obsidian.js';
 import { deserializeCache, serializeCache } from '../web/core/analysis/pipeline.js';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -18,6 +18,8 @@ export const DEFAULT_CONFIG = {
   host: '127.0.0.1',
   allowedOrigins: ['https://nihi566.github.io'],
   token: '',
+  // 同期・取り込み・分析のあとに Vault を自動で書き出す
+  autoExport: true,
 };
 
 export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT, 'data')) {
@@ -63,6 +65,9 @@ export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT
       return deserializeCache(await readJson('cache.json', null));
     },
     saveCache: (c) => writeJson('cache.json', serializeCache(c)),
+    // 最後に Vault に書き出した結果など、設定ではない状態
+    state: () => readJson('state.json', {}),
+    saveState: (st) => writeJson('state.json', st),
   };
 }
 
@@ -70,23 +75,21 @@ export function createStore(dataDir = process.env.BH_DATA || path.join(REPO_ROOT
 export async function writeVault(vaultDir, library, analysis, { root = 'Highlights', dryRun = false } = {}) {
   if (!vaultDir) throw new Error('Obsidian の Vault フォルダが設定されていません（bh config vault <パス>）');
   if (!existsSync(vaultDir)) throw new Error(`Vault フォルダが見つかりません: ${vaultDir}`);
-  const files = renderVault(library, analysis, { root });
   const abs = (p) => {
     const full = path.resolve(vaultDir, p);
     if (!full.startsWith(path.resolve(vaultDir) + path.sep)) throw new Error(`不正なパス: ${p}`);
     return full;
   };
-  const plan = await planVaultWrite(
-    files,
-    async (p) => {
-      try {
-        return await readFile(abs(p), 'utf8');
-      } catch {
-        return null;
-      }
-    },
-    root,
-  );
+  const read = async (p) => {
+    try {
+      return await readFile(abs(p), 'utf8');
+    } catch {
+      return null;
+    }
+  };
+  // 前回と同じファイルを同じ本・線・面に使い続ける
+  const files = renderVault(library, analysis, { root, owners: await loadVaultOwners(read, root) });
+  const plan = await planVaultWrite(files, read, root);
   if (!dryRun) {
     for (const f of plan.writes) {
       await mkdir(path.dirname(abs(f.path)), { recursive: true });
@@ -96,3 +99,38 @@ export async function writeVault(vaultDir, library, analysis, { root = 'Highligh
   }
   return plan;
 }
+
+export function summarizePlan(plan) {
+  return { written: plan.writes.length - 1, deleted: plan.deletes.length, unchanged: plan.unchanged, skipped: plan.skipped, orphaned: plan.orphaned };
+}
+
+/**
+ * 設定の Vault に書き出し、結果（時刻・件数・きっかけ）を state.json の lastExport に残す。
+ * Vault が未設定なら何もしない（null を返す）。失敗も lastExport に残してから投げ直す。
+ */
+export async function exportAndRecord(store, { root, trigger = 'manual', dryRun = false } = {}) {
+  const cfg = await store.config();
+  if (!cfg.vault) return null;
+  const r = root || cfg.root;
+  const record = { at: new Date().toISOString(), trigger, root: r, vaultPath: path.join(cfg.vault, r) };
+  try {
+    const summary = summarizePlan(await writeVault(cfg.vault, await store.library(), await store.analysis(), { root: r, dryRun }));
+    if (!dryRun) await store.saveState({ ...(await store.state()), lastExport: { ...record, ...summary, error: '' } });
+    return { ...record, ...summary };
+  } catch (e) {
+    await store.saveState({ ...(await store.state()), lastExport: { ...record, error: e.message } });
+    throw e;
+  }
+}
+
+/** Vault のマニフェストから「ファイル → 本・線・面の ID」を読む（「Obsidian で開く」で同じノートを開くため） */
+export async function readVaultOwners(vaultDir, root) {
+  return loadVaultOwners(async (p) => {
+    try {
+      return await readFile(path.join(vaultDir, p), 'utf8');
+    } catch {
+      return null;
+    }
+  }, root);
+}
+

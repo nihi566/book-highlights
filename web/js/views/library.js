@@ -102,7 +102,9 @@ export const book = {
     const hs = bookHighlights(state.library, b.id);
     const idx = lineIndex(state.analysis);
     const { vaultName, root } = state.settings;
-    const notePath = vaultPaths(state.library, null, root).books[b.id];
+    // 最後の書き出しと同じファイルを開く（PC が書き出していればその割り当て、このブラウザからならその割り当て）
+    const owners = (state.settings.ai.mode === 'companion' && state.pcInfo?.owners) || state.vaultOwners || {};
+    const notePath = vaultPaths(state.library, null, root, owners).books[b.id];
     const obsidianUrl = vaultName && notePath ? `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(notePath)}` : '';
     const linesHere = (state.analysis?.lines || []).filter((l) => l.bookIds?.includes(b.id));
     let chapter = null;

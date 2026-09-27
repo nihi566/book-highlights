@@ -1,6 +1,6 @@
 // 知識（AI 分析）の画面: 点 → 線 → 面 → 立体、おすすめの本
 import { html, raw, esc, safeUrl } from '../html.js';
-import { libraryStats } from '../../core/model.js';
+import { FEEDBACK_LABELS, feedbackByStatus, feedbackFor, libraryStats } from '../../core/model.js';
 import { layoutKnowledgeMap } from '../../core/obsidian.js';
 import { isoDate, truncate } from '../../core/text.js';
 import { highlightCard, lineIndex } from '../ui.js';
@@ -31,7 +31,11 @@ export function jobPanel(job) {
     ${job.running ? html`<div class="progress"><i style="width:${pct}%"></i></div>` : ''}
     <p class="small">${job.message || ''}${job.running && job.where === 'pc' ? '（PC で実行中。画面を閉じても続きます）' : ''}</p>
     ${job.error ? html`<p class="notice err">${job.error}</p>` : ''}
-    ${job.running ? html`<button class="btn small" data-action="cancel-analysis">中止</button>` : ''}
+    ${job.lost
+      ? html`<p class="notice">PC との通信が途切れたため、分析の状況が分かりません。PC では分析が続いている可能性があります。PC につながる状態で確認してください。</p>
+        <button class="btn small primary" data-action="check-pc-job">PC の状況を確認</button>`
+      : ''}
+    ${job.running && !job.reconnecting ? html`<button class="btn small" data-action="cancel-analysis">中止</button>` : ''}
   </div>`;
 }
 
@@ -81,9 +85,11 @@ export const knowledge = {
       ${recs.length || a.recommendationNote
         ? html`<div class="section"><h2>おすすめの本</h2><span class="small muted">${isoDate(a.recommendedAt || a.createdAt)}</span></div>
           ${a.recommendationNote ? html`<p class="notice">${a.recommendationNote}</p>` : ''}
-          ${recs.map((r) => recCard(a, r))}
+          ${recs.map((r, i) => recCard(a, r, i, state.library))}
           ${recs.length ? html`<p class="small muted">AI は書誌データベース（Google Books）で見つけた実在の本から選びます。検索できないときは AI が挙げた書名を Google Books・国立国会図書館サーチで確認します（✓ が確認済み）。</p>` : ''}`
         : ''}
+
+      ${wantList(state.library)}
 
       ${a.isolated?.length ? html`<div class="section"><h2>まだつながっていない点</h2><span class="small muted">${a.isolated.length}</span></div>
         <p class="help">どの線にも入らなかった点です。読書を重ねると、いつか線になるかもしれません。</p>
@@ -119,12 +125,13 @@ function planeCard(a, p) {
   </section>`;
 }
 
-function recCard(a, r) {
+function recCard(a, r, i, library) {
   const plane = a.planes.find((p) => p.id === r.planeId);
   const v = r.verified;
   const link = safeUrl(v?.link);
   const thumb = safeUrl(v?.thumbnail);
-  return html`<article class="card rec" data-title="${r.title}" data-vtitle="${v?.title || ''}">
+  const reaction = feedbackFor(library, r.title)?.status || '';
+  return html`<article class="card rec ${reaction === 'no' ? 'rec-dismissed' : ''}" data-title="${r.title}" data-vtitle="${v?.title || ''}">
     ${thumb ? html`<img src="${thumb}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
     <div class="grow">
       <div class="kind kind-${r.kind}">${KIND[r.kind] || r.kind}${plane ? html` ・ <a href="#/knowledge/plane/${plane.id}">${plane.name}</a>` : ''}</div>
@@ -134,6 +141,9 @@ function recCard(a, r) {
       <p class="small">${r.reason}</p>
       ${r.query ? html`<p class="small muted">「${r.query}」で探した本</p>` : ''}
       ${v ? html`<a class="small" href="${link || '#'}" target="_blank" rel="noopener noreferrer">✓ ${v.source || '書誌データベース'}: ${v.title}${v.publishedDate ? `（${String(v.publishedDate).slice(0, 4)}）` : ''}</a>` : r.verified === false ? html`<p class="small" style="color:var(--warn)">⚠ 書誌データベースで見つかりませんでした</p>` : html`<p class="small muted">未確認</p>`}
+      <div class="chips rec-feedback" role="group" aria-label="この本への反応（次のおすすめに使います）">
+        ${Object.entries(FEEDBACK_LABELS).map(([status, label]) => html`<button type="button" class="chip" data-action="rec-feedback" data-i="${i}" data-status="${status}" aria-pressed="${String(reaction === status)}">${label}</button>`)}
+      </div>
     </div>
   </article>`;
 }
@@ -241,3 +251,12 @@ export const isolatedView = {
       ${hs.map((h) => highlightCard(h, { library: state.library }))}`;
   },
 };
+
+/** おすすめで「読みたい」を付けた本の一覧 */
+function wantList(library) {
+  const want = feedbackByStatus(library).want;
+  if (!want.length) return '';
+  return html`<div class="section"><h2>読みたい本</h2><span class="small muted">${want.length}</span></div>
+    <ul class="card plain">${want.map((f) => html`<li>${f.title}${f.author ? html` <span class="small muted">— ${f.author}</span>` : ''}</li>`)}</ul>`;
+}
+

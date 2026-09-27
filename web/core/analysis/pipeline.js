@@ -8,7 +8,7 @@
 //
 // LLM の結果はメンバー構成のハッシュでキャッシュするので、再分析は変わった部分だけで済む。
 
-import { liveHighlights } from '../model.js';
+import { feedbackByStatus, liveHighlights } from '../model.js';
 import { bookKey, hash } from '../text.js';
 import { PROMPT_VERSION, RECOMMEND_KINDS, RELATION_TYPES, linePrompt, pickPrompt, planePrompt, recommendPrompt, searchPrompt, solidPrompt } from './prompts.js';
 import { centroid, dot, groupLines, groupPoints, l2normalize, tfidfEmbed } from './vectors.js';
@@ -172,16 +172,16 @@ export async function analyzeLibrary({ library, llm, cache = emptyCache(), onPro
  * 2. 書誌 DB で検索できないとき: LLM が書名を挙げ → Google Books / 国立国会図書館サーチで実在を確認
  */
 export async function recommendBooks({ library, analysis, llm, signal, onProgress = () => {}, verify = true, count = 6, fetchImpl }) {
-  const readTitles = Object.values(library.books)
-    .filter((b) => !b.deleted)
-    .map((b) => b.title);
-  const readKeys = new Set(readTitles.map(bookKey));
+  // おすすめへの反応: 読んだ本は既読として扱い、反応済みの本はもう挙げない。読みたい／興味なしは好みとして伝える
+  const prefs = feedbackByStatus(library);
+  const readTitles = [...Object.values(library.books).filter((b) => !b.deleted).map((b) => b.title), ...prefs.read.map((f) => f.title)];
+  const readKeys = new Set([...readTitles, ...prefs.want.map((f) => f.title), ...prefs.no.map((f) => f.title)].map(bookKey));
   const planeRef = (ref) => analysis.planes[parseInt(String(ref).replace(/[^\d]/g, ''), 10) - 1]?.id || null;
   const kindOf = (k) => (RECOMMEND_KINDS.includes(k) ? k : 'deepen');
 
   if (verify) {
     onProgress({ stage: 'recommend', done: 0, total: 3, message: '本を探す方向を考えています' });
-    const s = await llm.chatJson({ ...searchPrompt({ solid: analysis.solid, planes: analysis.planes, count: Math.min(6, count) }), signal });
+    const s = await llm.chatJson({ ...searchPrompt({ solid: analysis.solid, planes: analysis.planes, count: Math.min(6, count), prefs }), signal });
     const searches = (Array.isArray(s?.searches) ? s.searches : []).map((x) => ({ query: clean(x.query, 40), plane: x.plane, kind: kindOf(x.kind) })).filter((x) => x.query).slice(0, 6);
     const candidates = [];
     const seen = new Set(readKeys);
@@ -203,7 +203,7 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
     }
     if (reached && candidates.length) {
       onProgress({ stage: 'recommend', done: 2, total: 3, message: `見つかった ${candidates.length} 冊から選んでいます` });
-      const r = await llm.chatJson({ ...pickPrompt({ solid: analysis.solid, planes: analysis.planes, candidates, count }), signal, temperature: 0.3 });
+      const r = await llm.chatJson({ ...pickPrompt({ solid: analysis.solid, planes: analysis.planes, candidates, count, prefs }), signal, temperature: 0.3 });
       const picked = new Set();
       const recs = [];
       for (const p of Array.isArray(r?.picks) ? r.picks : []) {
@@ -225,7 +225,7 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
   let recs = [];
   // 小さなモデルは既読の本を挙げがちなので、多めに頼み、足りなければ却下した本を伝えてもう一度だけ頼む
   for (let round = 0; round < 2 && recs.length < Math.ceil(count / 2); round++) {
-    const p = recommendPrompt({ solid: analysis.solid, planes: analysis.planes, readTitles, count: count + 2, avoid: rejected });
+    const p = recommendPrompt({ solid: analysis.solid, planes: analysis.planes, readTitles, count: count + 2, avoid: rejected, prefs });
     const r = await llm.chatJson({ ...p, signal, temperature: 0.5 + round * 0.2 });
     for (const b of Array.isArray(r?.books) ? r.books : []) {
       const rec = { title: clean(b.title, 120), author: clean(b.author, 80), planeId: planeRef(b.plane), kind: kindOf(b.kind), reason: clean(b.reason, 400) };
