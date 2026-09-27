@@ -3,7 +3,8 @@ report.py
 ---------
 蔵書一覧（読みたい本 / 購入済み本 / 全部）と価格履歴を GitHub Pages 公開用の静的 HTML として
 書き出すバッチスクリプト。filmarks_scraper の reporter.py 相当（単一 HTML・軽量 JS のみ・
-React 不要）。
+React 不要）。あわせて同じ一覧をデータだけの wishlist.json として書き出す
+（book-highlights アプリが同じオリジンから fetch して欲しい本の画面を出す）。
 
 ページではタグ（読みたい / 読みたくない / 購入済み / 見た）・「見た」本の★評価・種別
 （マンガ / 本）をブラウザに保存でき、「見た・評価を書き出す」で JSON にして
@@ -22,6 +23,7 @@ import os
 import sys
 import html
 import io
+import json
 from datetime import datetime
 
 # Windows CP932 環境での文字化け防止（main.py と同じ対処）
@@ -34,6 +36,10 @@ sys.path.insert(0, BASE_DIR)
 
 from src.book_kind import KINDS, classify_kind
 from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_book_marks, get_books, get_price_history
+
+# book-highlights アプリが読む欲しい本のデータ（wishlist.json）の形式名と版
+WISHLIST_FILE_FORMAT = "kindle-wishlist"
+WISHLIST_FILE_VERSION = 1
 
 
 def _format_price(book: dict) -> str:
@@ -105,6 +111,58 @@ def _build_price_history_svg(history: list) -> str:
     )
 
 
+def _resolve_mark(book: dict) -> tuple:
+    """
+    取り込み済みの状態（book["mark"] = repository.get_book_marks() の1件）から、
+    公開してよい (種別, タグ, ★評価) を決める。index.html と wishlist.json で同じ判定にする。
+
+    固定の集合に入る値だけを返し、ユーザー由来の自由文字列は通さない（R2）。
+    種別は取り込み済みの上書きが無ければ書名から自動判定し、★評価はタグが「見た」のときだけ残す。
+    """
+    mark = book.get("mark") or {}
+    kind = mark.get("kind") if mark.get("kind") in KINDS else classify_kind(book.get("title") or "")
+    tag = mark.get("tag") if mark.get("tag") in MARK_TAGS else ""
+    rating = mark.get("rating")
+    is_valid_rating = isinstance(rating, int) and not isinstance(rating, bool) and 1 <= rating <= 5
+    return kind, tag, rating if tag == "seen" and is_valid_rating else None
+
+
+def build_wishlist(books: list) -> dict:
+    """
+    欲しい本のデータ（book-highlights アプリが同じオリジンから fetch する wishlist.json）を組み立てる。
+
+    画面は持たずデータだけを渡す。価格は index.html と同じく KU の本（価格が 0 で保存される）と
+    未取得の本を null にする。生成時刻は載せない（自動公開のたびに差分が出て、データが同じでも
+    コミットが増えるため）。最終取得日時は index.html と同じく各本の最新価格の timestamp の最大値。
+    """
+    timestamps = [str(book["timestamp"]) for book in books if book.get("timestamp")]
+    items = []
+    for book in books:
+        is_ku = bool(book.get("is_unlimited"))
+        actual_price = book.get("actual_price")
+        kind, tag, rating = _resolve_mark(book)
+        items.append(
+            {
+                "asin": book.get("asin") or "",
+                "title": book.get("title") or UNKNOWN_TITLE,
+                "price": None if is_ku or actual_price is None else actual_price,
+                "ku": is_ku,
+                "wanted": bool(book.get("is_wanted")),
+                "purchased": bool(book.get("is_purchased")),
+                "kind": kind,
+                "tag": tag,
+                "rating": rating,
+                "scraped_at": str(book["timestamp"]) if book.get("timestamp") else None,
+            }
+        )
+    return {
+        "format": WISHLIST_FILE_FORMAT,
+        "version": WISHLIST_FILE_VERSION,
+        "last_scraped": max(timestamps) if timestamps else None,
+        "books": items,
+    }
+
+
 def _build_book_row(book: dict, index: int) -> str:
     """
     1冊分の表の <tr> を組み立てる（R2対策: title/asin/価格表示は html.escape() を通す）。
@@ -134,13 +192,8 @@ def _build_book_row(book: dict, index: int) -> str:
 
     # data-saved-* は取り込み済みの状態（book["mark"] = repository.get_book_marks() の1件）と
     # 種別の自動判定で、ページの JS はブラウザに保存した状態が無いときにこれを使う。
-    # 固定の集合に入る値だけを出し、ユーザー由来の自由文字列は複製しない（R2）。
-    mark = book.get("mark") or {}
-    saved_kind = mark.get("kind") if mark.get("kind") in KINDS else classify_kind(book.get("title") or "")
-    saved_tag = mark.get("tag") if mark.get("tag") in MARK_TAGS else ""
-    rating = mark.get("rating")
-    is_valid_rating = isinstance(rating, int) and not isinstance(rating, bool) and 1 <= rating <= 5
-    saved_rating = str(rating) if saved_tag == "seen" and is_valid_rating else ""
+    saved_kind, saved_tag, rating = _resolve_mark(book)
+    saved_rating = "" if rating is None else str(rating)
 
     return (
         f'<tr class="book" data-price="{data_price}" data-ku="{data_ku}" data-index="{index}" '
@@ -1256,17 +1309,22 @@ def main() -> None:
         if mark and not publish_marks:
             mark = {"kind": mark.get("kind")}
         book["mark"] = mark
-    html_content = build_html(books)
-
-    # 途中中断で壊れた index.html を公開リポジトリに残さないよう、一時ファイルへ
-    # 書き出してから置換する（src/repository.py の DB マイグレーションと同じ方式）。
     output_path = os.path.join(public_site_dir, "index.html")
-    tmp_path = output_path + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
-    os.replace(tmp_path, output_path)
+    _write_replacing(output_path, build_html(books))
+    # 日本語をエスケープしないのは、公開リポジトリの差分を人が読めるようにするため
+    wishlist_path = os.path.join(public_site_dir, "wishlist.json")
+    _write_replacing(wishlist_path, json.dumps(build_wishlist(books), ensure_ascii=False, indent=1) + "\n")
 
-    print(f"生成しました: {output_path}（{len(books)} 冊）")
+    print(f"生成しました: {output_path} / {wishlist_path}（{len(books)} 冊）")
+
+
+def _write_replacing(path: str, content: str) -> None:
+    # 途中中断で壊れたファイルを公開リポジトリに残さないよう、一時ファイルへ
+    # 書き出してから置換する（src/repository.py の DB マイグレーションと同じ方式）。
+    tmp_path = path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    os.replace(tmp_path, path)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ report.py の HTML 生成関数（build_html）の単体テスト。
     python -m unittest test.test_report -v
 """
 
+import json
 import os
 import re
 import sys
@@ -532,6 +533,87 @@ class MarksUiTest(unittest.TestCase):
         self.assertIn('id="export-marks-status"', html)
 
 
+class BuildWishlistTest(unittest.TestCase):
+    """build_wishlist() が book-highlights アプリ向けの欲しい本データ（kindle-wishlist v1）を組み立てること。"""
+
+    def _book(self, **overrides):
+        book = {
+            "title": "欲しい本",
+            "asin": "B0WISH001",
+            "actual_price": 900,
+            "timestamp": "2026-01-02T03:04:05",
+            "is_unlimited": 0,
+            "is_wanted": 1,
+            "is_purchased": 0,
+        }
+        book.update(overrides)
+        return book
+
+    def test_top_level_has_format_version_last_scraped_and_books(self):
+        data = report.build_wishlist([self._book(), self._book(asin="B0WISH002", timestamp="2026-02-01T00:00:00")])
+        self.assertEqual(data["format"], "kindle-wishlist")
+        self.assertEqual(data["version"], 1)
+        self.assertEqual(data["last_scraped"], "2026-02-01T00:00:00")
+        self.assertEqual([b["asin"] for b in data["books"]], ["B0WISH001", "B0WISH002"])
+
+    def test_does_not_include_generation_time(self):
+        """生成時刻を載せると自動公開のたびに差分が出て、データが同じでもコミットが増える。"""
+        data = report.build_wishlist([self._book()])
+        self.assertEqual(set(data), {"format", "version", "last_scraped", "books"})
+
+    def test_last_scraped_is_none_when_no_price_fetched(self):
+        data = report.build_wishlist([self._book(timestamp=None)])
+        self.assertIsNone(data["last_scraped"])
+
+    def test_book_fields(self):
+        book = report.build_wishlist([self._book()])["books"][0]
+        self.assertEqual(
+            book,
+            {
+                "asin": "B0WISH001",
+                "title": "欲しい本",
+                "price": 900,
+                "ku": False,
+                "wanted": True,
+                "purchased": False,
+                "kind": report.classify_kind("欲しい本"),
+                "tag": "",
+                "rating": None,
+                "scraped_at": "2026-01-02T03:04:05",
+            },
+        )
+
+    def test_unlimited_book_has_no_price(self):
+        """KU の本は価格が 0 で保存されるため、0 円と誤表示しないよう price を null にする。"""
+        book = report.build_wishlist([self._book(is_unlimited=1, actual_price=0)])["books"][0]
+        self.assertIsNone(book["price"])
+        self.assertTrue(book["ku"])
+
+    def test_missing_price_is_null(self):
+        book = report.build_wishlist([self._book(actual_price=None)])["books"][0]
+        self.assertIsNone(book["price"])
+
+    def test_missing_title_falls_back_to_unknown_title(self):
+        book = report.build_wishlist([self._book(title=None)])["books"][0]
+        self.assertEqual(book["title"], report.UNKNOWN_TITLE)
+
+    def test_mark_is_resolved_like_the_page(self):
+        book = report.build_wishlist([self._book(mark={"tag": "seen", "rating": 4, "kind": "manga"})])["books"][0]
+        self.assertEqual((book["kind"], book["tag"], book["rating"]), ("manga", "seen", 4))
+
+    def test_rating_is_dropped_unless_tag_is_seen(self):
+        book = report.build_wishlist([self._book(mark={"tag": "wanted", "rating": 4})])["books"][0]
+        self.assertEqual((book["tag"], book["rating"]), ("wanted", None))
+
+    def test_unknown_tag_kind_and_rating_are_dropped(self):
+        book = report.build_wishlist(
+            [self._book(title="普通の本", mark={"tag": "<script>", "rating": 9, "kind": "evil"})]
+        )["books"][0]
+        self.assertEqual(book["tag"], "")
+        self.assertIsNone(book["rating"])
+        self.assertEqual(book["kind"], report.classify_kind("普通の本"))
+
+
 class MainIntegrationTest(unittest.TestCase):
     """main() が get_books/get_price_history の結果をbuild_htmlへ正しく配線することのテスト。
 
@@ -566,6 +648,34 @@ class MainIntegrationTest(unittest.TestCase):
             report.main()
         with open(os.path.join(self.tmpdir, "index.html"), encoding="utf-8") as f:
             return f.read()
+
+    def _read_wishlist_text(self):
+        with open(os.path.join(self.tmpdir, "wishlist.json"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_main_writes_wishlist_json_next_to_index_html(self):
+        os.environ.pop("PUBLISH_MARKS", None)
+        self._run_main_with_marks({})
+        data = json.loads(self._read_wishlist_text())
+        self.assertEqual(data["format"], "kindle-wishlist")
+        self.assertEqual([b["asin"] for b in data["books"]], ["B0INTEG1"])
+        self.assertFalse(os.path.exists(os.path.join(self.tmpdir, "wishlist.json.tmp")))
+
+    def test_main_wishlist_publishes_only_kind_override_by_default(self):
+        os.environ.pop("PUBLISH_MARKS", None)
+        self._run_main_with_marks({})
+        book = json.loads(self._read_wishlist_text())["books"][0]
+        self.assertEqual((book["kind"], book["tag"], book["rating"]), ("manga", "", None))
+
+    def test_main_wishlist_publishes_tags_and_ratings_when_opted_in(self):
+        self._run_main_with_marks({"PUBLISH_MARKS": "1"})
+        book = json.loads(self._read_wishlist_text())["books"][0]
+        self.assertEqual((book["kind"], book["tag"], book["rating"]), ("manga", "seen", 5))
+
+    def test_main_wishlist_keeps_japanese_readable(self):
+        """差分を人が読めるよう、日本語をエスケープせずそのまま書く。"""
+        self._run_main_with_marks({})
+        self.assertIn("結合テスト本", self._read_wishlist_text())
 
     def test_main_publishes_only_kind_override_by_default(self):
         """「見た」・★は読書記録なので、既定では公開ページに載せない（種別の上書きだけ載せる）。"""

@@ -43,6 +43,9 @@ from src.repository import get_book_marks, get_books, import_marks, set_wanted, 
 MARKS_FILE_FORMAT = "kindle-marks"
 MARKS_FILE_GLOB = "kindle-marks-*.json"
 
+# report.main() が PUBLIC_SITE_DIR に書き出し、publish() が公開するファイル
+PUBLISHED_FILES = ["index.html", "wishlist.json"]
+
 
 def publish() -> None:
     """
@@ -83,18 +86,18 @@ def publish() -> None:
         )
         return result.returncode
 
-    if _run_git(["add", "index.html"]) != 0:
+    if _run_git(["add"] + PUBLISHED_FILES) != 0:
         print("エラー: git add に失敗しました。公開を中断しました。", file=sys.stderr)
         sys.exit(1)
 
     # git diff --cached --quiet の終了コードは「差分なし=0 / 差分あり=1」で、
     # 他の分岐と意味が逆になる（0 が異常ではなく「commit 不要」を意味する）。
-    diff_returncode = _run_git(["diff", "--cached", "--quiet", "--", "index.html"])
+    diff_returncode = _run_git(["diff", "--cached", "--quiet", "--"] + PUBLISHED_FILES)
     if diff_returncode == 0:
         print("差分なし（前回から内容が同じ）。")
     else:
         commit_returncode = _run_git(
-            ["commit", "-m", "chore: update wishlist", "-q", "--", "index.html"]
+            ["commit", "-m", "chore: update wishlist", "-q", "--"] + PUBLISHED_FILES
         )
         if commit_returncode != 0:
             print("エラー: git commit に失敗しました。公開を中断しました。", file=sys.stderr)
