@@ -7,6 +7,7 @@ import { openSheet, toast } from './ui.js';
 import { book, books, home, search } from './views/library.js';
 import { isolatedView, knowledge, lineView, planeView } from './views/knowledge.js';
 import { exportView, importView, settingsView } from './views/settings.js';
+import { wishlist } from './views/wishlist.js';
 import { deleteBook, emptyLibrary, mergeLibraries, mergeParsed, updateHighlight } from '../core/model.js';
 import { parseFiles } from '../core/parsers/index.js';
 import { isNotebookJson, parseNotebookJson } from '../core/parsers/kindle-notebook.js';
@@ -21,6 +22,7 @@ const ROUTES = [
   [/^\/$/, home, 'home'],
   [/^\/books$/, books, 'books'],
   [/^\/book\/(?<id>[\w-]+)$/, book, 'books'],
+  [/^\/wishlist$/, wishlist, 'books'],
   [/^\/search$/, search, 'search'],
   [/^\/knowledge$/, knowledge, 'knowledge'],
   [/^\/knowledge\/line\/(?<id>[\w-]+)$/, lineView, 'knowledge'],

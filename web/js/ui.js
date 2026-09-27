@@ -59,6 +59,13 @@ export function highlightCard(h, { library, lines = [], query = '', showBook = t
   </article>`;
 }
 
+/** 本タブの「読んだ本 / 欲しい本」の切り替え（タブバーに増やさず本タブの中で切り替える） */
+export function shelfSwitch(active) {
+  const item = (key, href, label) =>
+    html`<a class="chip ${active === key ? 'on' : ''}" href="${href}" ${active === key ? html`aria-current="page"` : ''}>${label}</a>`;
+  return html`<nav class="chips shelf-switch" aria-label="本の種類">${item('books', '#/books', '読んだ本')}${item('wishlist', '#/wishlist', '欲しい本')}</nav>`;
+}
+
 export function bookRow(b) {
   return html`<li><a class="book-item" href="#/book/${b.id}">
     <span class="book-spine" style="background:${spineColor(b.title)}" aria-hidden="true">${[...b.title][0]}</span>
