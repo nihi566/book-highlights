@@ -17,6 +17,7 @@ const SHELL = [
   'js/views/knowledge.js',
   'js/views/settings.js',
   'js/views/wishlist.js',
+  'js/wishlist-data.js',
   'core/model.js',
   'core/wishlist.js',
   'core/text.js',

@@ -3,6 +3,8 @@
 // 2 つのサイトは同じオリジン（nihi566.github.io）なので、旧画面で付けたタグがそのまま読める。
 // 書き出しファイルも旧画面と同じ kindle-marks v1（PC の `python run.py import-marks` で取り込める）。
 
+import { bookKey, normalizeText } from './text.js';
+
 export const WISHLIST_FORMAT = 'kindle-wishlist';
 export const TAG_LABELS = { wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み', seen: '見た' };
 export const KIND_LABELS = { manga: 'マンガ', book: '本' };
@@ -194,6 +196,43 @@ function comparePrice(a, b, dir) {
   const pb = b.book.price;
   if (pa === null || pb === null) return (pa === null) - (pb === null);
   return (pa - pb) * dir;
+}
+
+/** 書名の照合キー。括弧で囲んだレーベル・版表記（（新潮文庫）・【合本版】など）と記号・空白を落とす */
+export function titleKey(title) {
+  return bookKey(String(title ?? '').normalize('NFKC').replace(/[(（【［\[][^)）】］\]]*[)）】］\]]/g, ''));
+}
+
+// 前方一致に使う書名の最短の長さ（「夜」が「夜と霧」に当たるような誤一致を避ける）
+const MIN_PREFIX = 5;
+
+/**
+ * 書名（候補を複数渡せる）から欲しい本を探す。照合キーの一致を優先し、無ければ前方一致
+ *（「ファスト&スロー」→「ファスト&スロー あなたの意思は…上」のように副題・巻数の違いを吸収する）
+ */
+export function findWishlistBook(books, titles) {
+  const keys = [titles].flat().map(titleKey).filter(Boolean);
+  if (!keys.length) return undefined;
+  const indexed = books.map((book) => ({ book, key: titleKey(book.title) })).filter((b) => b.key);
+  for (const key of keys) {
+    const exact = indexed.find((b) => b.key === key);
+    if (exact) return exact.book;
+  }
+  for (const key of keys) {
+    const prefix = indexed.find((b) => (key.length >= MIN_PREFIX && b.key.startsWith(key)) || (b.key.length >= MIN_PREFIX && key.startsWith(b.key)));
+    if (prefix) return prefix.book;
+  }
+  return undefined;
+}
+
+/** 検索タブ用。空白で区切った語をすべて含む本（書名・ASIN）。#タグの語はハイライト用なので無視する */
+export function searchWishlist(books, q) {
+  const words = normalizeText(q).split(' ').filter((w) => w && !w.startsWith('#'));
+  if (!words.length) return [];
+  return books.filter((b) => {
+    const hay = normalizeText(`${b.title} ${b.asin}`);
+    return words.every((w) => hay.includes(w));
+  });
 }
 
 export function formatPrice(book) {

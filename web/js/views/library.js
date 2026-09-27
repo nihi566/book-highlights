@@ -2,6 +2,8 @@
 import { html } from '../html.js';
 import { bookHighlights, dailyPicks, libraryStats, listBooks, searchHighlights, SOURCES } from '../../core/model.js';
 import { vaultPaths } from '../../core/obsidian.js';
+import { formatPrice, searchWishlist } from '../../core/wishlist.js';
+import { loadWishlist } from '../wishlist-data.js';
 import { bookRow, highlightCard, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
 
 const flow = html`<div class="flow" aria-label="点から立体へ">
@@ -135,6 +137,7 @@ export const search = {
         <input type="search" name="q" value="${q}" placeholder="言葉・書名・#タグ（空白で AND）" aria-label="ハイライトを検索" autocomplete="off" ${q ? '' : 'autofocus'}>
       </form>
       <div class="chips" id="search-filters"></div>
+      <div id="search-wishlist"></div>
       <div id="search-results"></div>`;
   },
   mount(root, ctx) {
@@ -172,4 +175,39 @@ function renderResults(root, ctx, q) {
   root.querySelector('#search-results').innerHTML = String(html`<p class="small muted">${results.length} 件${results.length > shown.length ? `（先頭 ${shown.length} 件を表示）` : ''}</p>
     ${shown.map((h) => highlightCard(h, { library: state.library, lines: idx.get(h.id), query: q }))}
     ${!results.length ? html`<p class="empty">見つかりませんでした</p>` : ''}`);
+  renderWishlistHits(root, q);
+}
+
+let wishlistToken = 0;
+
+/** 検索語に当たる欲しい本（先頭 5 件）。読めないときは何も出さない（ハイライトの検索を邪魔しない） */
+function renderWishlistHits(root, q) {
+  const box = root.querySelector('#search-wishlist');
+  const token = ++wishlistToken;
+  // #タグはハイライト用なので、欲しい本の画面へ渡す語から外す
+  const words = String(q || '').split(/\s+/).filter((w) => w && !w.startsWith('#')).join(' ');
+  if (!words) {
+    box.innerHTML = '';
+    return;
+  }
+  loadWishlist()
+    .then((w) => {
+      if (token !== wishlistToken || !box.isConnected) return;
+      const hits = searchWishlist(w.books, words);
+      box.innerHTML = hits.length
+        ? String(html`<section class="wishlist-hits"><div class="section"><h2>欲しい本</h2><a class="small" href="#/wishlist?q=${encodeURIComponent(words)}">欲しい本で見る（${hits.length} 件）</a></div>
+            <ul class="book-list">${hits.slice(0, 5).map(wishlistHitRow)}</ul></section>`)
+        : '';
+    })
+    .catch(() => {
+      if (token === wishlistToken && box.isConnected) box.innerHTML = '';
+    });
+}
+
+function wishlistHitRow(b) {
+  const inner = html`<span class="book-spine" style="background:${spineColor(b.title)}" aria-hidden="true">${[...b.title][0] || ''}</span>
+    <span class="grow"><span class="title">${b.title}</span><span class="meta">${formatPrice(b)}</span></span>`;
+  return b.asin
+    ? html`<li><a class="book-item" href="https://www.amazon.co.jp/dp/${b.asin}" target="_blank" rel="noopener noreferrer" aria-label="${b.title}（Amazon で開く）">${inner}</a></li>`
+    : html`<li><a class="book-item" href="#/wishlist?q=${encodeURIComponent(b.title)}">${inner}</a></li>`;
 }
