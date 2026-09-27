@@ -1,0 +1,6 @@
+node_modules/
+# 個人のハイライトデータはリポジトリに入れない
+data/
+*.local.json
+test-results/
+.DS_Store

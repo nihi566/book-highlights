@@ -1,0 +1,403 @@
+// ライブラリと分析結果を Obsidian の Vault 用 Markdown / Canvas に変換する
+//
+// 生成するノート（root は既定で "Highlights"）
+//   {root}/Index.md                 … 本の一覧（入口）
+//   {root}/Books/{本}.md            … 点：ハイライト。各ハイライトにブロック ID (^hxxxx) を付ける
+//   {root}/Lines/{線}.md            … 線：複数の点をつなぐ概念。点をブロック埋め込みで引用
+//   {root}/Planes/{面}.md           … 面：線を束ねたテーマ
+//   {root}/Knowledge Map.md         … 立体：全体の構造・原則・問い
+//   {root}/Knowledge Map.canvas     … 立体を Obsidian Canvas で俯瞰
+//   {root}/Recommendations.md       … おすすめの本
+//
+// 自動生成部分は <!-- bh:start --> 〜 <!-- bh:end --> で囲み、その外側に書いた自分のメモは再出力しても残る。
+
+import { SOURCES, bookHighlights, listBooks } from './model.js';
+import { isoDate, safeFileName, yamlString } from './text.js';
+
+export const START = '<!-- bh:start 自動生成（この区間は再出力で上書きされます。自分のメモは bh:end の下へ） -->';
+export const END = '<!-- bh:end -->';
+const START_RE = /<!-- bh:start[^>]*-->/;
+const MANIFEST = '.bh-manifest.json';
+
+export function vaultPaths(library, analysis, root = 'Highlights') {
+  const used = new Set();
+  const unique = (dir, name) => {
+    let base = safeFileName(name);
+    let p = `${root}/${dir}/${base}`;
+    for (let i = 2; used.has(p.toLowerCase()); i++) p = `${root}/${dir}/${base} (${i})`;
+    used.add(p.toLowerCase());
+    return p;
+  };
+  const books = {};
+  for (const b of listBooks(library)) books[b.id] = unique('Books', b.title);
+  const lines = {};
+  const planes = {};
+  for (const l of analysis?.lines || []) lines[l.id] = unique('Lines', l.name);
+  for (const p of analysis?.planes || []) planes[p.id] = unique('Planes', p.name);
+  return {
+    root,
+    index: `${root}/Index`,
+    map: `${root}/Knowledge Map`,
+    recommendations: `${root}/Recommendations`,
+    books,
+    lines,
+    planes,
+  };
+}
+
+const link = (path, label) => `[[${path}|${String(label).replace(/[[\]|]/g, ' ')}]]`;
+const tagify = (t) => '#' + String(t).trim().replace(/\s+/g, '_').replace(/[^\p{L}\p{N}_/-]/gu, '');
+
+function frontmatter(obj) {
+  const lines = ['---'];
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined || v === null || v === '') continue;
+    if (Array.isArray(v)) lines.push(`${k}: [${v.map(yamlString).join(', ')}]`);
+    else if (typeof v === 'number' || typeof v === 'boolean') lines.push(`${k}: ${v}`);
+    else lines.push(`${k}: ${yamlString(v)}`);
+  }
+  lines.push('---', '');
+  return lines.join('\n');
+}
+
+function managed(body, tail = '## 自分のメモ\n\n') {
+  return `${START}\n${body.trim()}\n${END}\n\n${tail}`;
+}
+
+function locationLabel(h) {
+  const parts = [];
+  if (h.location != null) parts.push(`位置 ${h.location}${h.locationEnd && h.locationEnd !== h.location ? '-' + h.locationEnd : ''}`);
+  if (h.page) parts.push(`p.${h.page}`);
+  const d = isoDate(h.createdAt);
+  if (d) parts.push(d);
+  return parts.join(' · ');
+}
+
+function quoteLines(text) {
+  return text.split('\n').map((l) => (l.trim() ? `> ${l}` : '>')).join('\n');
+}
+
+export function renderHighlight(h) {
+  const title = [h.favorite ? '★' : '', locationLabel(h) || SOURCES[h.source] || ''].filter(Boolean).join(' ');
+  const out = [`> [!quote]${h.kind === 'note' ? '-' : ''} ${title}`.trimEnd(), quoteLines(h.text)];
+  if (h.note) out.push('>', quoteLines(`**メモ:** ${h.note}`));
+  if (h.userNote) out.push('>', quoteLines(`**自分のメモ:** ${h.userNote}`));
+  if (h.tags?.length) out.push('>', `> ${h.tags.map(tagify).join(' ')}`);
+  out.push('', `^${h.id}`);
+  return out.join('\n');
+}
+
+export function renderBookNote(library, book, paths, analysis) {
+  const hs = bookHighlights(library, book.id);
+  const last = hs.map((h) => h.createdAt || h.importedAt).filter(Boolean).sort().pop();
+  const fm = frontmatter({
+    title: book.title,
+    author: book.author,
+    sources: book.sources.map((s) => SOURCES[s] || s),
+    highlights: hs.length,
+    last_highlighted: isoDate(last),
+    asin: book.asin,
+    bh_id: book.id,
+    tags: ['book-highlights/book'],
+  });
+  const body = [];
+  const meta = [book.author && `著者: ${book.author}`, `ソース: ${book.sources.map((s) => SOURCES[s] || s).join(' / ')}`, `ハイライト ${hs.length} 件`].filter(Boolean);
+  body.push(meta.join(' ｜ '), '');
+  // この本の点がつながっている線
+  const lineIds = (analysis?.lines || []).filter((l) => l.highlightIds.some((id) => hs.some((h) => h.id === id)));
+  if (lineIds.length) {
+    body.push('**この本から伸びる線:** ' + lineIds.map((l) => link(paths.lines[l.id], l.name)).join('、'), '');
+  }
+  let chapter = null;
+  for (const h of hs) {
+    if (h.chapter && h.chapter !== chapter) {
+      chapter = h.chapter;
+      body.push(`## ${chapter.replace(/\n/g, ' ')}`, '');
+    }
+    body.push(renderHighlight(h), '');
+  }
+  return `${fm}# ${book.title}\n\n${managed(body.join('\n'))}`;
+}
+
+export function renderIndex(library, paths, analysis) {
+  const books = listBooks(library);
+  const total = books.reduce((s, b) => s + b.count, 0);
+  const body = [
+    `本 ${books.length} 冊 ｜ 点（ハイライト） ${total} 件`,
+    '',
+    analysis ? `- 立体: ${link(paths.map, '知識マップ')}（${link(paths.map + '.canvas', 'Canvas')}）\n- 面 ${analysis.planes.length} ｜ 線 ${analysis.lines.length}\n- ${link(paths.recommendations, 'おすすめの本')}\n` : '> AI 分析はまだです。`bh analyze` か Web アプリの「AI」タブで実行できます。\n',
+    '## 本',
+    '',
+    '| 本 | 著者 | ソース | 点 | 最終 |',
+    '| --- | --- | --- | ---: | --- |',
+    ...books.map((b) => `| ${link(paths.books[b.id], b.title)} | ${b.author.replace(/\|/g, '/')} | ${b.sources.map((s) => SOURCES[s] || s).join(', ')} | ${b.count} | ${isoDate(b.lastHighlightedAt)} |`),
+  ];
+  return `${frontmatter({ tags: ['book-highlights/index'] })}# ハイライト索引\n\n${managed(body.join('\n'), '')}`;
+}
+
+export function renderLineNote(library, analysis, line, paths) {
+  const plane = analysis.planes.find((p) => p.lineIds.includes(line.id));
+  const hs = line.highlightIds.map((id) => library.highlights[id]).filter((h) => h && !h.deleted);
+  const byBook = new Map();
+  for (const h of hs) {
+    if (!byBook.has(h.bookId)) byBook.set(h.bookId, []);
+    byBook.get(h.bookId).push(h);
+  }
+  const fm = frontmatter({ bh_layer: '線', plane: plane?.name, points: hs.length, books: byBook.size, keywords: line.keywords, tags: ['book-highlights/line'] });
+  const body = [
+    `> [!abstract] 抽象化（線）`,
+    quoteLines(line.summary || ''),
+    '',
+  ];
+  if (line.insight) body.push(`**問い・示唆:** ${line.insight}`, '');
+  if (plane) body.push(`**面:** ${link(paths.planes[plane.id], plane.name)}`, '');
+  body.push(`## つながっている点（${hs.length}）`, '');
+  for (const [bookId, list] of byBook) {
+    const book = library.books[bookId];
+    if (!book || !paths.books[bookId]) continue;
+    body.push(`### ${link(paths.books[bookId], book.title)}`, '');
+    for (const h of list) body.push(`![[${paths.books[bookId]}#^${h.id}]]`, '');
+  }
+  const siblings = plane ? plane.lineIds.filter((id) => id !== line.id) : [];
+  if (siblings.length) {
+    body.push('## 同じ面の線', '');
+    for (const id of siblings) {
+      const s = analysis.lines.find((l) => l.id === id);
+      if (s) body.push(`- ${link(paths.lines[id], s.name)}`);
+    }
+  }
+  return `${fm}# ${line.name}\n\n${managed(body.join('\n'))}`;
+}
+
+export function renderPlaneNote(library, analysis, plane, paths) {
+  const lines = plane.lineIds.map((id) => analysis.lines.find((l) => l.id === id)).filter(Boolean);
+  const bookIds = new Set(lines.flatMap((l) => l.highlightIds.map((id) => library.highlights[id]?.bookId)).filter(Boolean));
+  const fm = frontmatter({ bh_layer: '面', lines: lines.length, books: bookIds.size, tags: ['book-highlights/plane'] });
+  const body = [`> [!summary] テーマ（面）`, quoteLines(plane.summary || ''), ''];
+  body.push(`## 線（${lines.length}）`, '');
+  for (const l of lines) body.push(`- ${link(paths.lines[l.id], l.name)} — ${l.summary.split('\n')[0]}`);
+  const rels = (analysis.solid?.relations || []).filter((r) => r.from === plane.id || r.to === plane.id);
+  if (rels.length) {
+    body.push('', '## 他の面との関係', '');
+    for (const r of rels) {
+      const other = analysis.planes.find((p) => p.id === (r.from === plane.id ? r.to : r.from));
+      if (other) body.push(`- ${link(paths.planes[other.id], other.name)}: ${r.description}`);
+    }
+  }
+  body.push('', '## 関わる本', '');
+  for (const id of bookIds) if (paths.books[id]) body.push(`- ${link(paths.books[id], library.books[id].title)}`);
+  body.push('', `立体: ${link(paths.map, '知識マップ')}`);
+  return `${fm}# ${plane.name}\n\n${managed(body.join('\n'))}`;
+}
+
+export function renderMapNote(library, analysis, paths) {
+  const s = analysis.solid || {};
+  const fm = frontmatter({ bh_layer: '立体', analyzed_at: isoDate(analysis.createdAt), model: analysis.model?.chat, planes: analysis.planes.length, lines: analysis.lines.length, points: analysis.stats?.points, tags: ['book-highlights/map'] });
+  const body = [];
+  body.push(`> [!tip] ${s.title || '知識の核'}`, quoteLines(s.core || ''), '');
+  body.push(`Canvas で見る: ${link(paths.map + '.canvas', '知識マップ.canvas')}`, '');
+  body.push('## 面（テーマ）', '');
+  for (const p of analysis.planes) {
+    body.push(`### ${link(paths.planes[p.id], p.name)}`, '', p.summary || '', '');
+    for (const id of p.lineIds) {
+      const l = analysis.lines.find((x) => x.id === id);
+      if (l) body.push(`- ${link(paths.lines[l.id], l.name)}（点 ${l.highlightIds.length}）`);
+    }
+    body.push('');
+  }
+  if (s.relations?.length) {
+    body.push('## 面と面の関係', '');
+    for (const r of s.relations) {
+      const a = analysis.planes.find((p) => p.id === r.from);
+      const b = analysis.planes.find((p) => p.id === r.to);
+      if (a && b) body.push(`- ${link(paths.planes[a.id], a.name)} → ${link(paths.planes[b.id], b.name)}: ${r.description}`);
+    }
+    body.push('');
+  }
+  if (s.principles?.length) body.push('## 行動の原則', '', ...s.principles.map((p) => `- ${p}`), '');
+  if (s.questions?.length) body.push('## これからの問い（知識の空白）', '', ...s.questions.map((q) => `- ${q}`), '');
+  if (analysis.isolated?.length) body.push(`## まだつながっていない点`, '', `${analysis.isolated.length} 件の点は、まだどの線にもつながっていません。読書を重ねると線になるかもしれません。`, '');
+  return `${fm}# 知識マップ（立体）\n\n${managed(body.join('\n'))}`;
+}
+
+export function renderRecommendations(analysis, paths) {
+  const recs = analysis.recommendations || [];
+  const kinds = { deepen: '深める', broaden: '広げる', challenge: '揺さぶる' };
+  const fm = frontmatter({ generated_at: isoDate(analysis.recommendedAt || analysis.createdAt), tags: ['book-highlights/recommendations'] });
+  const body = [`${link(paths.map, '知識マップ')}をもとに AI が選んだ本です。ローカル LLM は実在しない本を挙げることがあるため、「確認済み」は書誌データベースで見つかったものです。`, ''];
+  if (analysis.recommendationNote) body.push(`> [!warning] ${analysis.recommendationNote}`, '');
+  for (const r of recs) {
+    const plane = analysis.planes.find((p) => p.id === r.planeId);
+    const v = r.verified;
+    body.push(`## ${r.title}${r.author ? ` — ${r.author}` : ''}`, '');
+    body.push(`- 種類: ${kinds[r.kind] || r.kind || '-'}${plane ? ` ｜ 面: ${link(paths.planes[plane.id], plane.name)}` : ''}`);
+    body.push(`- 理由: ${r.reason}`);
+    if (v) body.push(`- 確認済み: [${v.title}${v.authors ? ' / ' + v.authors : ''}](${v.link})${v.publishedDate ? `（${v.publishedDate}）` : ''}`);
+    else if (r.verified === false) body.push('- ⚠ 書誌データベースで見つかりませんでした（実在を確認してください）');
+    body.push('');
+  }
+  return `${fm}# おすすめの本\n\n${managed(body.join('\n'))}`;
+}
+
+/** 立体の配置（中心=核、周囲=面、その外側=線）。Canvas と Web アプリの図で共用 */
+export function layoutKnowledgeMap(analysis) {
+  const nodes = [];
+  const edges = [];
+  const planes = analysis.planes || [];
+  nodes.push({ id: 'core', kind: 'core', x: 0, y: 0, label: analysis.solid?.title || '知識の核' });
+  const R1 = 520;
+  const R2 = 980;
+  const total = Math.max(1, planes.reduce((s, p) => s + Math.max(1, p.lineIds.length), 0));
+  let angle = -Math.PI / 2;
+  for (const p of planes) {
+    const span = (2 * Math.PI * Math.max(1, p.lineIds.length)) / total;
+    const mid = angle + span / 2;
+    nodes.push({ id: p.id, kind: 'plane', x: Math.cos(mid) * R1, y: Math.sin(mid) * R1, label: p.name, ref: p.id });
+    edges.push({ from: 'core', to: p.id, kind: 'core' });
+    p.lineIds.forEach((lid, i) => {
+      const l = analysis.lines.find((x) => x.id === lid);
+      if (!l) return;
+      const a = angle + (span * (i + 0.5)) / p.lineIds.length;
+      nodes.push({ id: l.id, kind: 'line', x: Math.cos(a) * R2, y: Math.sin(a) * R2, label: l.name, ref: l.id, weight: l.highlightIds.length });
+      edges.push({ from: p.id, to: l.id, kind: 'plane' });
+    });
+    angle += span;
+  }
+  for (const r of analysis.solid?.relations || []) {
+    if (planes.some((p) => p.id === r.from) && planes.some((p) => p.id === r.to)) edges.push({ from: r.from, to: r.to, kind: 'relation', label: r.type || '' });
+  }
+  return { nodes, edges };
+}
+
+export function renderCanvas(analysis, paths) {
+  const { nodes, edges } = layoutKnowledgeMap(analysis);
+  const size = { core: [460, 260], plane: [360, 140], line: [300, 90] };
+  const color = { core: '6', plane: '5', line: '4' };
+  const out = { nodes: [], edges: [] };
+  for (const n of nodes) {
+    const [w, h] = size[n.kind];
+    const base = { id: n.id, x: Math.round(n.x - w / 2), y: Math.round(n.y - h / 2), width: w, height: h, color: color[n.kind] };
+    if (n.kind === 'core') out.nodes.push({ ...base, type: 'text', text: `## ${analysis.solid?.title || '知識の核'}\n\n${analysis.solid?.core || ''}` });
+    else if (n.kind === 'plane') out.nodes.push({ ...base, type: 'file', file: paths.planes[n.ref] + '.md' });
+    else out.nodes.push({ ...base, type: 'file', file: paths.lines[n.ref] + '.md' });
+  }
+  edges.forEach((e, i) => {
+    const edge = { id: `e${i}`, fromNode: e.from, toNode: e.to };
+    if (e.kind === 'relation') Object.assign(edge, { label: e.label, color: '1', toEnd: 'arrow' });
+    else edge.toEnd = 'none';
+    out.edges.push(edge);
+  });
+  return JSON.stringify(out, null, 2);
+}
+
+/** Vault に書き出す全ファイル [{ path, content }]（path は .md/.canvas を含む Vault 相対パス） */
+export function renderVault(library, analysis, { root = 'Highlights' } = {}) {
+  const hasAnalysis = analysis && analysis.lines?.length;
+  const a = hasAnalysis ? analysis : null;
+  const paths = vaultPaths(library, a, root);
+  const files = [{ path: paths.index + '.md', content: renderIndex(library, paths, a) }];
+  for (const b of listBooks(library)) files.push({ path: paths.books[b.id] + '.md', content: renderBookNote(library, b, paths, a) });
+  if (a) {
+    for (const l of a.lines) files.push({ path: paths.lines[l.id] + '.md', content: renderLineNote(library, a, l, paths) });
+    for (const p of a.planes) files.push({ path: paths.planes[p.id] + '.md', content: renderPlaneNote(library, a, p, paths) });
+    files.push({ path: paths.map + '.md', content: renderMapNote(library, a, paths) });
+    files.push({ path: paths.map + '.canvas', content: renderCanvas(a, paths) });
+    if (a.recommendations?.length || a.recommendationNote) files.push({ path: paths.recommendations + '.md', content: renderRecommendations(a, paths) });
+  }
+  return files;
+}
+
+/**
+ * 既存ノートに生成内容をマージする。
+ * - bh:start〜bh:end の中身だけ差し替え、外側（自分のメモ）は残す
+ * - frontmatter は生成したキーだけ更新し、ユーザーが足したキーは残す
+ * - マーカーが無い既存ファイル（ユーザーが作った同名ノート）は null を返して上書きしない
+ */
+export function mergeManaged(existing, generated) {
+  if (existing == null) return generated;
+  if (!existing.includes(END) || !START_RE.test(existing)) return null;
+  const gen = splitNote(generated);
+  const cur = splitNote(existing);
+  const gStart = gen.body.search(START_RE);
+  const gEnd = gen.body.indexOf(END) + END.length;
+  const cStart = cur.body.search(START_RE);
+  const cEnd = cur.body.indexOf(END) + END.length;
+  const body = cur.body.slice(0, cStart) + gen.body.slice(gStart, gEnd) + cur.body.slice(cEnd);
+  const fm = mergeFrontmatter(cur.fm, gen.fm);
+  return (fm ? `---\n${fm}\n---\n` : '') + body;
+}
+
+function splitNote(text) {
+  const m = text.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!m) return { fm: '', body: text };
+  return { fm: m[1], body: text.slice(m[0].length) };
+}
+
+function fmEntries(fm) {
+  const entries = [];
+  for (const line of fm.split('\n')) {
+    const m = line.match(/^([A-Za-z0-9_\-\p{L}]+):/u);
+    if (m || !entries.length) entries.push({ key: m ? m[1] : '', lines: [line] });
+    else entries[entries.length - 1].lines.push(line);
+  }
+  return entries;
+}
+
+function mergeFrontmatter(current, generated) {
+  if (!current) return generated;
+  const gen = fmEntries(generated);
+  const cur = fmEntries(current);
+  const genKeys = new Map(gen.map((e) => [e.key, e]));
+  const out = cur.filter((e) => !genKeys.has(e.key) || !e.key).map((e) => e.lines.join('\n'));
+  // 生成キーは生成順で先頭に置き、ユーザーのキーは後ろに残す
+  return [...gen.map((e) => e.lines.join('\n')), ...out].join('\n');
+}
+
+/**
+ * Vault への書き込み計画を立てる（CLI と File System Access API の両方で使う）
+ * readExisting(path) は既存内容（無ければ null）を返す非同期関数。
+ * 前回のマニフェストにあって今回生成されないファイルは、自分のメモが無ければ削除候補にする。
+ */
+export async function planVaultWrite(files, readExisting, root = 'Highlights') {
+  const manifestPath = `${root}/${MANIFEST}`;
+  let previous = [];
+  try {
+    previous = JSON.parse((await readExisting(manifestPath)) || '{}').files || [];
+  } catch {
+    previous = [];
+  }
+  const writes = [];
+  const skipped = [];
+  let unchanged = 0;
+  for (const f of files) {
+    const existing = await readExisting(f.path);
+    if (f.path.endsWith('.canvas')) {
+      if (existing !== f.content) writes.push(f);
+      else unchanged++;
+      continue;
+    }
+    const merged = mergeManaged(existing, f.content);
+    if (merged == null) skipped.push(f.path);
+    else if (merged !== existing) writes.push({ path: f.path, content: merged });
+    else unchanged++;
+  }
+  const current = new Set(files.map((f) => f.path));
+  const deletes = [];
+  const orphaned = [];
+  for (const p of previous) {
+    if (current.has(p)) continue;
+    const existing = await readExisting(p);
+    if (existing == null) continue;
+    if (p.endsWith('.canvas') || !hasUserContent(existing)) deletes.push(p);
+    else orphaned.push(p);
+  }
+  const manifest = { path: manifestPath, content: JSON.stringify({ generator: 'book-highlights', files: [...current, ...orphaned].sort() }, null, 2) };
+  return { writes: [...writes, manifest], deletes, skipped, orphaned, unchanged };
+}
+
+function hasUserContent(text) {
+  const i = text.indexOf(END);
+  if (i < 0) return true;
+  const after = text.slice(i + END.length).replace('## 自分のメモ', '').trim();
+  return after.length > 0;
+}
