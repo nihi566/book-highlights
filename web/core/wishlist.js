@@ -3,6 +3,8 @@
 // 2 つのサイトは同じオリジン（nihi566.github.io）なので、旧画面で付けたタグがそのまま読める。
 // 書き出しファイルも旧画面と同じ kindle-marks v1（PC の `python run.py import-marks` で取り込める）。
 
+import { bookKey, normalizeText } from './text.js';
+
 export const WISHLIST_FORMAT = 'kindle-wishlist';
 export const TAG_LABELS = { wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み', seen: '見た' };
 export const KIND_LABELS = { manga: 'マンガ', book: '本' };
@@ -159,7 +161,8 @@ function matchesTag(tag, filter) {
  * 戻り値の priceRangeInvalid は下限 > 上限（そのときは価格帯を無視する）
  */
 export function filterWishlist(items, f = {}) {
-  const words = String(f.q || '').trim().toLowerCase().split(/[\s　]+/).filter(Boolean);
+  // 検索タブ（searchWishlist）と同じ正規化にする（全角英数字の書名・全角の語でも件数と結果がずれない）
+  const words = normalizeText(f.q).split(' ').filter(Boolean);
   let min = priceValue(f.min);
   let max = priceValue(f.max);
   const priceRangeInvalid = !Number.isNaN(min) && !Number.isNaN(max) && min > max;
@@ -169,7 +172,7 @@ export function filterWishlist(items, f = {}) {
   const visible = items.filter(({ book, marks }) => {
     if (shelf === 'wanted' && !book.wanted) return false;
     if (shelf === 'purchased' && !book.purchased) return false;
-    const hay = `${book.title} ${book.asin}`.toLowerCase();
+    const hay = normalizeText(`${book.title} ${book.asin}`);
     if (!words.every((w) => hay.includes(w))) return false;
     if (f.ku && !book.ku) return false;
     if (!matchesTag(marks.tag, f.tag || 'all')) return false;
@@ -194,6 +197,45 @@ function comparePrice(a, b, dir) {
   const pb = b.book.price;
   if (pa === null || pb === null) return (pa === null) - (pb === null);
   return (pa - pb) * dir;
+}
+
+/** 書名の照合キー。括弧で囲んだレーベル・版表記（（新潮文庫）・【合本版】など）と記号・空白を落とす */
+export function titleKey(title) {
+  return bookKey(String(title ?? '').normalize('NFKC').replace(/[(（【［\[][^)）】］\]]*[)）】］\]]/g, ''));
+}
+
+// 前方一致に使う書名の最短の長さ（「夜」が「夜と霧」に当たるような誤一致を避ける）
+const MIN_PREFIX = 5;
+
+/**
+ * 書名（候補を複数渡せる）から欲しい本を探し、{ book, exact } を返す。照合キーの一致を優先し、無ければ前方一致
+ *（「ファスト&スロー」→「ファスト&スロー あなたの意思は…上」のように副題・巻数の違いを吸収する）。
+ * 前方一致は続編・派生本（「7つの習慣」→「7つの習慣 ティーンズ」）にも当たるので exact: false にして、
+ * 呼び出し側は「登録済み」と言い切らない
+ */
+export function findWishlistBook(books, titles) {
+  const keys = [titles].flat().map(titleKey).filter(Boolean);
+  if (!keys.length) return undefined;
+  const indexed = books.map((book) => ({ book, key: titleKey(book.title) })).filter((b) => b.key);
+  for (const key of keys) {
+    const exact = indexed.find((b) => b.key === key);
+    if (exact) return { book: exact.book, exact: true };
+  }
+  for (const key of keys) {
+    const prefix = indexed.find((b) => (key.length >= MIN_PREFIX && b.key.startsWith(key)) || (b.key.length >= MIN_PREFIX && key.startsWith(b.key)));
+    if (prefix) return { book: prefix.book, exact: false };
+  }
+  return undefined;
+}
+
+/** 検索タブ用。空白で区切った語をすべて含む本（書名・ASIN）。#タグの語はハイライト用なので無視する */
+export function searchWishlist(books, q) {
+  const words = normalizeText(q).split(' ').filter((w) => w && !w.startsWith('#'));
+  if (!words.length) return [];
+  return books.filter((b) => {
+    const hay = normalizeText(`${b.title} ${b.asin}`);
+    return words.every((w) => hay.includes(w));
+  });
 }
 
 export function formatPrice(book) {

@@ -3,38 +3,18 @@
 import { html } from '../html.js';
 import { download } from '../services.js';
 import { shelfSwitch, spineColor, toast } from '../ui.js';
-import { browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, parseWishlist, saveMarks, TAG_FILTER_LABELS, TAG_LABELS, toggleMark } from '../../core/wishlist.js';
+import { browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, saveMarks, TAG_FILTER_LABELS, TAG_LABELS, toggleMark } from '../../core/wishlist.js';
+import { loadWishlist } from '../wishlist-data.js';
 
-// 同じオリジンの kindle-wishlist-site を先に読む（GitHub Pages ではタグの localStorage も共有される）。
-// PC のコンパニオンなど別の場所から開いたときは、公開 URL から読む（GitHub Pages は CORS を許可している）。
-export const WISHLIST_URLS = [
-  new URL('../kindle-wishlist-site/wishlist.json', location.href).href,
-  'https://nihi566.github.io/kindle-wishlist-site/wishlist.json',
-];
 const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', rating: '評価が高い順' };
 const SHELVES = { all: 'すべて', wanted: '読みたい', purchased: '購入済み' };
 const COVER = (asin) => `https://images-na.ssl-images-amazon.com/images/P/${asin}.09.MZZZZZZZ.jpg`;
 
-let loaded = null; // { lastScraped, books }（開いている間は読み直さない）
-let loading = null;
 // localStorage に保存できないブラウザ用。画面を移っても付けたタグが残るよう 1 つだけ持ち、
 // canStore: false のままにして「閉じる前に書き出して」の案内と公開データとの差の書き出しを使う（旧画面と同じ）
 const fallbackStore = { ...memoryStore(), canStore: false };
 const filters = { shelf: 'all', q: '', sort: 'default', ku: false, min: '', max: '' };
-
-async function fetchWishlist() {
-  let lastError;
-  for (const url of [...new Set(WISHLIST_URLS)]) {
-    try {
-      const res = await fetch(url, { cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return parseWishlist(await res.json());
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError;
-}
+let linkFilter = false; // いまの filters.q が検索・おすすめのリンクから入ったものか
 
 function lastScrapedText(iso) {
   if (!iso) return '未取得';
@@ -48,23 +28,28 @@ export const wishlist = {
       ${shelfSwitch('wishlist')}
       <div id="wl-body"><p class="loading">欲しい本を読み込み中…</p></div>`;
   },
-  mount(root) {
+  mount(root, ctx) {
     const body = root.querySelector('#wl-body');
     const store = browserStore();
     const marksStore = store.canStore ? store : fallbackStore;
-    const show = () => {
-      const items = loaded.books.map((book) => {
-        cleanupSyncedMarks(marksStore, book);
-        return { book, marks: loadMarks(book, marksStore) };
-      });
-      mountList(root, body, items, marksStore, loaded.lastScraped);
-    };
-    if (loaded) return show();
-    loading ??= fetchWishlist().finally(() => (loading = null));
-    loading
+    // 検索の「欲しい本で見る」・おすすめの印から来たときは、その語だけで絞り込んで開く
+    //（ほかの条件が残っていると、印の付いた本が 0 件になる）。次に普通に開いたときはその語を外す
+    const q = ctx?.query?.get('q');
+    if (q) {
+      Object.assign(filters, { q, shelf: 'all', sort: 'default', ku: false, min: '', max: '' });
+      linkFilter = true;
+    } else if (linkFilter) {
+      filters.q = '';
+      linkFilter = false;
+    }
+    loadWishlist()
       .then((w) => {
-        loaded = w;
-        if (body.isConnected) show();
+        if (!body.isConnected) return;
+        const items = w.books.map((book) => {
+          cleanupSyncedMarks(marksStore, book);
+          return { book, marks: loadMarks(book, marksStore) };
+        });
+        mountList(root, body, items, marksStore, w.lastScraped, { fromLink: Boolean(q) });
       })
       .catch((e) => {
         if (!body.isConnected) return;
@@ -73,7 +58,7 @@ export const wishlist = {
         body.querySelector('[data-wl="retry"]').addEventListener('click', () => {
           // ボタンを消してから読み直す（連打で一覧の処理が二重に付かないように）
           body.innerHTML = '<p class="loading">欲しい本を読み込み中…</p>';
-          wishlist.mount(root);
+          wishlist.mount(root, ctx);
         });
       });
   },
@@ -84,10 +69,11 @@ function storedFilter(store, key, allowed) {
   return allowed.includes(v) ? v : 'all';
 }
 
-function mountList(root, body, items, store, lastScraped) {
+function mountList(root, body, items, store, lastScraped, { fromLink = false } = {}) {
   const count = (shelf) => items.filter(({ book }) => shelf === 'all' || book[shelf]).length;
-  filters.tag = storedFilter(store, KEYS.tagFilter, Object.keys(TAG_FILTER_LABELS));
-  filters.kind = storedFilter(store, KEYS.kindFilter, ['manga', 'book']);
+  // リンクから来たときは保存済みのタグ・種別の絞り込みを使わない（保存値は消さないので、次に普通に開けば戻る）
+  filters.tag = fromLink ? 'all' : storedFilter(store, KEYS.tagFilter, Object.keys(TAG_FILTER_LABELS));
+  filters.kind = fromLink ? 'all' : storedFilter(store, KEYS.kindFilter, ['manga', 'book']);
   root.querySelector('#wl-sub').textContent = `欲しい本 ${items.length} 冊`;
   body.innerHTML = String(html`
     <p class="small muted">価格の最終取得: ${lastScrapedText(lastScraped)}</p>
