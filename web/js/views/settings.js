@@ -160,6 +160,6 @@ function pcExportStatus(state) {
       <dt>最後に書き出した時刻</dt><dd>${lastExportText(info.lastExport)}</dd>
       <dt>自動の書き出し</dt><dd>${info.autoExport ? '同期・取り込み・分析のあとに自動で書き出します' : 'オフ（PC で bh config autoexport on にすると有効）'}</dd>
     </dl>
-    ${info.root && info.root !== state.settings.root ? html`<p class="notice">PC の出力先のフォルダは「${info.root}」です。書き出すと、この画面の設定「${state.settings.root}」に合わせます。</p>` : ''}`;
+    ${info.root && info.root !== state.settings.root && state.settings.rootExplicit ? html`<p class="notice">PC の出力先のフォルダは「${info.root}」です。「PC に書き出す」を押すと、この画面の設定「${state.settings.root}」に合わせます。</p>` : ''}`;
 }
 

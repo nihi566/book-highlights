@@ -78,7 +78,14 @@ async function main() {
       console.log(`取り込み: 新しい点 ${s.added} 件、更新 ${s.updated} 件、既存 ${s.unchanged} 件（新しい本 ${s.booksAdded} 冊）${r.analysisChanged ? '。バックアップの新しい分析結果も反映しました' : ''}`);
       // Vault が設定されていれば、取り込んだらすぐ Obsidian にも写す（--no-obsidian で止める）
       const cfgAfter = await store.config();
-      if (!args['no-obsidian'] && (args.obsidian || (cfgAfter.vault && cfgAfter.autoExport !== false))) await exportVault(store, { trigger: 'import' });
+      if (!args['no-obsidian'] && (args.obsidian || (cfgAfter.vault && cfgAfter.autoExport !== false))) {
+        try {
+          await exportVault(store, { trigger: 'import' });
+        } catch (e) {
+          // 取り込みは保存済みなので失敗扱いにはしない
+          console.log(`! 取り込みは保存しましたが、Obsidian への書き出しに失敗しました: ${e.message}（あとで bh obsidian で書き出せます）`);
+        }
+      }
       break;
     }
     case 'obsidian':

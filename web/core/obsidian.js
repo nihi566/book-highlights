@@ -34,6 +34,15 @@ export function vaultPaths(library, analysis, root = 'Highlights', owners = {}) 
   }
   const used = new Set();
   const take = (p) => used.add(p.toLowerCase()) && p;
+  // 本の ID は変わらないので、前回の持ち主の予約は（削除した本のメモ付きノートでも）守る。
+  // 線・面の ID は分析し直すと変わるので、予約は持ち主が今も存在するときだけ有効（同じ名前なら同じノートを使い続ける）
+  const books = listBooks(library);
+  const current = new Set([...books, ...(analysis?.lines || []), ...(analysis?.planes || [])].map((x) => x.id));
+  const blocks = (p, id, dir) => {
+    const owner = reservedBy.get(p.toLowerCase());
+    if (!owner || owner === id) return false;
+    return dir === 'Books' || current.has(owner);
+  };
   const assign = (dir, items, nameOf) => {
     const out = {};
     const sorted = [...items].sort((a, b) => a.id.localeCompare(b.id));
@@ -49,7 +58,7 @@ export function vaultPaths(library, analysis, root = 'Highlights', owners = {}) 
       if (out[it.id]) continue;
       const base = baseOf(it);
       let p = base;
-      for (let i = 2; used.has(p.toLowerCase()) || (reservedBy.has(p.toLowerCase()) && reservedBy.get(p.toLowerCase()) !== it.id); i++) p = `${base} (${i})`;
+      for (let i = 2; used.has(p.toLowerCase()) || blocks(p, it.id, dir); i++) p = `${base} (${i})`;
       out[it.id] = take(p);
     }
     return out;
@@ -59,7 +68,7 @@ export function vaultPaths(library, analysis, root = 'Highlights', owners = {}) 
     index: `${root}/Index`,
     map: `${root}/Knowledge Map`,
     recommendations: `${root}/Recommendations`,
-    books: assign('Books', listBooks(library), (b) => b.title),
+    books: assign('Books', books, (b) => b.title),
     lines: assign('Lines', analysis?.lines || [], (l) => l.name),
     planes: assign('Planes', analysis?.planes || [], (p) => p.name),
   };
@@ -390,7 +399,7 @@ function topLevelKey(line) {
   if (!line.trim() || /^[\s#-]/.test(line)) return null;
   const quoted = line.match(/^"((?:[^"\\]|\\.)*)"\s*:(?:\s|$)/) || line.match(/^'((?:[^']|'')*)'\s*:(?:\s|$)/);
   if (quoted) return quoted[1];
-  const plain = line.match(/^([^:]+?)\s*:(?:\s|$)/);
+  const plain = line.match(/^(.+?)\s*:(?:\s|$)/);
   return plain ? plain[1] : null;
 }
 
@@ -420,11 +429,12 @@ function yamlList(entry) {
     if (/^'.*'$/.test(t)) return t.slice(1, -1).replace(/''/g, "'");
     return t;
   };
-  const first = entry.lines[0].slice(entry.lines[0].indexOf(':') + 1).trim();
+  const line0 = entry.lines[0];
+  const first = line0.slice(line0.search(/:(?:\s|$)/) + 1).trim();
   const values = [];
-  if (first.startsWith('[')) {
-    for (const m of first.replace(/^\[|\]$/g, '').matchAll(/"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,]+/g)) values.push(unquote(m[0]));
-  } else if (first) values.push(unquote(first));
+  const items = (str) => [...str.matchAll(/\s*("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,]+)/g)].map((m) => unquote(m[1]));
+  if (first.startsWith('[')) values.push(...items(first.replace(/^\[|\]$/g, '')));
+  else if (first) values.push(...items(first));
   for (const line of entry.lines.slice(1)) {
     const item = line.match(/^\s*-\s+(.*)$/);
     if (item) values.push(unquote(item[1]));
@@ -495,11 +505,26 @@ export async function planVaultWrite(files, readExisting, root = 'Highlights') {
   for (const f of files) if (f.id) owners[f.path] = f.id;
   const sortedOwners = Object.fromEntries(Object.entries(owners).sort(([a], [b]) => a.localeCompare(b)));
   const manifest = { path: manifestPath, content: JSON.stringify({ generator: 'book-highlights', files: [...current, ...orphaned].sort(), owners: sortedOwners }, null, 2) };
-  return { writes: [...writes, manifest], deletes, skipped, orphaned, unchanged };
+  return { writes: [...writes, manifest], deletes, skipped, orphaned, unchanged, owners: sortedOwners };
 }
 
-// このツールが frontmatter に書くキー（これ以外のキーがあればユーザーが足したもの）
-const GENERATED_KEYS = new Set(['title', 'author', 'sources', 'highlights', 'last_highlighted', 'asin', 'bh_id', 'tags', 'bh_layer', 'plane', 'points', 'books', 'keywords', 'lines', 'planes', 'analyzed_at', 'model', 'generated_at']);
+// このツールがノートの種類ごとに frontmatter に書くキー（これ以外のキーがあればユーザーが足したもの）
+const GENERATED_KEYS = {
+  book: new Set(['title', 'author', 'sources', 'highlights', 'last_highlighted', 'asin', 'bh_id', 'tags']),
+  line: new Set(['bh_layer', 'plane', 'points', 'books', 'keywords', 'tags']),
+  plane: new Set(['bh_layer', 'lines', 'books', 'tags']),
+  map: new Set(['bh_layer', 'analyzed_at', 'model', 'planes', 'lines', 'points', 'tags']),
+  other: new Set(['generated_at', 'tags']),
+};
+
+function generatedKeysFor(entries) {
+  const value = (key) => {
+    const e = entries.find((x) => x.key === key);
+    return e ? yamlList(e)[0] || '' : '';
+  };
+  if (entries.some((e) => e.key === 'bh_id')) return GENERATED_KEYS.book;
+  return { 線: GENERATED_KEYS.line, 面: GENERATED_KEYS.plane, 立体: GENERATED_KEYS.map }[value('bh_layer')] || GENERATED_KEYS.other;
+}
 
 /** 自動生成部分の外に、ユーザーが書いたものが残っているか（あれば削除しない） */
 function hasUserContent(raw) {
@@ -507,8 +532,10 @@ function hasUserContent(raw) {
   const start = body.search(START_RE);
   const end = body.indexOf(END);
   if (start < 0 || end < 0) return true;
-  for (const e of fmEntries(fm)) {
-    if (e.comment || (e.key && !GENERATED_KEYS.has(e.key))) return true;
+  const entries = fmEntries(fm);
+  const generated = generatedKeysFor(entries);
+  for (const e of entries) {
+    if (e.comment || (e.key && !generated.has(e.key))) return true;
     if (e.key === 'tags' && yamlList(e).some((t) => !String(t).startsWith('book-highlights/'))) return true;
   }
   const before = body.slice(0, start).replace(/^# .*$/m, '').trim();

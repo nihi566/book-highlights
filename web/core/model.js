@@ -82,6 +82,7 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
       book.userUpdatedAt = now;
       for (const h of Object.values(library.highlights)) {
         if (h.bookId === bookId && h.deletedWithBook) {
+          keepUserStamp(h);
           delete h.deleted;
           delete h.deletedWithBook;
           h.updatedAt = now;
@@ -144,6 +145,7 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
         hl.tags = shorter.tags;
         hl.userNote = shorter.userNote;
         hl.importedAt = shorter.importedAt;
+        keepUserStamp(shorter);
         if (shorter.userUpdatedAt) hl.userUpdatedAt = shorter.userUpdatedAt;
         shorter.deleted = true;
         shorter.supersededBy = id;
@@ -159,7 +161,13 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
   return stats;
 }
 
+/** 古い版のデータ（userUpdatedAt 無し）で編集の跡があれば、updatedAt を進める前にその時刻を編集時刻として残す */
+function keepUserStamp(item) {
+  if (!item.userUpdatedAt && (item.favorite || item.tags?.length || item.userNote || (item.deleted && !item.supersededBy))) item.userUpdatedAt = item.updatedAt;
+}
+
 function fillMissing(target, src, now) {
+  keepUserStamp(target);
   let changed = false;
   for (const key of ['note', 'chapter', 'page', 'color', 'createdAt']) {
     if (!target[key] && src[key]) {
@@ -254,14 +262,15 @@ function mergeItem(a, b, userFields) {
 function mergeHighlight(a, b) {
   const out = mergeItem(a, b, USER_FIELDS);
   // 伸ばしたハイライトに置き換わった古い点は、どちらの端末から来ても消えたまま
-  const supersededBy = a.supersededBy || b.supersededBy;
+  const supersededBy = [a.supersededBy, b.supersededBy].filter(Boolean).sort()[0];
   if (supersededBy) Object.assign(out, { deleted: true, supersededBy });
   return out;
 }
 
 function mergeBook(a, b) {
   const out = mergeItem(a, b, BOOK_USER_FIELDS);
-  out.sources = [...new Set([...(a.sources || []), ...(b.sources || [])])];
+  const rank = (x) => (Object.keys(SOURCES).indexOf(x) + 1 || 99);
+  out.sources = [...new Set([...(a.sources || []), ...(b.sources || [])])].sort((x, y) => rank(x) - rank(y) || x.localeCompare(y));
   out.createdAt = [a.createdAt, b.createdAt].filter(Boolean).sort()[0] || out.createdAt;
   return out;
 }
@@ -278,6 +287,17 @@ export function mergeLibraries(base, incoming) {
     for (const [id, item] of Object.entries(incoming[kind] || {})) {
       const cur = out[kind][id];
       out[kind][id] = cur ? merge(cur, item) : structuredClone(item);
+    }
+  }
+  // 置き換わった古い点に、置き換え先より新しい自分の編集（もう一方の端末で未同期だったもの）があれば引き継ぐ
+  for (const h of Object.values(out.highlights)) {
+    const target = h.supersededBy && out.highlights[h.supersededBy];
+    if (!target || target.deleted) continue;
+    const hs = userStamp(h, USER_FIELDS);
+    if (hs && hs > userStamp(target, USER_FIELDS)) {
+      for (const k of ['favorite', 'tags', 'userNote']) target[k] = structuredClone(h[k]);
+      target.userUpdatedAt = hs;
+      target.updatedAt = later(target.updatedAt, hs);
     }
   }
   // おすすめへの反応は、付けた時刻が新しい方

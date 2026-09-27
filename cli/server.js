@@ -9,7 +9,7 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { REPO_ROOT, exportAndRecord, summarizePlan } from './store.js';
+import { REPO_ROOT, exportAndRecord, readVaultOwners, summarizePlan } from './store.js';
 import { safeFileName } from '../web/core/text.js';
 import { libraryStats, mergeLibraries } from '../web/core/model.js';
 import { applyImport } from '../web/core/importing.js';
@@ -38,13 +38,19 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
   // 同期・取り込み・分析結果の保存のあと、少し待ってから Vault を自動で書き出す（続けて来たら 1 回にまとめる）
   let autoTimer = null;
   let autoTrigger = '';
+  let autoPending = '';
   function scheduleAutoExport(trigger) {
     autoTrigger = trigger;
     clearTimeout(autoTimer);
     autoTimer = setTimeout(async () => {
       try {
         const cfg = await store.config();
-        if (!cfg.vault || cfg.autoExport === false || job.running) return;
+        if (!cfg.vault || cfg.autoExport === false) return;
+        // 分析中は書き出しを分析の後に回す（分析が失敗・中止しても、同期した内容は Vault に届く）
+        if (job.running) {
+          autoPending = autoTrigger;
+          return;
+        }
         await store.lock(() => exportAndRecord(store, { trigger: autoTrigger }));
       } catch (e) {
         log(`[auto-export] ${e.message}`);
@@ -120,6 +126,7 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
           vaultPath: cfg.vault ? path.join(cfg.vault, cfg.root) : '',
           autoExport: cfg.autoExport !== false,
           lastExport: (await store.state()).lastExport || null,
+          owners: cfg.vault ? await readVaultOwners(cfg.vault, cfg.root) : {},
           analysis: analysis ? { createdAt: analysis.createdAt, ...analysis.stats } : null,
           job: publicJob(),
         });
@@ -225,6 +232,9 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
     } finally {
       job.running = false;
       job.finishedAt = new Date().toISOString();
+      // 分析が Vault まで書き出せなかったとき、分析中に届いた同期・取り込みの書き出しをここで行う
+      if (autoPending && (job.error || !job.vault)) scheduleAutoExport(autoPending);
+      autoPending = '';
     }
   }
 

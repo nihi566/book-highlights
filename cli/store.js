@@ -123,3 +123,14 @@ export async function exportAndRecord(store, { root, trigger = 'manual', dryRun 
   }
 }
 
+/** Vault のマニフェストから「ファイル → 本・線・面の ID」を読む（「Obsidian で開く」で同じノートを開くため） */
+export async function readVaultOwners(vaultDir, root) {
+  return loadVaultOwners(async (p) => {
+    try {
+      return await readFile(path.join(vaultDir, p), 'utf8');
+    } catch {
+      return null;
+    }
+  }, root);
+}
+

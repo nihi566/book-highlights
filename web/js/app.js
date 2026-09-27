@@ -220,7 +220,7 @@ async function runAnalysis(mode = 'analyze') {
   setJob({ running: true, where: 'pc', stage: 'embed', message: 'PC と同期しています', done: 0, total: 0, error: '' });
   try {
     await syncWithPc();
-    await companion.startAnalyze(mode, state.settings.root);
+    await companion.startAnalyze(mode);
     await pollPcJob();
   } catch (e) {
     setJob({ running: false, stage: 'error', error: e.message, message: '' });
@@ -297,14 +297,22 @@ async function sync({ quiet = false } = {}) {
 
 /** PC の状態（出力先・最後に Vault に書き出した結果）を取り直し、表示している画面に反映する */
 async function refreshPcInfo() {
-  if (state.settings.ai.mode !== 'companion') return;
+  // PC を設定していないとき（GitHub Pages で開いただけ）は localhost に問い合わせない
+  if (state.settings.ai.mode !== 'companion' || !(state.servedByCompanion || state.settings.ai.companionUrl)) return;
   try {
     state.pcInfo = await companion.info();
   } catch {
     return;
   }
+  // フォルダ名を自分で決めていなければ PC の設定に合わせる（画面の表示と実際の出力先をそろえる）
+  if (!state.settings.rootExplicit && state.pcInfo.root && state.pcInfo.root !== state.settings.root) {
+    state.settings.root = state.pcInfo.root;
+    await save.settings();
+  }
   const { path } = parseHash();
-  if (path === '/export' || path === '/settings') render({ keepScroll: true });
+  // 入力中の欄があるときは描き直さない（書きかけの設定を消さない）
+  const typing = document.activeElement?.matches?.('#view input:not([type="checkbox"]):not([type="radio"]), #view textarea, #view select');
+  if ((path === '/export' || path === '/settings') && !typing) render({ keepScroll: true });
 }
 
 let folderTimer;
@@ -326,7 +334,8 @@ function scheduleFolderExport() {
 
 async function recordFolderExport(handle, plan, trigger) {
   state.folderExport = { at: new Date().toISOString(), trigger, name: handle.name, root: state.settings.root, written: plan.writes.length - 1, unchanged: plan.unchanged, deleted: plan.deletes.length };
-  await save.folderExport();
+  state.vaultOwners = plan.owners || {};
+  await Promise.all([save.folderExport(), save.vaultOwners()]);
   const { path } = parseHash();
   if (path === '/export') render({ keepScroll: true });
 }
@@ -461,7 +470,8 @@ const actions = {
   async 'export-pc'() {
     try {
       await syncWithPc();
-      const r = await companion.exportVault(state.settings.root);
+      // フォルダ名は、この画面で自分で決めたときだけ PC に伝える（既定値で PC の設定を上書きしない）
+      const r = await companion.exportVault(state.settings.rootExplicit ? state.settings.root : undefined);
       await refreshPcInfo();
       showExportResult(`PC の Vault（${r.vaultPath}）に書き出しました: 書き込み ${r.written} 件・変更なし ${r.unchanged} 件${r.skipped.length ? `・同名ノートのため見送り ${r.skipped.length} 件` : ''}`);
     } catch (e) {
@@ -508,7 +518,9 @@ const forms = {
   },
   async 'export-settings'(form) {
     const d = new FormData(form);
-    state.settings.root = safeFileName(String(d.get('root') || '').trim() || 'Highlights');
+    const root = safeFileName(String(d.get('root') || '').trim() || 'Highlights');
+    if (root !== state.settings.root) state.settings.rootExplicit = true;
+    state.settings.root = root;
     state.settings.vaultName = String(d.get('vaultName') || '').trim();
     await save.settings();
     toast('保存しました');
@@ -572,7 +584,8 @@ window.addEventListener('hashchange', () => render());
 
 document.addEventListener('visibilitychange', () => {
   const job = state.job;
-  if (document.visibilityState === 'visible' && job?.where === 'pc' && (job.lost || job.running) && !followingPcJob) checkPcJob();
+  // 途切れて「状況不明」になった PC の分析だけ確かめ直す（始める途中の分析を古い結果で上書きしない）
+  if (document.visibilityState === 'visible' && job?.where === 'pc' && job.lost && !followingPcJob) checkPcJob();
 });
 
 async function start() {
