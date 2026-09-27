@@ -24,7 +24,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: test
     runs-on: ubuntu-latest
+    # ジョブ単位の permissions は全体の設定を置き換えるので、checkout 用の contents: read もここに書く
     permissions:
+      contents: read
       pages: write
       id-token: write
     concurrency:
