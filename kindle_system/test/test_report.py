@@ -147,6 +147,53 @@ class BuildHtmlTest(unittest.TestCase):
         self.assertEqual(html.count("&lt;script&gt;"), 2)
 
 
+class LastScrapedTest(unittest.TestCase):
+    """report.build_html() の「価格の最終取得」日時表示のテスト。"""
+
+    def _book(self, asin, timestamp):
+        return {
+            "title": f"本{asin}",
+            "asin": asin,
+            "sell_price": None,
+            "point_value": 0,
+            "actual_price": None,
+            "campaign_text": "",
+            "timestamp": timestamp,
+            "is_unlimited": 0,
+            "is_wanted": 0,
+            "is_purchased": 0,
+        }
+
+    def _last_scraped(self, html):
+        match = re.search(r'<p class="last-scraped">(.*?)</p>', html)
+        self.assertIsNotNone(match)
+        return match.group(1)
+
+    def test_shows_latest_timestamp_among_books(self):
+        books = [
+            self._book("B0A", "2026-09-20T08:00:00.123456"),
+            self._book("B0B", "2026-09-27T14:03:59.000001"),
+            self._book("B0C", None),
+        ]
+        line = self._last_scraped(report.build_html(books))
+        self.assertIn('<time datetime="2026-09-27T14:03:59.000001">2026-09-27 14:03</time>', line)
+
+    def test_shows_not_yet_when_no_price_was_fetched(self):
+        books = [self._book("B0A", None)]
+        self.assertEqual(self._last_scraped(report.build_html(books)), "価格の最終取得: 未取得")
+        self.assertEqual(self._last_scraped(report.build_html([])), "価格の最終取得: 未取得")
+
+    def test_escapes_unparsable_timestamp(self):
+        books = [self._book("B0A", "<b>broken</b>")]
+        line = self._last_scraped(report.build_html(books))
+        self.assertNotIn("<b>", line)
+        self.assertIn("&lt;b&gt;broken&lt;/b&gt;", line)
+
+    def test_is_placed_right_after_title(self):
+        html = report.build_html([])
+        self.assertRegex(html, r'<h1>蔵書リスト</h1>\n<p class="last-scraped">')
+
+
 class CategorySectionsTest(unittest.TestCase):
     """report.build_html() の want済み/購入済み/全部 3カテゴリ分けのテスト。"""
 

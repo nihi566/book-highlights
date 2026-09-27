@@ -17,6 +17,7 @@ import os
 import sys
 import html
 import io
+from datetime import datetime
 
 # Windows CP932 環境での文字化け防止（main.py と同じ対処）
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
@@ -205,7 +206,8 @@ _PAGE_STYLE = r"""
 }
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 var(--space-xl); background: var(--color-bg); color: var(--color-text); }
-h1 { margin-bottom: var(--space-xl); }
+h1 { margin-bottom: var(--space-xs); }
+.last-scraped { color: var(--color-muted); font-size: var(--font-size-sm); margin: 0 0 var(--space-xl); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .result-count { color: var(--color-muted); font-size: var(--font-size-sm); margin: 0 0 var(--space-sm); }
 .book-table { width: 100%; border-collapse: collapse; background: var(--color-surface); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
@@ -275,7 +277,8 @@ h1 { margin-bottom: var(--space-xl); }
 }
 @media (max-width: 640px) {
   body { margin: 1rem auto; padding: 0 var(--space-lg); }
-  h1 { font-size: 1.4rem; margin: 0 0 var(--space-lg); }
+  h1 { font-size: 1.4rem; margin: 0 0 var(--space-xs); }
+  .last-scraped { margin-bottom: var(--space-lg); }
   .filter-btn, .reset-btn { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
   .search-input, .sort-select, .tag-filter-select, .price-input { min-height: 2.75rem; }
   .view-list .book-table thead { display: none; }
@@ -291,8 +294,7 @@ h1 { margin-bottom: var(--space-xl); }
 
 """
 
-_PAGE_HEADER_HTML = r"""<h1>蔵書リスト</h1>
-<div class="filter-bar" role="group" aria-label="表示する分類">
+_PAGE_HEADER_HTML = r"""<div class="filter-bar" role="group" aria-label="表示する分類">
 <button type="button" class="filter-btn" data-target="section-all" aria-pressed="true">全部</button>
 <button type="button" class="filter-btn" data-target="section-wanted" aria-pressed="false">読みたい</button>
 <button type="button" class="filter-btn" data-target="section-purchased" aria-pressed="false">購入済み</button>
@@ -736,6 +738,29 @@ applyView(getStoredView());
 """
 
 
+def _build_last_scraped_html(books: list) -> str:
+    """
+    価格を最後に取得（スクレイピング）した日時をタイトル直下に表示する1行を組み立てる。
+
+    専用の実行記録は持たず、各書籍の最新価格の timestamp（repository.get_books() が返す
+    price_history の最新1件。save_price_history() が datetime.now().isoformat() で書く
+    ローカル時刻）の最大値を最終取得日時とみなす。1冊も価格を取得していなければ「未取得」。
+    ISO 形式として解釈できない値はそのまま（エスケープして）表示する。
+    """
+    timestamps = [str(book["timestamp"]) for book in books if book.get("timestamp")]
+    if not timestamps:
+        return '<p class="last-scraped">価格の最終取得: 未取得</p>'
+    latest = max(timestamps)
+    try:
+        label = datetime.fromisoformat(latest).strftime("%Y-%m-%d %H:%M")
+    except ValueError:
+        label = latest
+    return (
+        f'<p class="last-scraped">価格の最終取得: '
+        f'<time datetime="{html.escape(latest, quote=True)}">{html.escape(label)}</time></p>'
+    )
+
+
 def build_html(books: list) -> str:
     """
     書籍一覧を want済み/購入済み/全部の3カテゴリに分けた単一の静的 HTML として生成する
@@ -777,6 +802,8 @@ def build_html(books: list) -> str:
         f"<style>\n{_PAGE_STYLE}</style>\n"
         "</head>\n"
         '<body class="view-grid">\n'
+        "<h1>蔵書リスト</h1>\n"
+        f"{_build_last_scraped_html(books)}\n"
         f"{_PAGE_HEADER_HTML}\n"
         f"{sections_html}\n"
         "\n"
