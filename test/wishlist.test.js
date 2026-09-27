@@ -1,6 +1,48 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, loadMarks, marksFile, memoryStore, parseWishlist, saveMarks, toggleMark } from '../web/core/wishlist.js';
+import { cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseWishlist, saveMarks, searchWishlist, titleKey, toggleMark } from '../web/core/wishlist.js';
+
+test('titleKey: 括弧のレーベル・版表記と記号・空白を落とす', () => {
+  assert.equal(titleKey('731―石井四郎と細菌戦部隊の闇を暴く―（新潮文庫）'), titleKey('731 石井四郎と細菌戦部隊の闇を暴く'));
+  assert.equal(titleKey('ＦＡＣＴＦＵＬＮＥＳＳ (日経BP)'), 'factfulness');
+  assert.equal(titleKey('サピエンス全史（上）【合本版】'), 'サピエンス全史');
+});
+
+test('findWishlistBook: 書名の一致・前方一致で欲しい本を探す（短い書名は完全一致だけ）', () => {
+  const { books } = parseWishlist({ format: 'kindle-wishlist', version: 1, books: [
+    { asin: 'B0AAAAAAA1', title: '思考の整理学 (ちくま文庫)' },
+    { asin: 'B0AAAAAAA2', title: 'ファスト&スロー あなたの意思はどのように決まるか? 上' },
+    { asin: 'B0AAAAAAA3', title: '夜' },
+  ] });
+  assert.deepEqual(findWishlistBook(books, '思考の整理学'), { book: books[0], exact: true });
+  assert.deepEqual(findWishlistBook(books, 'ファスト&スロー'), { book: books[1], exact: false }, '前方一致は exact: false（続編・派生本の可能性があるので呼び出し側で表示を分ける）');
+  assert.equal(findWishlistBook(books, '夜')?.book.asin, 'B0AAAAAAA3', '完全一致なら短くても見つかる');
+  assert.equal(findWishlistBook(books, '夜と霧'), undefined, '短い書名 "夜" を前方一致に使わない');
+  assert.equal(findWishlistBook(books, '思考'), undefined, '4 文字以下の書名で前方一致しない');
+  assert.equal(findWishlistBook(books, ''), undefined);
+  assert.deepEqual(findWishlistBook(books, ['ファスト&スロー', '思考の整理学']), { book: books[0], exact: true }, '候補の書名を複数渡すと、どれかの完全一致を前方一致より優先する');
+});
+
+test('filterWishlist と searchWishlist は同じ正規化で当たる（全角英数字の書名・全角の語）', () => {
+  const { books } = parseWishlist({ format: 'kindle-wishlist', version: 1, books: [{ asin: 'B0AAAAAAA1', title: 'ＡＩ時代の仕事術' }, { asin: 'B0AAAAAAA2', title: '別の本' }] });
+  const items = books.map((book) => ({ book, marks: loadMarks(book, memoryStore()) }));
+  for (const q of ['ai', 'ＡＩ 仕事']) {
+    assert.deepEqual(searchWishlist(books, q).map((b) => b.asin), ['B0AAAAAAA1'], `searchWishlist: ${q}`);
+    assert.deepEqual(filterWishlist(items, { q }).items.map((i) => i.book.asin), ['B0AAAAAAA1'], `filterWishlist: ${q}`);
+  }
+});
+
+test('searchWishlist: 空白で AND・書名と ASIN・#タグ語は無視', () => {
+  const { books } = parseWishlist({ format: 'kindle-wishlist', version: 1, books: [
+    { asin: 'B0AAAAAAA1', title: 'すごい本 上' },
+    { asin: 'B0AAAAAAA2', title: 'すごい本 下' },
+  ] });
+  assert.deepEqual(searchWishlist(books, 'すごい 上').map((b) => b.asin), ['B0AAAAAAA1']);
+  assert.deepEqual(searchWishlist(books, 'ｂ0aaaaaaa2').map((b) => b.asin), ['B0AAAAAAA2'], '全角・小文字でも当たる');
+  assert.deepEqual(searchWishlist(books, 'すごい #習慣').map((b) => b.asin), ['B0AAAAAAA1', 'B0AAAAAAA2']);
+  assert.deepEqual(searchWishlist(books, '#習慣'), [], '#タグだけの検索では出さない');
+  assert.deepEqual(searchWishlist(books, '  '), []);
+});
 
 const book = (over = {}) => ({ asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, kind: 'book', tag: '', rating: null, scraped_at: '2026-01-01T00:00:00', ...over });
 const data = (books, over = {}) => ({ format: 'kindle-wishlist', version: 1, last_scraped: '2026-01-02T03:04:05', books, ...over });

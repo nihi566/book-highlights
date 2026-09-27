@@ -4,6 +4,8 @@ import { FEEDBACK_LABELS, feedbackByStatus, feedbackFor, libraryStats } from '..
 import { layoutKnowledgeMap } from '../../core/obsidian.js';
 import { isoDate, truncate } from '../../core/text.js';
 import { highlightCard, lineIndex } from '../ui.js';
+import { findWishlistBook } from '../../core/wishlist.js';
+import { loadWishlist } from '../wishlist-data.js';
 
 const STAGES = [
   ['embed', '点'],
@@ -93,6 +95,24 @@ export const knowledge = {
         <p class="help">どの線にも入らなかった点です。読書を重ねると、いつか線になるかもしれません。</p>
         <a class="btn small" href="#/knowledge/isolated">見る</a>` : ''}`;
   },
+  mount(root) {
+    // おすすめの本がすでに欲しい本（kindle-wishlist-site）に入っていれば印を付ける。読めなければ何もしない
+    const cards = [...root.querySelectorAll('.rec[data-title]')];
+    if (!cards.length) return;
+    loadWishlist()
+      .then((w) => {
+        for (const card of cards) {
+          const found = findWishlistBook(w.books, [card.dataset.title, card.dataset.vtitle]);
+          const slot = card.querySelector('.rec-wish');
+          if (!found || !slot?.isConnected) continue;
+          const b = found.book;
+          // 前方一致は続編・派生本のこともあるので言い切らず、欲しい本側の書名を見せる
+          const label = found.exact ? (b.purchased ? '購入済み' : '欲しい本に登録済み') : `欲しい本に似た書名: ${b.title}`;
+          slot.innerHTML = String(html`<a class="badge wish ${found.exact ? '' : 'similar'}" href="#/wishlist?q=${encodeURIComponent(b.asin || b.title)}">${label}</a>`);
+        }
+      })
+      .catch(() => {});
+  },
 };
 
 function planeCard(a, p) {
@@ -111,11 +131,12 @@ function recCard(a, r, i, library) {
   const link = safeUrl(v?.link);
   const thumb = safeUrl(v?.thumbnail);
   const reaction = feedbackFor(library, r.title)?.status || '';
-  return html`<article class="card rec ${reaction === 'no' ? 'rec-dismissed' : ''}">
+  return html`<article class="card rec ${reaction === 'no' ? 'rec-dismissed' : ''}" data-title="${r.title}" data-vtitle="${v?.title || ''}">
     ${thumb ? html`<img src="${thumb}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
     <div class="grow">
       <div class="kind kind-${r.kind}">${KIND[r.kind] || r.kind}${plane ? html` ・ <a href="#/knowledge/plane/${plane.id}">${plane.name}</a>` : ''}</div>
       <h3>${r.title}</h3>
+      <div class="rec-wish"></div>
       <div class="small muted">${r.author}</div>
       <p class="small">${r.reason}</p>
       ${r.query ? html`<p class="small muted">「${r.query}」で探した本</p>` : ''}
