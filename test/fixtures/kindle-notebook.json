@@ -1,0 +1,43 @@
+{
+ "format": "book-highlights/kindle-notebook",
+ "version": 1,
+ "exportedAt": "2024-04-01T00:00:00.000Z",
+ "source": "https://read.amazon.co.jp",
+ "books": [
+  {
+   "asin": "B000TEST01",
+   "title": "時間の使い方の哲学",
+   "author": "小林 誠",
+   "lastAnnotated": "2024年3月30日 土曜日",
+   "highlights": [
+    {
+     "text": "人生は短いのではない。私たちがその多くを浪費しているのだ。",
+     "note": "",
+     "location": "215",
+     "page": "",
+     "color": "yellow"
+    },
+    {
+     "text": "予定表に空白を作ることは、怠けではなく戦略である。",
+     "note": "来週から試す",
+     "location": "1,020",
+     "page": "64",
+     "color": "blue"
+    },
+    {
+     "text": "",
+     "note": "本全体の感想: 有限性の受容がテーマ",
+     "location": "2000",
+     "page": "",
+     "color": ""
+    }
+   ]
+  },
+  {
+   "asin": "B000TEST02",
+   "title": "空の本",
+   "author": "誰か",
+   "highlights": []
+  }
+ ]
+}
