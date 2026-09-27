@@ -17,6 +17,9 @@ const COVER = (asin) => `https://images-na.ssl-images-amazon.com/images/P/${asin
 
 let loaded = null; // { lastScraped, books }（開いている間は読み直さない）
 let loading = null;
+// localStorage に保存できないブラウザ用。画面を移っても付けたタグが残るよう 1 つだけ持ち、
+// canStore: false のままにして「閉じる前に書き出して」の案内と公開データとの差の書き出しを使う（旧画面と同じ）
+const fallbackStore = { ...memoryStore(), canStore: false };
 const filters = { shelf: 'all', q: '', sort: 'default', ku: false, min: '', max: '' };
 
 async function fetchWishlist() {
@@ -48,7 +51,7 @@ export const wishlist = {
   mount(root) {
     const body = root.querySelector('#wl-body');
     const store = browserStore();
-    const marksStore = store.canStore ? store : memoryStore();
+    const marksStore = store.canStore ? store : fallbackStore;
     const show = () => {
       const items = loaded.books.map((book) => {
         cleanupSyncedMarks(marksStore, book);
@@ -67,7 +70,11 @@ export const wishlist = {
         if (!body.isConnected) return;
         body.innerHTML = String(html`<p class="notice err">欲しい本のデータを読み込めませんでした（${e.message}）。通信状況を確かめて、もう一度読み込んでください。</p>
           <div class="row" style="margin-top:12px"><button class="btn" type="button" data-wl="retry">もう一度読み込む</button></div>`);
-        body.querySelector('[data-wl="retry"]').addEventListener('click', () => wishlist.mount(root));
+        body.querySelector('[data-wl="retry"]').addEventListener('click', () => {
+          // ボタンを消してから読み直す（連打で一覧の処理が二重に付かないように）
+          body.innerHTML = '<p class="loading">欲しい本を読み込み中…</p>';
+          wishlist.mount(root);
+        });
       });
   },
 };
