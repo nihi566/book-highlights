@@ -263,6 +263,23 @@ function autoSyncAfterChange() {
   syncTimer = setTimeout(() => sync({ quiet: true }), 1500);
 }
 
+function canAutoSync() {
+  return state.settings.ai.mode === 'companion' && state.settings.autoSync && (state.servedByCompanion || state.settings.ai.companionUrl);
+}
+
+// ブラウザ拡張などが PC に取り込んだ点を拾うため、画面に戻ったときと表示中は 5 分ごとに同期する
+// （メモなどを入力している途中は画面を描き直さないよう見送る）
+const PERIODIC_SYNC_MS = 5 * 60 * 1000;
+function startPeriodicSync() {
+  const tick = () => {
+    if (document.visibilityState !== 'visible' || !canAutoSync()) return;
+    if (document.activeElement?.matches('input, textarea, select, [contenteditable]')) return;
+    sync({ quiet: true });
+  };
+  document.addEventListener('visibilitychange', tick);
+  setInterval(tick, PERIODIC_SYNC_MS);
+}
+
 // ---- Obsidian へ書き出し ----
 
 function vaultFiles() {
@@ -485,7 +502,8 @@ async function start() {
   listenBookmarklet();
   requestPersistence();
   if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
-  if (state.settings.ai.mode === 'companion' && state.settings.autoSync && (state.servedByCompanion || state.settings.ai.companionUrl)) sync({ quiet: true });
+  if (canAutoSync()) sync({ quiet: true });
+  startPeriodicSync();
 }
 
 start().catch((e) => {

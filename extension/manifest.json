@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "点と線 — Kindle 自動取り込み",
+  "version": "0.1.0",
+  "description": "Kindle のノートブックを定期的に確認し、新しいハイライトを PC の bh serve に送ります。",
+  "permissions": ["alarms", "storage", "offscreen"],
+  "host_permissions": [
+    "https://read.amazon.co.jp/*",
+    "https://read.amazon.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://*.ts.net/*"
+  ],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "action": { "default_title": "Kindle 自動取り込み", "default_icon": "icon.png" },
+  "icons": { "128": "icon.png" },
+  "minimum_chrome_version": "116"
+}

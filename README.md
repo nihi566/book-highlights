@@ -20,7 +20,7 @@ Play ブックスと Kindle で線を引いた箇所（ハイライト）を 1 �
 flowchart LR
   subgraph Sources[取り込み元]
     K1[Kindle 端末<br>My Clippings.txt]
-    K2[Kindle アプリ<br>read.amazon.co.jp/notebook<br>（ブックマークレット）]
+    K2[Kindle アプリ<br>read.amazon.co.jp/notebook<br>（拡張機能で自動 / ブックマークレット）]
     K3[Kindle アプリの<br>ノートブックのエクスポート HTML]
     P1[Play ブックス<br>ドライブ「Play ブックスのメモ」<br>.docx/.html/.md/.zip]
   end
@@ -86,7 +86,8 @@ tailscale serve --bg 8787   # https://<PC名>.<tailnet>.ts.net で PC に届く�
 
 | 読み方 | 方法 |
 | --- | --- |
-| Kindle アプリ（スマホ・タブレット） | PC のブラウザで **ブックマークレット**（取り込み画面からドラッグして登録）を read.amazon.co.jp/notebook で実行 → 全冊まとめて「アプリに送る」か JSON で保存 |
+| Kindle アプリ（自動） | PC の Chrome / Edge に **拡張機能**（`extension/`）を入れると、ノートブックを 15 分ごとに確認して新しい線だけを `bh serve` に送る。手順は [docs/setup.md](docs/setup.md) の 5.5 |
+| Kindle アプリ（手動） | PC のブラウザで **ブックマークレット**（取り込み画面からドラッグして登録）を read.amazon.co.jp/notebook で実行 → 全冊まとめて「アプリに送る」か JSON で保存 |
 | Kindle 端末 | USB でつなぎ `documents/My Clippings.txt` を取り込む |
 | Kindle アプリ（1 冊ずつ） | ノートブック → エクスポート でメールした HTML を取り込む |
 | Play ブックス | 設定で「メモ、ハイライト、しおりを Google ドライブに保存」をオン → ドライブの「Play ブックスのメモ」フォルダをダウンロード（zip）してそのまま取り込む。スマホでは各ドキュメントを .docx で保存 |

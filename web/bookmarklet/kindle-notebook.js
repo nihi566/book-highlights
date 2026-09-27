@@ -1,6 +1,7 @@
 // Kindle ノートブック（https://read.amazon.co.jp/notebook）から全ての本のハイライトを集めるブックマークレット
 // Web アプリの「取り込み」画面が、このファイルを javascript: URL にして配布する（__APP_URL__ はそのとき置き換わる）。
 // 取得したデータは JSON ファイルとして保存するか、Web アプリに直接送る。Amazon 以外には何も送らない。
+// 読み取りのセレクタは extension/offscreen.js（自動取り込みの拡張機能）と同じ。Amazon の画面が変わったら両方を直す。
 (async () => {
   const APP_URL = '__APP_URL__';
   if (!/^read\.amazon\./.test(location.hostname) || !location.pathname.startsWith('/notebook')) {

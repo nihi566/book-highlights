@@ -84,6 +84,35 @@ test('コンパニオンサーバ: 取り込み → 分析ジョブ → Vault �
   });
 });
 
+test('コンパニオンサーバ: ブラウザ拡張からの自動取り込み（auto: true）は削除した本を復活させない', async () => {
+  await withServer(async ({ base, store }) => {
+    const notebook = (texts) => ({
+      files: [
+        {
+          name: 'kindle-auto.json',
+          base64: Buffer.from(JSON.stringify({ format: 'book-highlights/kindle-notebook', version: 1, books: [{ asin: 'B000TEST', title: '自動の本', author: '著者', highlights: texts.map((text) => ({ text })) }] })).toString('base64'),
+        },
+      ],
+      auto: true,
+    });
+    const post = async (body) => (await fetch(`${base}/api/import`, { method: 'POST', body: JSON.stringify(body) })).json();
+    const r1 = await post(notebook(['点A']));
+    assert.equal(r1.stats.added, 1);
+    // 同じ内容を何度送っても増えない（拡張は変化のあった本を丸ごと送る）
+    const r2 = await post(notebook(['点A', '点B']));
+    assert.equal(r2.stats.added, 1);
+    assert.equal(r2.stats.unchanged, 1);
+
+    const lib = await store.library();
+    const book = Object.values(lib.books).find((b) => b.title === '自動の本');
+    book.deleted = true;
+    await store.saveLibrary(lib);
+    const r3 = await post(notebook(['点A', '点B', '点C']));
+    assert.equal(r3.stats.skippedDeletedBooks, 1);
+    assert.ok((await store.library()).books[book.id].deleted);
+  });
+});
+
 test('コンパニオンサーバ: CORS・Host・トークンの制限', async () => {
   await withServer(async ({ base }) => {
     const ok = await fetch(`${base}/api/info`, { headers: { Origin: 'https://example.github.io' } });

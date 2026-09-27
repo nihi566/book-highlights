@@ -102,14 +102,14 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
         return send(res, 200, merged);
       }
       case 'POST /api/import': {
-        // { files: [{ name, base64 }] } を PC 側でパースして取り込む
+        // { files: [{ name, base64 }], auto? } を PC 側でパースして取り込む（auto: ブラウザ拡張の自動取り込み。削除した本を復活させない）
         const body = await readBody(req);
         const files = (body.files || []).map((f) => ({ name: f.name, bytes: Buffer.from(f.base64, 'base64') }));
         const { books, libraries, results } = await parseFiles(files);
         const stats = await store.lock(async () => {
           let lib = await store.library();
           for (const backup of libraries) lib = mergeLibraries(lib, backup);
-          const st = mergeParsed(lib, books);
+          const st = mergeParsed(lib, books, { reviveDeleted: !body.auto });
           await store.saveLibrary(lib);
           return st;
         });
