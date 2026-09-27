@@ -1,7 +1,7 @@
 """
 src/repository.py
 ------------------
-book_mappings / price_history へのデータアクセスを集約するモジュール。
+book_mappings / price_history / book_marks へのデータアクセスを集約するモジュール。
 
 main.py に直書きされていた DB アクセス関数（save_price_history / save_mapping /
 get_paid_asin / get_purchased_asins）をここへ移し、bookmeter 系の新規 Phase からも
@@ -14,15 +14,17 @@ get_paid_asin / get_purchased_asins）をここへ移し、bookmeter 系の新�
 
 import logging
 import os
+import re
 import sqlite3
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from sqlmodel import Session, select, text
 
 from src import database as database_module
+from src.book_kind import KINDS, classify_kind
 from src.database import DB_PATH, get_session, init_db_orm
-from src.models import BookMapping, PriceHistory
+from src.models import BookMapping, BookMark, PriceHistory
 
 logger = logging.getLogger(__name__)
 
@@ -714,3 +716,161 @@ def get_or_create_by_paid_asin(
     session.flush()
     session.refresh(new_book)
     return new_book
+
+
+# 公開ページのタグ（report.py の TAG_LABELS と同じキー）。"seen" は「見た」。
+MARK_TAGS = ("wanted", "unwanted", "purchased", "seen")
+# タイトルが無い本に公開ページが出す表示（report.py）。書き出しファイルに載っても題名として扱わない
+UNKNOWN_TITLE = "(タイトル不明)"
+_MARK_ASIN_PATTERN = re.compile(r"[A-Z0-9]{10}")
+_MARK_TITLE_MAX_LENGTH = 300
+
+
+def _book_marks_table_exists(session: Session) -> bool:
+    row = session.exec(
+        text("SELECT name FROM sqlite_master WHERE type='table' AND name='book_marks'")
+    ).first()
+    return row is not None
+
+
+def ensure_book_marks_table() -> None:
+    """book_marks が無ければ作る（init_db() を経ない import-marks からも書き込めるように）。"""
+    BookMark.__table__.create(bind=database_module.engine, checkfirst=True)
+
+
+def get_book_marks() -> dict:
+    """
+    取り込み済みのタグ・★評価・種別を {paid_asin: {...}} で返す。
+
+    読み取り専用の経路（report.py のページ生成）から呼ばれるため、テーブルが未作成なら
+    作らずに空の dict を返す（DB ファイルが書き込み不可でもページ生成を止めないため）。
+    """
+    with get_session() as session:
+        if not _book_marks_table_exists(session):
+            return {}
+        marks = session.exec(select(BookMark)).all()
+        return {
+            mark.paid_asin: {
+                "title": mark.title,
+                "tag": mark.tag or "",
+                "rating": mark.rating,
+                "kind": mark.kind,
+                "updated_at": mark.updated_at,
+            }
+            for mark in marks
+        }
+
+
+def _normalize_mark_item(item) -> Union[dict, str]:
+    """
+    書き出しファイルの1件を検証して正規化する。不正ならスキップ理由の文字列を返す。
+
+    ページ（ブラウザ）で作られた値なので、ASIN 形式・タグ・★の範囲・種別を固定の集合で
+    検証し、想定外の値を DB に入れない。★は「見た」のときだけ意味を持つため、それ以外の
+    タグでは捨てる（ページ側も「見た」を外すと★を消す）。
+
+    ページはその端末で押した項目だけを書き出す（タグと★は "tag" / "rating"、種別は "kind"）。
+    has_tag / has_kind は項目が載っていたかどうかで、載っていない項目は DB の値を変えない。
+    """
+    if not isinstance(item, dict):
+        return "項目がオブジェクトではありません"
+    asin = item.get("asin")
+    if not isinstance(asin, str) or not _MARK_ASIN_PATTERN.fullmatch(asin):
+        return f"ASIN の形式が不正です: {asin!r}"
+    has_tag = "tag" in item
+    has_kind = "kind" in item
+    if not has_tag and not has_kind:
+        return f"{asin}: 反映する項目（tag / kind）がありません"
+
+    tag = item.get("tag") or ""
+    if tag not in MARK_TAGS and tag != "":
+        return f"{asin}: 不明なタグです: {tag!r}"
+
+    rating = item.get("rating")
+    if rating is not None and (isinstance(rating, bool) or not isinstance(rating, int) or not 1 <= rating <= 5):
+        return f"{asin}: ★評価は 1〜5 の整数である必要があります: {rating!r}"
+    if tag != "seen":
+        rating = None
+
+    kind = item.get("kind")
+    if kind is not None and kind not in KINDS:
+        return f"{asin}: 不明な種別です: {kind!r}"
+
+    title = item.get("title")
+    title = title.strip()[:_MARK_TITLE_MAX_LENGTH] if isinstance(title, str) and title.strip() else None
+    if title == UNKNOWN_TITLE:
+        title = None
+
+    return {
+        "asin": asin,
+        "has_tag": has_tag,
+        "tag": tag,
+        "rating": rating,
+        "has_kind": has_kind,
+        "kind": kind,
+        "title": title,
+    }
+
+
+def import_marks(items: list) -> dict:
+    """
+    公開ページから書き出したタグ・★評価・種別（ASIN ごとの最新状態）を book_marks へ反映する。
+
+    1件ごとに「その端末で最後に付けた状態」を表すため、載っている項目（タグと★ / 種別）は
+    既存の値を上書きし、載っていない項目は既存の値を残す（同じ ASIN が複数あれば後のものを使う）。
+    タグも★も無く、種別も自動判定どおりになった ASIN は行を消す。
+    種別は自動判定（src/book_kind.py）と違うときだけ上書きとして保存する。判定に使う
+    タイトルは book_mappings を優先し、無ければ書き出しファイルのタイトルを使う。
+
+    戻り値: {"updated": 反映した件数, "deleted": 消した件数, "skipped": [スキップ理由, ...]}
+    """
+    ensure_book_marks_table()
+    result = {"updated": 0, "deleted": 0, "skipped": []}
+
+    latest_by_asin = {}
+    for item in items:
+        normalized = _normalize_mark_item(item)
+        if isinstance(normalized, str):
+            result["skipped"].append(normalized)
+            continue
+        latest_by_asin[normalized["asin"]] = normalized
+
+    now = datetime.now().isoformat()
+    with get_session() as session:
+        for asin, mark_data in latest_by_asin.items():
+            mapping = session.exec(
+                select(BookMapping).where(BookMapping.paid_asin == asin)
+            ).first()
+            mark = session.get(BookMark, asin)
+            title = (
+                (mapping.title if mapping and mapping.title else None)
+                or mark_data["title"]
+                or (mark.title if mark is not None else None)
+            )
+            if mark_data["has_tag"]:
+                tag, rating = mark_data["tag"], mark_data["rating"]
+            else:
+                tag, rating = (mark.tag or "", mark.rating) if mark is not None else ("", None)
+            if mark_data["has_kind"]:
+                kind = mark_data["kind"]
+                kind_override = kind if kind and kind != classify_kind(title or "") else None
+            else:
+                kind_override = mark.kind if mark is not None else None
+
+            if not tag and rating is None and kind_override is None:
+                if mark is not None:
+                    session.delete(mark)
+                    result["deleted"] += 1
+                continue
+
+            if mark is None:
+                mark = BookMark(paid_asin=asin, updated_at=now)
+            mark.title = title
+            mark.tag = tag
+            mark.rating = rating
+            mark.kind = kind_override
+            mark.updated_at = now
+            session.add(mark)
+            result["updated"] += 1
+        session.commit()
+    return result

@@ -1,7 +1,7 @@
 """
 test_run.py
 -----------
-run.py（CLIバッチ運用エントリポイント: sync/want/purchase）の単体テスト。
+run.py（CLIバッチ運用エントリポイント: sync/want/purchase/import-marks/recommend）の単体テスト。
 
 main.run_integration / src.bookmeter_sync.sync_bookmeter_wishlist / report.main /
 git コマンドはすべてモックし、実クロール・実読書メーター通信・実git操作へは
@@ -12,6 +12,7 @@ git コマンドはすべてモックし、実クロール・実読書メータ�
 """
 
 import argparse
+import json
 import os
 import sys
 import unittest
@@ -475,6 +476,186 @@ class PurchaseCommandTest(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             run.cmd_purchase(argparse.Namespace(asin="B0MISSING", on=True, off=False))
         self.assertEqual(cm.exception.code, 1)
+
+
+_MARKS_ITEMS = [{"asin": "B0SEEN0001", "title": "見た本", "tag": "seen", "rating": 4, "kind": "book"}]
+
+
+@patch("run._load_env_file")
+@patch("run.get_book_marks", return_value={})
+@patch("run.get_books", return_value=[])
+@patch("run.publish")
+@patch("run.import_marks", return_value={"updated": 1, "deleted": 0, "skipped": []})
+class ImportMarksCommandTest(unittest.TestCase):
+    """`run.py import-marks`: 公開ページの書き出しファイルを検証して import_marks へ渡すこと。"""
+
+    def setUp(self):
+        import tempfile
+        self.tmpdir = tempfile.mkdtemp(prefix="import_marks_test_")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _write(self, name, data):
+        path = os.path.join(self.tmpdir, name)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(data if isinstance(data, str) else json.dumps(data, ensure_ascii=False))
+        return path
+
+    def _args(self, *argv):
+        return run.build_parser().parse_args(["import-marks", *argv])
+
+    def test_valid_file_is_imported_without_publishing(self, mock_import, mock_publish, *_):
+        path = self._write("kindle-marks-20260927-1200.json", {"format": "kindle-marks", "version": 1, "items": _MARKS_ITEMS})
+        run.cmd_import_marks(self._args(path))
+        mock_import.assert_called_once_with(_MARKS_ITEMS)
+        mock_publish.assert_not_called()
+
+    def test_publish_option_publishes_after_import(self, mock_import, mock_publish, *_):
+        path = self._write("marks.json", {"format": "kindle-marks", "items": _MARKS_ITEMS})
+        run.cmd_import_marks(self._args(path, "--publish"))
+        mock_import.assert_called_once()
+        mock_publish.assert_called_once_with()
+
+    def test_file_with_bom_is_accepted(self, mock_import, *_):
+        """Windows のエディタで保存し直して BOM が付いても読めること。"""
+        path = self._write("bom.json", "﻿" + json.dumps({"format": "kindle-marks", "items": []}))
+        run.cmd_import_marks(self._args(path))
+        mock_import.assert_called_once_with([])
+
+    def test_other_json_is_rejected(self, mock_import, *_):
+        path = self._write("other.json", {"items": _MARKS_ITEMS})
+        with self.assertRaises(SystemExit) as cm:
+            run.cmd_import_marks(self._args(path))
+        self.assertEqual(cm.exception.code, 1)
+        mock_import.assert_not_called()
+
+    def test_broken_json_is_rejected(self, mock_import, *_):
+        path = self._write("broken.json", "{not json")
+        with self.assertRaises(SystemExit) as cm:
+            run.cmd_import_marks(self._args(path))
+        self.assertEqual(cm.exception.code, 1)
+        mock_import.assert_not_called()
+
+    def test_missing_file_is_rejected(self, mock_import, *_):
+        with self.assertRaises(SystemExit) as cm:
+            run.cmd_import_marks(self._args(os.path.join(self.tmpdir, "nothing.json")))
+        self.assertEqual(cm.exception.code, 1)
+        mock_import.assert_not_called()
+
+    def test_without_path_uses_latest_file_in_download_dir(self, mock_import, *_):
+        old = self._write("kindle-marks-20260101-0000.json", {"format": "kindle-marks", "items": []})
+        self._write("kindle-marks-20260927-1200.json", {"format": "kindle-marks", "items": _MARKS_ITEMS})
+        os.utime(old, (1_000_000, 1_000_000))
+        with patch.dict(os.environ, {"MARKS_DOWNLOAD_DIR": self.tmpdir}):
+            run.cmd_import_marks(self._args())
+        mock_import.assert_called_once_with(_MARKS_ITEMS)
+
+    def test_db_write_error_exits_with_message(self, mock_import, *_):
+        from sqlalchemy.exc import OperationalError
+        mock_import.side_effect = OperationalError("INSERT", {}, Exception("attempt to write a readonly database"))
+        path = self._write("marks.json", {"format": "kindle-marks", "items": _MARKS_ITEMS})
+        with self.assertRaises(SystemExit) as cm:
+            run.cmd_import_marks(self._args(path))
+        self.assertEqual(cm.exception.code, 1)
+
+    def test_without_path_and_no_file_exits(self, mock_import, *_):
+        with patch.dict(os.environ, {"MARKS_DOWNLOAD_DIR": self.tmpdir}):
+            with self.assertRaises(SystemExit) as cm:
+                run.cmd_import_marks(self._args())
+        self.assertEqual(cm.exception.code, 1)
+        mock_import.assert_not_called()
+
+
+_BOOKS = [
+    {"asin": "B0MANGA001", "title": "読んだマンガ (ハルタコミックス)", "is_purchased": 0},
+    {"asin": "B0MANGA002", "title": "候補のマンガ (バンチコミックス)", "is_purchased": 0},
+    {"asin": "B0BOOK0001", "title": "候補の本", "is_purchased": 0},
+]
+_MARKS = {"B0MANGA001": {"tag": "seen", "rating": 5, "kind": None, "title": None, "updated_at": "2026-09-27"}}
+
+
+@patch.dict(os.environ, {"LOCAL_LLM_API": "", "LOCAL_LLM_URL": "", "LOCAL_LLM_MODEL": ""})
+@patch("run._load_env_file")
+@patch("run.get_book_marks", return_value=_MARKS)
+@patch("run.get_books", return_value=_BOOKS)
+@patch("run.recommender.resolve_model", return_value="qwen2.5:7b")
+@patch(
+    "run.recommender.request_recommendations",
+    return_value=json.dumps(
+        {"taste": "静かな話が好き", "from_list": [{"asin": "B0MANGA002", "reason": "雰囲気が近い"}], "new_titles": []},
+        ensure_ascii=False,
+    ),
+)
+class RecommendCommandTest(unittest.TestCase):
+    """`run.py recommend`: 種別ごとにローカル LLM へ問い合わせ、結果を表示すること（HTTP はモック）。"""
+
+    def _run(self, *argv):
+        import io
+        from contextlib import redirect_stdout
+        args = run.build_parser().parse_args(["recommend", *argv])
+        out = io.StringIO()
+        with redirect_stdout(out):
+            args.func(args)
+        return out.getvalue()
+
+    def test_manga_recommendation_is_printed(self, mock_request, mock_resolve, *_):
+        output = self._run("--kind", "manga")
+        mock_request.assert_called_once()
+        prompt = mock_request.call_args[0][0][1]["content"]
+        self.assertIn("読んだマンガ (ハルタコミックス)（★5）", prompt)
+        self.assertIn("[B0MANGA002]", prompt)
+        self.assertNotIn("候補の本", prompt)  # 本はマンガの候補に混ぜない
+        self.assertIn("■ マンガのおすすめ", output)
+        self.assertIn("候補のマンガ (バンチコミックス)", output)
+        self.assertIn("https://www.amazon.co.jp/dp/B0MANGA002", output)
+
+    def test_kind_without_seen_is_skipped_without_llm_call(self, mock_request, mock_resolve, *_):
+        output = self._run("--kind", "book")
+        mock_request.assert_not_called()
+        mock_resolve.assert_not_called()
+        self.assertIn("「見た」本がまだ無いため", output)
+
+    def test_all_queries_only_kinds_with_seen(self, mock_request, *_):
+        output = self._run()
+        self.assertEqual(mock_request.call_count, 1)
+        self.assertIn("■ マンガのおすすめ", output)
+        self.assertIn("「見た」本がまだ無いため", output)
+
+    def test_dry_run_prints_prompt_without_llm_call(self, mock_request, mock_resolve, *_):
+        output = self._run("--kind", "manga", "--dry-run")
+        mock_request.assert_not_called()
+        mock_resolve.assert_not_called()
+        self.assertIn("ローカル LLM に送るプロンプト", output)
+        self.assertIn("[B0MANGA002]", output)
+
+    def test_llm_error_exits_with_code_1(self, mock_request, *_):
+        mock_request.side_effect = run.recommender.LocalLlmError("接続できません")
+        with self.assertRaises(SystemExit) as cm:
+            self._run("--kind", "manga")
+        self.assertEqual(cm.exception.code, 1)
+
+    def test_invalid_api_setting_exits_with_code_1(self, mock_request, *_):
+        with patch.dict(os.environ, {"LOCAL_LLM_API": "cloud"}):
+            with self.assertRaises(SystemExit) as cm:
+                self._run()
+        self.assertEqual(cm.exception.code, 1)
+        mock_request.assert_not_called()
+
+
+class RecommendArgparseTest(unittest.TestCase):
+    def test_defaults(self):
+        args = run.build_parser().parse_args(["recommend"])
+        self.assertEqual((args.kind, args.count, args.new, args.dry_run), ("all", 5, 3, False))
+        self.assertIs(args.func, run.cmd_recommend)
+
+    def test_rejects_unknown_kind_and_negative_count(self):
+        parser = run.build_parser()
+        for argv in (["recommend", "--kind", "anime"], ["recommend", "--count", "-1"]):
+            with self.subTest(argv=argv):
+                with self.assertRaises(SystemExit):
+                    parser.parse_args(argv)
 
 
 if __name__ == "__main__":

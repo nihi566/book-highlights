@@ -1357,5 +1357,143 @@ class GetBooksFilterTest(unittest.TestCase):
         self.assertIn("B0BOTH001", {b["asin"] for b in repository.get_books(filter="purchased")})
 
 
+class BookMarksTest(unittest.TestCase):
+    """repository.import_marks / get_book_marks（公開ページで付けたタグ・★評価・種別の取り込み）のテスト。
+
+    既存 DB には book_marks が無い状態から始まるため、setUp では book_mappings /
+    price_history だけを作り、import_marks が自分でテーブルを作れることも確かめる。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="book_marks_test_")
+        db_path = os.path.join(self.tmpdir, "marks.db")
+        from sqlmodel import create_engine, SQLModel
+        from src.models import BookMapping, PriceHistory
+        self.engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine, tables=[BookMapping.__table__, PriceHistory.__table__])
+
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _insert_mapping(self, paid_asin, title):
+        from sqlmodel import Session
+        from src.models import BookMapping
+        with Session(self.engine) as session:
+            session.add(BookMapping(paid_asin=paid_asin, title=title, source="bookmeter"))
+            session.commit()
+
+    def _table_names(self) -> set:
+        from sqlalchemy import inspect
+        return set(inspect(self.engine).get_table_names())
+
+    def test_get_book_marks_returns_empty_without_creating_table(self):
+        """ページ生成（読み取りだけの経路）ではテーブルを作らないこと（書き込み不可の DB でも止めない）。"""
+        self.assertEqual(repository.get_book_marks(), {})
+        self.assertNotIn("book_marks", self._table_names())
+
+    def test_import_creates_table_and_stores_seen_with_rating(self):
+        result = repository.import_marks(
+            [{"asin": "B0SEEN0001", "title": "見た本", "tag": "seen", "rating": 4, "kind": "book"}]
+        )
+        self.assertEqual(result, {"updated": 1, "deleted": 0, "skipped": []})
+        self.assertIn("book_marks", self._table_names())
+        marks = repository.get_book_marks()
+        self.assertEqual(marks["B0SEEN0001"]["tag"], "seen")
+        self.assertEqual(marks["B0SEEN0001"]["rating"], 4)
+        self.assertEqual(marks["B0SEEN0001"]["title"], "見た本")
+        self.assertIsNone(marks["B0SEEN0001"]["kind"])  # 自動判定どおりなので上書きしない
+
+    def test_import_overwrites_existing_mark_and_last_duplicate_wins(self):
+        repository.import_marks([{"asin": "B0SEEN0001", "title": "本", "tag": "seen", "rating": 2}])
+        repository.import_marks(
+            [
+                {"asin": "B0SEEN0001", "title": "本", "tag": "seen", "rating": 3},
+                {"asin": "B0SEEN0001", "title": "本", "tag": "seen", "rating": 5},
+            ]
+        )
+        self.assertEqual(repository.get_book_marks()["B0SEEN0001"]["rating"], 5)
+
+    def test_rating_is_dropped_unless_tag_is_seen(self):
+        repository.import_marks([{"asin": "B0WANT0001", "title": "読みたい本", "tag": "wanted", "rating": 5}])
+        mark = repository.get_book_marks()["B0WANT0001"]
+        self.assertEqual(mark["tag"], "wanted")
+        self.assertIsNone(mark["rating"])
+
+    def test_cleared_state_deletes_existing_mark(self):
+        repository.import_marks([{"asin": "B0SEEN0001", "title": "本", "tag": "seen", "rating": 4}])
+        result = repository.import_marks(
+            [{"asin": "B0SEEN0001", "title": "本", "tag": "", "rating": None, "kind": "book"}]
+        )
+        self.assertEqual(result["deleted"], 1)
+        self.assertNotIn("B0SEEN0001", repository.get_book_marks())
+
+    def test_kind_is_stored_only_when_it_differs_from_auto_classification(self):
+        """タイトルから本と判定される作品をページでマンガに切り替えたら、上書きとして残ること。"""
+        self._insert_mapping("B0MANGA001", "戦争は女の顔をしていない 6")
+        repository.import_marks(
+            [{"asin": "B0MANGA001", "title": "戦争は女の顔をしていない 6", "tag": "", "kind": "manga"}]
+        )
+        self.assertEqual(repository.get_book_marks()["B0MANGA001"]["kind"], "manga")
+
+        # 自動判定（本）に戻したら、タグも★も無いので行ごと消える
+        repository.import_marks(
+            [{"asin": "B0MANGA001", "title": "戦争は女の顔をしていない 6", "tag": "", "kind": "book"}]
+        )
+        self.assertNotIn("B0MANGA001", repository.get_book_marks())
+
+    def test_title_from_book_mappings_is_preferred(self):
+        self._insert_mapping("B0TITLE001", "DB 上のタイトル (ハルタコミックス)")
+        repository.import_marks(
+            [{"asin": "B0TITLE001", "title": "書き換えられたタイトル", "tag": "seen", "kind": "manga"}]
+        )
+        mark = repository.get_book_marks()["B0TITLE001"]
+        self.assertEqual(mark["title"], "DB 上のタイトル (ハルタコミックス)")
+        self.assertIsNone(mark["kind"])  # DB のタイトルでマンガと判定できるので上書き不要
+
+    def test_item_without_kind_keeps_existing_kind_override(self):
+        """別の端末で★だけ付けた書き出し（kind なし）で、取り込み済みの種別の上書きを消さないこと。"""
+        self._insert_mapping("B0MANGA001", "戦争は女の顔をしていない 6")
+        repository.import_marks([{"asin": "B0MANGA001", "title": "戦争は女の顔をしていない 6", "kind": "manga"}])
+        repository.import_marks([{"asin": "B0MANGA001", "title": "戦争は女の顔をしていない 6", "tag": "seen", "rating": 5}])
+        mark = repository.get_book_marks()["B0MANGA001"]
+        self.assertEqual((mark["tag"], mark["rating"], mark["kind"]), ("seen", 5, "manga"))
+
+    def test_item_without_tag_keeps_existing_tag_and_rating(self):
+        repository.import_marks([{"asin": "B0SEEN0001", "title": "本", "tag": "seen", "rating": 3}])
+        repository.import_marks([{"asin": "B0SEEN0001", "title": "本", "kind": "manga"}])
+        mark = repository.get_book_marks()["B0SEEN0001"]
+        self.assertEqual((mark["tag"], mark["rating"], mark["kind"]), ("seen", 3, "manga"))
+
+    def test_placeholder_title_is_not_stored(self):
+        """タイトル不明の本の表示「(タイトル不明)」を題名として保存しないこと。"""
+        repository.import_marks([{"asin": "B0NOTITLE1", "title": "(タイトル不明)", "tag": "seen", "rating": 5}])
+        self.assertIsNone(repository.get_book_marks()["B0NOTITLE1"]["title"])
+
+    def test_invalid_items_are_skipped_with_reasons(self):
+        result = repository.import_marks(
+            [
+                "not-an-object",
+                {"asin": "<script>", "tag": "seen"},
+                {"asin": "B0BADTAG01", "tag": "favorite"},
+                {"asin": "B0BADRATE1", "tag": "seen", "rating": 6},
+                {"asin": "B0BOOLRAT1", "tag": "seen", "rating": True},
+                {"asin": "B0BADKIND1", "tag": "seen", "kind": "anime"},
+                {"asin": "B000000000\n", "tag": "seen"},
+                {"asin": "B0NOFIELD1", "title": "タグも種別も無い"},
+                {"asin": "B0GOOD0001", "tag": "seen", "rating": 1},
+            ]
+        )
+        self.assertEqual(result["updated"], 1)
+        self.assertEqual(len(result["skipped"]), 8)
+        self.assertEqual(set(repository.get_book_marks()), {"B0GOOD0001"})
+
+
 if __name__ == "__main__":
     unittest.main()

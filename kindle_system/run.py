@@ -2,16 +2,20 @@
 run.py
 ------
 ローカルサーバー常駐（src/server.py）を廃止し、CLIバッチのみで運用するための
-エントリポイント。sync / want / purchase の3サブコマンドを提供する。
+エントリポイント。sync / want / purchase / import-marks / recommend のサブコマンドを提供する。
 
 使い方:
     python run.py sync [--workers N] [--limit N] [--start N]
     python run.py want <asin> (--on|--off)
     python run.py purchase <asin> (--on|--off)
+    python run.py import-marks [<書き出したファイル>] [--publish]
+    python run.py recommend [--kind manga|book|all] [--count N] [--new N] [--model NAME] [--dry-run]
 """
 
 import argparse
 import asyncio
+import glob
+import json
 import os
 import sys
 import subprocess
@@ -25,11 +29,19 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
+from sqlalchemy.exc import SQLAlchemyError
+
 import report
 from report import _load_env_file
 import main as main_module
+from src import recommender
+from src.book_kind import KIND_BOOK, KIND_MANGA
 from src.bookmeter_sync import sync_bookmeter_wishlist
-from src.repository import set_wanted, set_purchased
+from src.repository import get_book_marks, get_books, import_marks, set_wanted, set_purchased
+
+# 公開ページの「見た・評価を書き出す」が作るファイル（report.py の MARKS_FILE_FORMAT / ファイル名と揃える）
+MARKS_FILE_FORMAT = "kindle-marks"
+MARKS_FILE_GLOB = "kindle-marks-*.json"
 
 
 def publish() -> None:
@@ -176,6 +188,132 @@ def cmd_purchase(args: argparse.Namespace) -> None:
     print(f"[OK] purchase フラグを更新しました（ASIN: {args.asin}, status: {status}）。")
 
 
+def _find_latest_marks_file(directory: str):
+    """directory 直下の書き出しファイル（kindle-marks-*.json）のうち最も新しいものを返す。無ければ None。"""
+    files = glob.glob(os.path.join(directory, MARKS_FILE_GLOB))
+    return max(files, key=os.path.getmtime) if files else None
+
+
+def cmd_import_marks(args: argparse.Namespace) -> None:
+    """
+    公開ページで書き出したタグ・★評価・種別を book_marks に取り込む。
+
+    ファイルを省略した場合は MARKS_DOWNLOAD_DIR（未設定ならホームの Downloads）から
+    最新の kindle-marks-*.json を使う（PC のブラウザで書き出した直後にそのまま取り込めるように）。
+    --publish を付けると取り込み後に publish()（report 生成 → git push）まで行い、
+    別の端末で開いても取り込んだ状態が初期表示されるようにする。
+    """
+    _load_env_file(os.path.join(BASE_DIR, ".env"))
+
+    path = args.file
+    if not path:
+        directory = os.environ.get("MARKS_DOWNLOAD_DIR") or os.path.join(os.path.expanduser("~"), "Downloads")
+        path = _find_latest_marks_file(directory)
+        if not path:
+            print(
+                f"エラー: 書き出しファイルが見つかりません（{directory} に {MARKS_FILE_GLOB} がありません）。"
+                "ファイルのパスを指定してください。",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        print(f"[情報] 最新の書き出しファイルを使います: {path}")
+
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            data = json.load(f)
+    except OSError as e:
+        print(f"エラー: ファイルを開けません: {path}（{e}）", file=sys.stderr)
+        sys.exit(1)
+    except ValueError:
+        print(f"エラー: JSON として読めません: {path}", file=sys.stderr)
+        sys.exit(1)
+    if not isinstance(data, dict) or data.get("format") != MARKS_FILE_FORMAT or not isinstance(data.get("items"), list):
+        print(
+            "エラー: 公開ページの「見た・評価を書き出す」で作ったファイルではありません。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    try:
+        result = import_marks(data["items"])
+    except SQLAlchemyError as e:
+        # DB ファイルが書き込み不可（所有者違い等）やロック中のときに、トレースバックではなく原因を示す
+        print(f"エラー: DB への書き込みに失敗しました。取り込みを中断しました（{e}）", file=sys.stderr)
+        sys.exit(1)
+    for reason in result["skipped"]:
+        print(f"[スキップ] {reason}")
+    print(
+        f"[OK] 取り込みました（反映 {result['updated']} 件 / 解除 {result['deleted']} 件 / "
+        f"スキップ {len(result['skipped'])} 件）。"
+    )
+    summary = recommender.summarize_seen(get_books(filter="all"), get_book_marks())
+    print(
+        "[情報] 見た: "
+        + " / ".join(
+            f"{recommender.KIND_LABELS[kind]} {summary[kind]['seen']}件（★評価 {summary[kind]['rated']}件）"
+            for kind in (KIND_MANGA, KIND_BOOK)
+        )
+    )
+
+    if args.publish:
+        publish()
+    else:
+        print("[情報] 公開ページにも反映するには --publish を付けて実行するか、python run.py sync を実行してください。")
+
+
+def cmd_recommend(args: argparse.Namespace) -> None:
+    """
+    取り込み済みの「見た」作品と★評価から、ローカル LLM にマンガ・本それぞれのおすすめを出してもらう。
+
+    --kind all（既定）はマンガ・本を別々に問い合わせる。「見た」が1件も無い種別は飛ばす。
+    --dry-run は LLM に送るプロンプトを表示するだけで問い合わせない（LLM を用意する前の確認用）。
+    """
+    _load_env_file(os.path.join(BASE_DIR, ".env"))
+    try:
+        settings = recommender.load_llm_settings(os.environ, model=args.model, timeout=args.timeout)
+    except recommender.LocalLlmError as e:
+        print(f"エラー: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    books = get_books(filter="all")
+    marks = get_book_marks()
+    kinds = [KIND_MANGA, KIND_BOOK] if args.kind == "all" else [args.kind]
+    model = None
+    for kind in kinds:
+        label = recommender.KIND_LABELS[kind]
+        inputs = recommender.collect_inputs(books, marks, kind, max_candidates=args.max_candidates)
+        if not inputs["seen"]:
+            print(
+                f"[{label}] 「見た」{label}がまだ無いため、おすすめを出せません"
+                "（公開ページで「見た」と★を付けて書き出し、python run.py import-marks で取り込んでください）。"
+            )
+            continue
+        messages = recommender.build_messages(kind, inputs, count=args.count, new_count=args.new)
+        if args.dry_run:
+            print(f"===== {label}: ローカル LLM に送るプロンプト =====")
+            for message in messages:
+                print(f"[{message['role']}]\n{message['content']}\n")
+            continue
+        try:
+            if model is None:
+                model = recommender.resolve_model(settings)
+            print(f"[{label}] ローカル LLM（{model}）に問い合わせています…（数十秒〜数分かかることがあります）", flush=True)
+            text = recommender.request_recommendations(messages, settings, model)
+        except recommender.LocalLlmError as e:
+            print(f"エラー: {e}", file=sys.stderr)
+            sys.exit(1)
+        result = recommender.parse_recommendations(text, inputs, count=args.count, new_count=args.new)
+        print(recommender.format_recommendations(kind, result, model=model, inputs=inputs))
+        print()
+
+
+def _non_negative_int(value: str) -> int:
+    number = int(value)
+    if number < 0:
+        raise argparse.ArgumentTypeError("0 以上の整数を指定してください")
+    return number
+
+
 def _add_on_off_group(subparser: argparse.ArgumentParser) -> None:
     group = subparser.add_mutually_exclusive_group(required=True)
     group.add_argument("--on", action="store_true", help="フラグをONにする")
@@ -215,6 +353,52 @@ def build_parser() -> argparse.ArgumentParser:
     purchase_parser.add_argument("asin", help="対象の paid_asin")
     _add_on_off_group(purchase_parser)
     purchase_parser.set_defaults(func=cmd_purchase)
+
+    import_parser = subparsers.add_parser(
+        "import-marks", help="公開ページで書き出した「見た」・★評価・種別（JSON）を DB に取り込む"
+    )
+    import_parser.add_argument(
+        "file",
+        nargs="?",
+        default=None,
+        help="書き出したファイル（省略時は MARKS_DOWNLOAD_DIR か ~/Downloads の最新の kindle-marks-*.json）",
+    )
+    import_parser.add_argument(
+        "--publish", action="store_true", help="取り込んだあと公開ページを作り直して公開する"
+    )
+    import_parser.set_defaults(func=cmd_import_marks)
+
+    recommend_parser = subparsers.add_parser(
+        "recommend", help="「見た」作品と★評価から、ローカル LLM にマンガ・本のおすすめを出してもらう"
+    )
+    recommend_parser.add_argument(
+        "--kind",
+        choices=[KIND_MANGA, KIND_BOOK, "all"],
+        default="all",
+        help="対象（manga: マンガ / book: 本 / all: 両方を別々に。デフォルト: all）",
+    )
+    recommend_parser.add_argument(
+        "--count", type=_non_negative_int, default=5, help="登録済みの本から選ぶ件数（デフォルト: 5）"
+    )
+    recommend_parser.add_argument(
+        "--new", type=_non_negative_int, default=3, help="登録済み以外から挙げる件数（デフォルト: 3、0 で出さない）"
+    )
+    recommend_parser.add_argument(
+        "--max-candidates",
+        type=_non_negative_int,
+        default=recommender.DEFAULT_MAX_CANDIDATES,
+        help=f"LLM に見せる候補の上限（デフォルト: {recommender.DEFAULT_MAX_CANDIDATES}）",
+    )
+    recommend_parser.add_argument(
+        "--model", default=None, help="使うモデル名（省略時は LOCAL_LLM_MODEL、無ければ入っている最初のモデル）"
+    )
+    recommend_parser.add_argument(
+        "--timeout", type=int, default=None, help=f"応答待ちの秒数（デフォルト: {recommender.DEFAULT_TIMEOUT_SECONDS}）"
+    )
+    recommend_parser.add_argument(
+        "--dry-run", action="store_true", help="LLM に送るプロンプトを表示するだけで問い合わせない"
+    )
+    recommend_parser.set_defaults(func=cmd_recommend)
 
     return parser
 

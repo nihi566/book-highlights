@@ -5,6 +5,11 @@ report.py
 書き出すバッチスクリプト。filmarks_scraper の reporter.py 相当（単一 HTML・軽量 JS のみ・
 React 不要）。
 
+ページではタグ（読みたい / 読みたくない / 購入済み / 見た）・「見た」本の★評価・種別
+（マンガ / 本）をブラウザに保存でき、「見た・評価を書き出す」で JSON にして
+`run.py import-marks` で DB に取り込める（ローカル LLM のおすすめ `run.py recommend` に使う）。
+取り込んだタグ・★を公開ページにも載せるのは PUBLISH_MARKS=1 のときだけ（種別の上書きは常に載せる）。
+
 使い方:
     python report.py
 
@@ -27,7 +32,8 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
-from src.repository import get_books, get_price_history
+from src.book_kind import KINDS, classify_kind
+from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_book_marks, get_books, get_price_history
 
 
 def _format_price(book: dict) -> str:
@@ -112,7 +118,7 @@ def _build_book_row(book: dict, index: int) -> str:
     表紙・タグ欄・Amazon への遷移は、この行の ASIN を読んでページ側の JS が付け足す
     （_PAGE_SCRIPT。行そのものには <a> も表紙の <img> も出さない）。
     """
-    title = html.escape(book.get("title") or "(タイトル不明)")
+    title = html.escape(book.get("title") or UNKNOWN_TITLE)
     asin = html.escape(book.get("asin") or "")
     price_text = html.escape(_format_price(book))
     history_html = _build_price_history_svg(book.get("price_history") or [])
@@ -126,8 +132,19 @@ def _build_book_row(book: dict, index: int) -> str:
     data_price = "" if is_ku or actual_price is None else str(actual_price)
     data_ku = "1" if is_ku else "0"
 
+    # data-saved-* は取り込み済みの状態（book["mark"] = repository.get_book_marks() の1件）と
+    # 種別の自動判定で、ページの JS はブラウザに保存した状態が無いときにこれを使う。
+    # 固定の集合に入る値だけを出し、ユーザー由来の自由文字列は複製しない（R2）。
+    mark = book.get("mark") or {}
+    saved_kind = mark.get("kind") if mark.get("kind") in KINDS else classify_kind(book.get("title") or "")
+    saved_tag = mark.get("tag") if mark.get("tag") in MARK_TAGS else ""
+    rating = mark.get("rating")
+    is_valid_rating = isinstance(rating, int) and not isinstance(rating, bool) and 1 <= rating <= 5
+    saved_rating = str(rating) if saved_tag == "seen" and is_valid_rating else ""
+
     return (
-        f'<tr class="book" data-price="{data_price}" data-ku="{data_ku}" data-index="{index}">'
+        f'<tr class="book" data-price="{data_price}" data-ku="{data_ku}" data-index="{index}" '
+        f'data-saved-kind="{saved_kind}" data-saved-tag="{saved_tag}" data-saved-rating="{saved_rating}">'
         f'<td class="col-title">{title}</td>'
         f'<td class="col-asin">{asin}</td>'
         f'<td class="col-price">{price_text}</td>'
@@ -162,7 +179,7 @@ def _build_category_section(section_id: str, heading: str, books: list, empty_me
             f"<tbody>{rows_html}</tbody>"
             f"</table>"
             f'<p class="no-results hidden" role="status">'
-            f"条件に一致する本がありません。検索語・タグ・価格の条件を見直してください。</p>"
+            f"条件に一致する本がありません。検索語・種別・タグ・価格の条件を見直してください。</p>"
         )
     else:
         list_html = f'<p class="empty">{html.escape(empty_message)}</p>'
@@ -203,6 +220,9 @@ _PAGE_STYLE = r"""
   --color-tag-wanted: var(--color-accent);
   --color-tag-unwanted: #767676;
   --color-tag-purchased: #2e8b57;
+  --color-tag-seen: #7b3fa0;
+  --color-star: #b8860b;
+  --color-kind-manga: #b3261e;
 }
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 var(--space-xl); background: var(--color-bg); color: var(--color-text); }
@@ -230,6 +250,21 @@ h1 { margin-bottom: var(--space-xs); }
 .tag-btn-wanted[aria-pressed="true"] { background: var(--color-tag-wanted); }
 .tag-btn-unwanted[aria-pressed="true"] { background: var(--color-tag-unwanted); }
 .tag-btn-purchased[aria-pressed="true"] { background: var(--color-tag-purchased); }
+.tag-btn-seen[aria-pressed="true"] { background: var(--color-tag-seen); }
+.kind-btn { display: inline-block; margin-bottom: var(--space-xs); padding: 0 0.4rem; font-size: 0.7rem; line-height: 1.4; cursor: pointer; border: 1px solid currentColor; border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-muted); }
+.kind-btn[data-kind="manga"] { color: var(--color-kind-manga); }
+.rating-group { display: flex; max-width: 10rem; margin-top: var(--space-xs); }
+.star-btn { flex: 1 1 0; min-width: 0; min-height: 1.75rem; padding: 0; cursor: pointer; border: none; background: none; color: var(--color-muted); font-size: 1.1rem; line-height: 1; }
+.star-btn.is-on { color: var(--color-star); }
+.kind-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); margin-bottom: var(--space-lg); }
+.kind-bar-label { color: var(--color-muted); font-size: var(--font-size-sm); margin-right: var(--space-xs); }
+.kind-filter-btn { padding: 0.25rem 0.8rem; font-size: var(--font-size-sm); cursor: pointer; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); }
+.kind-filter-btn[aria-pressed="true"] { font-weight: bold; color: #fff; background: var(--color-text); border-color: var(--color-text); }
+.marks-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-lg); padding: var(--space-sm) var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); }
+.marks-summary { margin: 0; color: var(--color-muted); font-size: var(--font-size-sm); }
+.export-btn { padding: var(--space-sm) 0.8rem; cursor: pointer; border: 1px solid var(--color-accent); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-accent); font-weight: 600; }
+.export-btn:hover { background: var(--color-bg); }
+.export-status { flex-basis: 100%; margin: 0; font-size: var(--font-size-sm); overflow-wrap: anywhere; }
 .empty { color: var(--color-muted); }
 .no-results { color: var(--color-muted); padding: var(--space-lg); text-align: center; }
 .hidden { display: none; }
@@ -272,6 +307,8 @@ h1 { margin-bottom: var(--space-xs); }
 .view-grid .col-price { font-size: 1rem; white-space: normal; overflow-wrap: anywhere; }
 .view-grid .col-tag { margin-top: auto; padding-top: var(--space-xs); white-space: normal; }
 .view-grid .tag-btn { min-height: 1.5rem; padding: 0.1rem 0.35rem; font-size: 0.65rem; }
+.view-grid .kind-btn { font-size: 0.6rem; }
+.view-grid .star-btn { min-height: 1.5rem; font-size: 1rem; }
 @media (min-width: 641px) {
   .view-grid .book-table tbody { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
@@ -279,7 +316,7 @@ h1 { margin-bottom: var(--space-xs); }
   body { margin: 1rem auto; padding: 0 var(--space-lg); }
   h1 { font-size: 1.4rem; margin: 0 0 var(--space-xs); }
   .last-scraped { margin-bottom: var(--space-lg); }
-  .filter-btn, .reset-btn { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
+  .filter-btn, .reset-btn, .kind-filter-btn, .export-btn { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
   .search-input, .sort-select, .tag-filter-select, .price-input { min-height: 2.75rem; }
   .view-list .book-table thead { display: none; }
   .view-list .book-table, .view-list .book-table tbody, .view-list .book-table tr, .view-list .book-table td { display: block; width: 100%; }
@@ -299,6 +336,12 @@ _PAGE_HEADER_HTML = r"""<div class="filter-bar" role="group" aria-label="表示�
 <button type="button" class="filter-btn" data-target="section-wanted" aria-pressed="false">読みたい</button>
 <button type="button" class="filter-btn" data-target="section-purchased" aria-pressed="false">購入済み</button>
 </div>
+<div class="kind-bar" role="group" aria-label="種別で絞り込み">
+<span class="kind-bar-label" aria-hidden="true">種別</span>
+<button type="button" class="kind-filter-btn" data-kind-filter="all" aria-pressed="true">すべて</button>
+<button type="button" class="kind-filter-btn" data-kind-filter="manga" aria-pressed="false">マンガ</button>
+<button type="button" class="kind-filter-btn" data-kind-filter="book" aria-pressed="false">本</button>
+</div>
 <div class="controls-bar">
 <label class="visually-hidden" for="search-input">タイトル・ASINで検索</label>
 <input type="search" id="search-input" class="search-input" placeholder="タイトル・ASINで検索" aria-label="タイトル・ASINで検索">
@@ -308,6 +351,7 @@ _PAGE_HEADER_HTML = r"""<div class="filter-bar" role="group" aria-label="表示�
 <option value="price-asc">価格が安い順</option>
 <option value="price-desc">価格が高い順</option>
 <option value="title-asc">タイトル順</option>
+<option value="rating-desc">評価が高い順</option>
 </select>
 <label class="ku-filter"><input type="checkbox" id="ku-only-checkbox"> Kindle Unlimited対象のみ</label>
 <label class="visually-hidden" for="tag-filter-select">タグで絞り込み</label>
@@ -317,6 +361,7 @@ _PAGE_HEADER_HTML = r"""<div class="filter-bar" role="group" aria-label="表示�
 <option value="wanted">タグ: 読みたいのみ</option>
 <option value="unwanted">タグ: 読みたくないのみ</option>
 <option value="purchased">タグ: 購入済みのみ</option>
+<option value="seen">タグ: 見たのみ</option>
 <option value="untagged">タグ: タグなしのみ</option>
 </select>
 <div class="price-range">
@@ -329,7 +374,12 @@ _PAGE_HEADER_HTML = r"""<div class="filter-bar" role="group" aria-label="表示�
 <p id="price-range-error" class="price-range-error hidden" role="alert">価格の下限は上限以下にしてください（価格条件は一時的に無視されます）。</p>
 <button type="button" id="reset-controls-button" class="reset-btn">条件をクリア</button>
 </div>
-<p id="active-filter-notice" class="active-filter-notice hidden" role="status">検索・タグ・価格の条件を適用中です（すべてのタブに共通で適用されます）。</p>"""
+<p id="active-filter-notice" class="active-filter-notice hidden" role="status">検索・種別・タグ・価格の条件を適用中です（すべてのタブに共通で適用されます）。</p>
+<div class="marks-bar">
+<p id="marks-summary" class="marks-summary" aria-live="polite"></p>
+<button type="button" id="export-marks-button" class="export-btn">見た・評価を書き出す</button>
+<p id="export-marks-status" class="export-status hidden" role="status"></p>
+</div>"""
 
 _PAGE_SCRIPT = r"""
 function applyControls() {
@@ -349,6 +399,7 @@ function applyControls() {
   var priceMin = parseFloat(priceMinInput.value);
   var priceMax = parseFloat(priceMaxInput.value);
   var tagFilter = tagFilterSelect ? tagFilterSelect.value : 'all';
+  var kindFilter = getKindFilter();
 
   var priceRangeError = document.getElementById('price-range-error');
   var priceRangeInvalid = !isNaN(priceMin) && !isNaN(priceMax) && priceMin > priceMax;
@@ -363,7 +414,8 @@ function applyControls() {
 
   var activeFilterNotice = document.getElementById('active-filter-notice');
   if (activeFilterNotice) {
-    var hasActiveFilter = searchWords.length > 0 || kuOnly || hasPriceFilter || tagFilter !== 'all';
+    var hasActiveFilter =
+      searchWords.length > 0 || kuOnly || hasPriceFilter || tagFilter !== 'all' || kindFilter !== 'all';
     activeFilterNotice.classList.toggle('hidden', !hasActiveFilter);
   }
 
@@ -396,6 +448,9 @@ function applyControls() {
       if (!matchesTagFilter(tr.dataset.tag || '', tagFilter)) {
         visible = false;
       }
+      if (kindFilter !== 'all' && (tr.dataset.kind || tr.dataset.savedKind) !== kindFilter) {
+        visible = false;
+      }
       if (!isNaN(priceMin) && (price === null || price < priceMin)) {
         visible = false;
       }
@@ -416,6 +471,10 @@ function applyControls() {
         var titleA = a.querySelector('.col-title');
         var titleB = b.querySelector('.col-title');
         return (titleA ? titleA.textContent : '').localeCompare(titleB ? titleB.textContent : '', 'ja');
+      }
+      if (sortMode === 'rating-desc') {
+        var diff = ratingSortValue(b) - ratingSortValue(a);
+        return diff !== 0 ? diff : parseInt(a.dataset.index, 10) - parseInt(b.dataset.index, 10);
       }
       var pa = a.dataset.price === '' ? null : parseFloat(a.dataset.price);
       var pb = b.dataset.price === '' ? null : parseFloat(b.dataset.price);
@@ -454,11 +513,56 @@ function matchesTagFilter(tag, filter) {
   if (filter === 'untagged') {
     return tag === '';
   }
-  if (filter === 'wanted' || filter === 'unwanted' || filter === 'purchased') {
+  if (filter === 'wanted' || filter === 'unwanted' || filter === 'purchased' || filter === 'seen') {
     return tag === filter;
   }
   return true;
 }
+
+// 評価が高い順: ★の数、「見た」だけで★なしは★の付いた本の後、「見た」以外はさらに後
+function ratingSortValue(tr) {
+  if (tr.dataset.tag !== 'seen') {
+    return 0;
+  }
+  return parseInt(tr.dataset.rating, 10) || 0.5;
+}
+
+var KIND_FILTER_STORAGE_KEY = 'book-kind-filter';
+
+function getKindFilter() {
+  var pressed = document.querySelector('.kind-filter-btn[aria-pressed="true"]');
+  return pressed ? pressed.dataset.kindFilter : 'all';
+}
+
+function setKindFilter(filter) {
+  document.querySelectorAll('.kind-filter-btn').forEach(function (btn) {
+    btn.setAttribute('aria-pressed', btn.dataset.kindFilter === filter ? 'true' : 'false');
+  });
+  try {
+    if (filter === 'manga' || filter === 'book') {
+      localStorage.setItem(KIND_FILTER_STORAGE_KEY, filter);
+    } else {
+      localStorage.removeItem(KIND_FILTER_STORAGE_KEY);
+    }
+  } catch (e) {}
+}
+
+document.querySelectorAll('.kind-filter-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    setKindFilter(btn.dataset.kindFilter);
+    applyControls();
+  });
+});
+
+(function restoreKindFilter() {
+  var stored = null;
+  try {
+    stored = localStorage.getItem(KIND_FILTER_STORAGE_KEY);
+  } catch (e) {}
+  if (stored === 'manga' || stored === 'book') {
+    setKindFilter(stored);
+  }
+})();
 
 document.querySelectorAll('.filter-btn').forEach(function (btn) {
   btn.addEventListener('click', function () {
@@ -503,14 +607,18 @@ if (resetControlsButton) {
       tagFilterSelect.value = 'all';
     }
     setStoredTagFilter('all');
+    setKindFilter('all');
     applyControls();
   });
 }
 
 applyControls();
 
-var TAG_LABELS = { wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み' };
-var TAG_STORAGE_PREFIX = 'book-tag:';
+var TAG_LABELS = { wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み', seen: '見た' };
+var KIND_LABELS = { manga: 'マンガ', book: '本' };
+// タグ・★評価・種別はブラウザに ASIN ごとに保存する（タグのキーは従来どおり book-tag:ASIN）
+var MARK_STORAGE_PREFIXES = { tag: 'book-tag:', rating: 'book-rating:', kind: 'book-kind:' };
+var MARK_FIELDS = ['tag', 'rating', 'kind'];
 var TAG_FILTER_STORAGE_KEY = 'book-tag-filter';
 // 同じ本は「全部」と「読みたい」等の複数タブに行があるため、タグの変更は同じ ASIN の全行へ反映する
 var rowsByAsin = {};
@@ -533,37 +641,158 @@ function setStoredTagFilter(filter) {
   } catch (e) {}
 }
 
-function getStoredTag(asin) {
+// 最後に押した時刻（ASIN ごと）と、最後に書き出した時刻
+var MARK_TIME_PREFIX = 'book-mark-at:';
+var MARKS_EXPORTED_AT_KEY = 'book-marks-exported-at';
+// 書き出し・取り込みの単位。★は「見た」に付くのでタグと一緒に扱う
+var MARK_GROUPS = { tag: ['tag', 'rating'], kind: ['kind'] };
+// 各行の公開ページ上の状態（data-saved-*）
+var savedByAsin = {};
+
+function readStorage(key) {
   try {
-    return localStorage.getItem(TAG_STORAGE_PREFIX + asin) || '';
+    return localStorage.getItem(key);
   } catch (e) {
-    return '';
+    return null;
   }
 }
 
-function setStoredTag(asin, tag) {
+function writeStorage(key, value) {
   try {
-    if (tag) {
-      localStorage.setItem(TAG_STORAGE_PREFIX + asin, tag);
+    if (value === null) {
+      localStorage.removeItem(key);
     } else {
-      localStorage.removeItem(TAG_STORAGE_PREFIX + asin);
+      localStorage.setItem(key, value);
     }
   } catch (e) {}
 }
 
-function applyTagState(tr, tag) {
-  tr.dataset.tag = tag || '';
-  tr.querySelectorAll('.tag-btn').forEach(function (btn) {
-    btn.setAttribute('aria-pressed', btn.dataset.tag === tag ? 'true' : 'false');
+// サイトデータがブロックされている等で保存できないブラウザでは、画面上の状態と公開ページの状態の差を書き出す
+var canStoreMarks = (function () {
+  try {
+    localStorage.setItem('book-marks-probe', '1');
+    localStorage.removeItem('book-marks-probe');
+    return true;
+  } catch (e) {
+    return false;
+  }
+})();
+
+function readStoredMark(asin, field) {
+  return readStorage(MARK_STORAGE_PREFIXES[field] + asin);
+}
+
+// 押した値は、公開ページ（data-saved-*）と同じ値に戻したときも保存する。
+// 取り込んでからページを作り直すまでの間は、DB の方がページより新しいことがあるため。
+function storeMarks(asin, marks, group) {
+  MARK_GROUPS[group].forEach(function (field) {
+    writeStorage(MARK_STORAGE_PREFIXES[field] + asin, marks[field]);
   });
+  writeStorage(MARK_TIME_PREFIX + asin, String(Date.now()));
+}
+
+function clearStoredMarks(asin) {
+  MARK_FIELDS.forEach(function (field) {
+    writeStorage(MARK_STORAGE_PREFIXES[field] + asin, null);
+  });
+  writeStorage(MARK_TIME_PREFIX + asin, null);
+}
+
+function hasStoredMarks(asin) {
+  return MARK_FIELDS.some(function (field) {
+    return readStoredMark(asin, field) !== null;
+  });
+}
+
+function storedAt(asin) {
+  return parseInt(readStorage(MARK_TIME_PREFIX + asin), 10) || 0;
+}
+
+function lastExportedAt() {
+  return parseInt(readStorage(MARKS_EXPORTED_AT_KEY), 10) || 0;
+}
+
+function sameMarks(a, b) {
+  return a.tag === b.tag && a.rating === b.rating && a.kind === b.kind;
+}
+
+function getSavedMarks(tr) {
+  var tag = tr.dataset.savedTag || '';
+  var rating = tr.dataset.savedRating || '';
+  return {
+    tag: TAG_LABELS.hasOwnProperty(tag) ? tag : '',
+    rating: /^[1-5]$/.test(rating) ? rating : '',
+    kind: tr.dataset.savedKind === 'manga' ? 'manga' : 'book'
+  };
+}
+
+function loadMarks(asin, saved) {
+  var marks = { tag: saved.tag, rating: saved.rating, kind: saved.kind };
+  if (asin) {
+    var tag = readStoredMark(asin, 'tag');
+    var rating = readStoredMark(asin, 'rating');
+    var kind = readStoredMark(asin, 'kind');
+    if (tag !== null && (tag === '' || TAG_LABELS.hasOwnProperty(tag))) {
+      marks.tag = tag;
+    }
+    if (rating !== null && /^[1-5]?$/.test(rating)) {
+      marks.rating = rating;
+    }
+    if (kind === 'manga' || kind === 'book') {
+      marks.kind = kind;
+    }
+  }
+  // ★は「見た」の本だけに付く
+  if (marks.tag !== 'seen') {
+    marks.rating = '';
+  }
+  return marks;
+}
+
+function applyMarks(tr, marks) {
+  tr.dataset.tag = marks.tag;
+  tr.dataset.rating = marks.rating;
+  tr.dataset.kind = marks.kind;
+  tr.querySelectorAll('.tag-btn').forEach(function (btn) {
+    btn.setAttribute('aria-pressed', btn.dataset.tag === marks.tag ? 'true' : 'false');
+  });
+  var kindBtn = tr.querySelector('.kind-btn');
+  if (kindBtn) {
+    var otherKind = marks.kind === 'manga' ? 'book' : 'manga';
+    kindBtn.dataset.kind = marks.kind;
+    kindBtn.textContent = KIND_LABELS[marks.kind];
+    kindBtn.setAttribute('aria-label', '種別: ' + KIND_LABELS[marks.kind] + '（押すと' + KIND_LABELS[otherKind] + 'に切り替え）');
+  }
+  var ratingGroup = tr.querySelector('.rating-group');
+  if (ratingGroup) {
+    ratingGroup.classList.toggle('hidden', marks.tag !== 'seen');
+    var value = parseInt(marks.rating, 10) || 0;
+    ratingGroup.querySelectorAll('.star-btn').forEach(function (star) {
+      var n = parseInt(star.dataset.rating, 10);
+      star.classList.toggle('is-on', n <= value);
+      star.textContent = n <= value ? '★' : '☆';
+      star.setAttribute('aria-pressed', n === value ? 'true' : 'false');
+    });
+  }
+}
+
+function currentMarks(tr) {
+  return { tag: tr.dataset.tag || '', rating: tr.dataset.rating || '', kind: tr.dataset.kind || 'book' };
 }
 
 document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
   var asinEl = tr.querySelector('.col-asin');
   var asin = asinEl ? asinEl.textContent.trim() : '';
+  var saved = getSavedMarks(tr);
 
   var td = document.createElement('td');
   td.className = 'col-tag';
+
+  var kindBtn = document.createElement('button');
+  kindBtn.type = 'button';
+  kindBtn.className = 'kind-btn';
+  td.appendChild(kindBtn);
+
   var group = document.createElement('div');
   group.className = 'tag-group';
   group.setAttribute('role', 'group');
@@ -578,33 +807,68 @@ document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
     group.appendChild(btn);
   });
   td.appendChild(group);
+
+  var ratingGroup = document.createElement('div');
+  ratingGroup.className = 'rating-group';
+  ratingGroup.setAttribute('role', 'group');
+  ratingGroup.setAttribute('aria-label', '★評価（同じ★をもう一度押すと取り消し）');
+  for (var n = 1; n <= 5; n++) {
+    var star = document.createElement('button');
+    star.type = 'button';
+    star.className = 'star-btn';
+    star.dataset.rating = String(n);
+    star.setAttribute('aria-label', '★' + n);
+    ratingGroup.appendChild(star);
+  }
+  td.appendChild(ratingGroup);
   tr.appendChild(td);
 
-  applyTagState(tr, getStoredTag(asin));
+  var marks = loadMarks(asin, saved);
+  applyMarks(tr, marks);
   if (asin) {
     (rowsByAsin[asin] = rowsByAsin[asin] || []).push(tr);
+    savedByAsin[asin] = saved;
+    // 書き出し済みの変更が公開ページに追いついたら（取り込み・再公開の後）、ブラウザから消す
+    if (hasStoredMarks(asin) && sameMarks(marks, saved) && storedAt(asin) <= lastExportedAt()) {
+      clearStoredMarks(asin);
+    }
   }
 
   td.addEventListener('click', function (e) {
     // タグ欄内のタップはボタンを外しても Amazon へ遷移させない（小さいボタンの押し損じ対策）
     e.stopPropagation();
-    var btn = e.target.closest('.tag-btn');
+    var btn = e.target.closest('button');
     if (!btn) {
       return;
     }
-    var next = tr.dataset.tag === btn.dataset.tag ? '' : btn.dataset.tag;
+    var next = currentMarks(tr);
+    if (btn.classList.contains('tag-btn')) {
+      next.tag = next.tag === btn.dataset.tag ? '' : btn.dataset.tag;
+      if (next.tag !== 'seen') {
+        next.rating = '';
+      }
+    } else if (btn.classList.contains('star-btn')) {
+      next.rating = next.rating === btn.dataset.rating ? '' : btn.dataset.rating;
+    } else if (btn.classList.contains('kind-btn')) {
+      next.kind = next.kind === 'manga' ? 'book' : 'manga';
+    } else {
+      return;
+    }
     (asin ? rowsByAsin[asin] : [tr]).forEach(function (row) {
-      applyTagState(row, next);
+      applyMarks(row, next);
     });
-    setStoredTag(asin, next);
+    if (asin) {
+      storeMarks(asin, next, btn.classList.contains('kind-btn') ? 'kind' : 'tag');
+    }
     // 並べ替えで行を入れ直すとフォーカスが外れるため、押したボタンが見えたままなら戻す（キーボード操作向け）
     applyControls();
+    updateMarksSummary();
     if (!btn.closest('.hidden')) {
       btn.focus();
     }
   });
   td.addEventListener('keydown', function (e) {
-    if (e.target.closest('.tag-btn')) {
+    if (e.target.closest('button')) {
       e.stopPropagation();
     }
   });
@@ -624,6 +888,108 @@ if (tagFilterSelectEl) {
 }
 // タグは上で各行に付けたので、保存済みのタグ絞り込みを含めてもう一度適用する
 applyControls();
+
+// 「見た・評価を書き出す」: ブラウザに保存した変更を JSON ファイルにする。
+// PC で `python run.py import-marks <ファイル>` を実行すると DB に蓄積され、ローカル LLM のおすすめ
+// （`python run.py recommend`）に使われる。
+var MARKS_FILE_FORMAT = 'kindle-marks';
+
+function collectMarks() {
+  var summary = { seen: 0, rated: 0, items: [], unexported: 0 };
+  var exportedAt = lastExportedAt();
+  Object.keys(rowsByAsin).forEach(function (asin) {
+    var tr = rowsByAsin[asin][0];
+    var marks = currentMarks(tr);
+    var saved = savedByAsin[asin];
+    if (marks.tag === 'seen') {
+      summary.seen++;
+      if (marks.rating) {
+        summary.rated++;
+      }
+    }
+    // 書き出すのは押した項目だけ（押していない項目は、取り込み時に DB の値のまま残る）
+    var touched = Object.keys(MARK_GROUPS).filter(function (group) {
+      return MARK_GROUPS[group].some(function (field) {
+        return canStoreMarks ? readStoredMark(asin, field) !== null : marks[field] !== saved[field];
+      });
+    });
+    if (touched.length === 0) {
+      return;
+    }
+    var titleEl = tr.querySelector('.col-title');
+    var item = { asin: asin, title: titleEl ? titleEl.textContent : '' };
+    if (touched.indexOf('tag') !== -1) {
+      item.tag = marks.tag;
+      item.rating = marks.rating ? parseInt(marks.rating, 10) : null;
+    }
+    if (touched.indexOf('kind') !== -1) {
+      item.kind = marks.kind;
+    }
+    summary.items.push(item);
+    if (!canStoreMarks || storedAt(asin) > exportedAt) {
+      summary.unexported++;
+    }
+  });
+  return summary;
+}
+
+function updateMarksSummary() {
+  var summaryEl = document.getElementById('marks-summary');
+  if (!summaryEl) {
+    return;
+  }
+  var summary = collectMarks();
+  var text = '見た ' + summary.seen + '件（★評価 ' + summary.rated + '件）・まだ書き出していない変更 ' + summary.unexported + '件';
+  if (!canStoreMarks) {
+    text += '（このブラウザには保存できないため、ページを閉じる前に書き出してください）';
+  }
+  summaryEl.textContent = text;
+}
+
+function pad2(n) {
+  return (n < 10 ? '0' : '') + n;
+}
+
+function exportMarks() {
+  var statusEl = document.getElementById('export-marks-status');
+  var summary = collectMarks();
+  var message;
+  if (summary.items.length === 0) {
+    message = 'ブラウザに保存した変更はありません（表示中のタグ・★・種別は公開ページと同じです）。';
+  } else {
+    var now = new Date();
+    var fileName =
+      'kindle-marks-' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) +
+      '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + '.json';
+    var data = { format: MARKS_FILE_FORMAT, version: 1, exported_at: now.toISOString(), items: summary.items };
+    var blob = new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 10000);
+    writeStorage(MARKS_EXPORTED_AT_KEY, String(Date.now()));
+    updateMarksSummary();
+    message =
+      fileName + ' を書き出しました（' + summary.items.length + '件）。PC で「python run.py import-marks ファイルのパス」を実行して取り込むと、' +
+      '「python run.py recommend」でローカル LLM のおすすめを出せます。';
+  }
+  if (statusEl) {
+    statusEl.textContent = message;
+    statusEl.classList.remove('hidden');
+  }
+}
+
+var exportMarksButton = document.getElementById('export-marks-button');
+if (exportMarksButton) {
+  exportMarksButton.addEventListener('click', exportMarks);
+}
+updateMarksSummary();
 
 document.querySelectorAll('.book-table tbody tr.book').forEach(function (tr) {
   var asinEl = tr.querySelector('.col-asin');
@@ -770,7 +1136,8 @@ def build_html(books: list) -> str:
     「読みたい」「購入済み」セクションにも同じ本が重複して表示される（「全部」セクションは
     フラグに関わらず常に全件を表示する）。任意で book["price_history"]
     （repository.get_price_history() と同形式の list）を持たせると価格履歴欄に反映される
-    （持たない場合は「データなし」になる）。
+    （持たない場合は「データなし」になる）。任意で book["mark"]（repository.get_book_marks()
+    の1件）を持たせると、取り込み済みのタグ・★評価・種別がページの初期状態になる。
 
     タイトル・ASIN・価格表示・価格履歴グラフ座標のエスケープ/無害化は
     _build_book_row() / _build_price_history_svg() が担う（R2 対策）。
@@ -878,8 +1245,17 @@ def main() -> None:
         sys.exit(1)
 
     books = get_books(filter="all")
+    # run.py import-marks で取り込んだ内容を、ページの初期状態として各行に持たせる。
+    # 種別（マンガ/本）の上書きは常に載せるが、「見た」・★評価・読みたくない等のタグは読書記録
+    # なので、PUBLISH_MARKS=1 のときだけ公開ページに載せる（既定では DB とローカル LLM だけで使う）。
+    marks = get_book_marks()
+    publish_marks = os.environ.get("PUBLISH_MARKS", "").strip().lower() in ("1", "true", "yes")
     for book in books:
         book["price_history"] = get_price_history(book["asin"])
+        mark = marks.get(book["asin"])
+        if mark and not publish_marks:
+            mark = {"kind": mark.get("kind")}
+        book["mark"] = mark
     html_content = build_html(books)
 
     # 途中中断で壊れた index.html を公開リポジトリに残さないよう、一時ファイルへ
