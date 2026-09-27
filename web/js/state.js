@@ -16,6 +16,8 @@ export const DEFAULT_SETTINGS = {
     embedModel: '',
   },
   autoSync: true,
+  // PC のブラウザで Vault のフォルダに直接書き出しているとき、取り込み・同期のあとに自動で書き出す
+  autoExportFolder: true,
 };
 
 export const state = {
@@ -25,10 +27,15 @@ export const state = {
   servedByCompanion: false,
   job: null,
   lastSync: null,
+  // PC のコンパニオンサーバの状態（出力先・最後に Vault に書き出した結果など）
+  pcInfo: null,
+  // このブラウザから Vault のフォルダに最後に書き出した結果
+  folderExport: null,
 };
 
 export async function loadState() {
-  const [library, analysis, settings, lastSync] = await Promise.all([kv.get('library'), kv.get('analysis'), kv.get('settings'), kv.get('lastSync')]);
+  const [library, analysis, settings, lastSync, folderExport] = await Promise.all([kv.get('library'), kv.get('analysis'), kv.get('settings'), kv.get('lastSync'), kv.get('folderExport')]);
+  state.folderExport = folderExport || null;
   if (library) state.library = library;
   if (analysis) state.analysis = analysis;
   if (settings) state.settings = { ...structuredClone(DEFAULT_SETTINGS), ...settings, ai: { ...DEFAULT_SETTINGS.ai, ...(settings.ai || {}) } };
@@ -40,6 +47,7 @@ export const save = {
   analysis: () => (state.analysis ? kv.set('analysis', state.analysis) : kv.del('analysis')),
   settings: () => kv.set('settings', state.settings),
   lastSync: () => kv.set('lastSync', state.lastSync),
+  folderExport: () => kv.set('folderExport', state.folderExport),
 };
 
 export async function loadCache() {

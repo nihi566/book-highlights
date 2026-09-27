@@ -103,3 +103,15 @@ export function openSheet(content, onSubmit) {
     if (e.target === dialog) dialog.close();
   }, { once: true });
 }
+
+const EXPORT_TRIGGERS = { sync: '同期のあと', import: '取り込みのあと', analysis: '分析のあと', manual: '手動', folder: 'このブラウザから' };
+
+/** 最後に Vault に書き出した結果を 1 行で（例: 9/27 18:05・同期のあと・書き込み 3 件） */
+export function lastExportText(last) {
+  if (!last?.at) return 'まだ書き出していません';
+  const d = new Date(last.at);
+  const when = `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+  const what = last.error ? `失敗: ${last.error}` : `書き込み ${last.written ?? 0} 件・変更なし ${last.unchanged ?? 0} 件`;
+  return `${when}・${EXPORT_TRIGGERS[last.trigger] || last.trigger || ''}・${what}`;
+}
+

@@ -4,6 +4,7 @@ import { libraryStats } from '../../core/model.js';
 import { ACCEPT } from '../../core/parsers/index.js';
 import { isoDate } from '../../core/text.js';
 import { fsSupported } from '../services.js';
+import { lastExportText } from '../ui.js';
 
 export const importView = {
   render({ state }) {
@@ -73,8 +74,10 @@ export const exportView = {
 
       <div class="section"><h2>書き出し方</h2></div>
       <div class="card stack">
-        ${pcAvailable ? html`<div><h3>PC の Vault に書き出す</h3><p class="help">PC のコンパニオンサーバが、設定済みの Vault に直接書き込みます（スマホからでも可）。先に PC と同期します。</p><button class="btn primary" data-action="export-pc">PC に書き出す</button></div>` : ''}
-        ${fsSupported ? html`<div><h3>この PC のフォルダに直接書き出す</h3><p class="help">Vault のフォルダを選ぶと、以後はワンタップで更新できます（Chrome / Edge）。</p><div class="row"><button class="btn ${pcAvailable ? '' : 'primary'}" data-action="export-fs">Vault に書き出す</button><button class="btn small" data-action="pick-vault">フォルダを選び直す</button></div></div>` : ''}
+        ${pcAvailable ? html`<div><h3>PC の Vault に書き出す</h3><p class="help">PC のコンパニオンサーバが、設定済みの Vault に直接書き込みます（スマホからでも可）。先に PC と同期します。</p><button class="btn primary" data-action="export-pc">PC に書き出す</button>${pcExportStatus(state)}</div>` : ''}
+        ${fsSupported ? html`<div><h3>この PC のフォルダに直接書き出す</h3><p class="help">Vault のフォルダを選ぶと、以後はワンタップで更新できます（Chrome / Edge）。</p><div class="row"><button class="btn ${pcAvailable ? '' : 'primary'}" data-action="export-fs">Vault に書き出す</button><button class="btn small" data-action="pick-vault">フォルダを選び直す</button></div>
+          <dl class="kv small"><dt>最後に書き出した時刻</dt><dd>${lastExportText(state.folderExport)}${state.folderExport?.name ? `（${state.folderExport.name}）` : ''}</dd></dl>
+          <label class="check small"><input type="checkbox" data-action="toggle-autoexport-folder" ${state.settings.autoExportFolder ? 'checked' : ''}> 取り込み・同期・編集のあと自動で書き出す（書き込みを許可したフォルダだけ）</label></div>` : ''}
         <div><h3>zip でダウンロード</h3><p class="help">展開して Vault のフォルダに入れます（iPhone は「ファイル」アプリで展開して Obsidian のフォルダへ）。</p><button class="btn" data-action="export-zip">zip をダウンロード</button></div>
       </div>
       <div id="export-result"></div>
@@ -126,8 +129,9 @@ export const settingsView = {
       <div class="section"><h2>PC と同期</h2></div>
       <div class="card stack">
         <p class="help">スマホで取り込んだ点や編集を PC に送り、PC の分析結果を受け取ります（コンパニオンサーバ経由）。</p>
-        <label class="row"><input type="checkbox" data-action="toggle-autosync" ${state.settings.autoSync ? 'checked' : ''}> 起動時に自動で同期する</label>
+        <label class="check"><input type="checkbox" data-action="toggle-autosync" ${state.settings.autoSync ? 'checked' : ''}> 起動時に自動で同期する</label>
         <div class="row"><button class="btn" data-action="sync">今すぐ同期</button><span class="small muted">${state.lastSync ? `最終: ${isoDate(state.lastSync)} ${new Date(state.lastSync).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` : '未同期'}</span></div>
+        ${state.pcInfo ? html`<p class="small muted">PC の Vault に最後に書き出した時刻: ${lastExportText(state.pcInfo.lastExport)}</p>` : ''}
       </div>
 
       <div class="section"><h2>データ</h2></div>
@@ -146,3 +150,16 @@ export const settingsView = {
     });
   },
 };
+
+/** PC の書き出し先と、最後に書き出した結果 */
+function pcExportStatus(state) {
+  const info = state.pcInfo;
+  if (!info) return html`<p class="small muted" style="margin-top:8px">PC に接続すると、出力先と最後に書き出した時刻がここに出ます。</p>`;
+  return html`<dl class="kv small">
+      <dt>出力先</dt><dd>${info.vaultPath ? html`<span class="code">${info.vaultPath}</span>` : 'PC で Vault が未設定です（bh config vault <パス>）'}</dd>
+      <dt>最後に書き出した時刻</dt><dd>${lastExportText(info.lastExport)}</dd>
+      <dt>自動の書き出し</dt><dd>${info.autoExport ? '同期・取り込み・分析のあとに自動で書き出します' : 'オフ（PC で bh config autoexport on にすると有効）'}</dd>
+    </dl>
+    ${info.root && info.root !== state.settings.root ? html`<p class="notice">PC の出力先のフォルダは「${info.root}」です。書き出すと、この画面の設定「${state.settings.root}」に合わせます。</p>` : ''}`;
+}
+
