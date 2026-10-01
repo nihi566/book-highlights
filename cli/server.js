@@ -144,12 +144,12 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
         return send(res, 200, merged);
       }
       case 'POST /api/import': {
-        // { files: [{ name, base64 }] } を PC 側でパースして取り込む
+        // { files: [{ name, base64 }], auto? } を PC 側でパースして取り込む（auto: ブラウザ拡張の自動取り込み。削除した本を復活させない）
         const body = await readBody(req);
         const files = (body.files || []).map((f) => ({ name: f.name, bytes: Buffer.from(f.base64, 'base64') }));
         const parsed = await parseFiles(files);
         const r = await store.lock(async () => {
-          const out = applyImport({ library: await store.library(), analysis: await store.analysis() }, parsed);
+          const out = applyImport({ library: await store.library(), analysis: await store.analysis() }, parsed, { reviveDeleted: !body.auto });
           await store.saveLibrary(out.library);
           if (out.analysisChanged) await store.saveAnalysis(out.analysis);
           return out;

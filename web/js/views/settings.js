@@ -19,8 +19,19 @@ export const importView = {
       <div class="section"><h2>Kindle</h2></div>
       <div class="card">
         <details>
-          <summary>Kindle アプリで読んでいる（おすすめ: ブックマークレット）</summary>
-          <p class="help">アプリで引いた線は Amazon のノートブック（read.amazon.co.jp/notebook）に集まります。PC のブラウザで次の手順を 1 度設定すれば、全ての本のハイライトをまとめて取り込めます。</p>
+          <summary>Kindle アプリで読んでいる（おすすめ: 自動取り込みの拡張機能）</summary>
+          <p class="help">アプリで引いた線は Amazon のノートブック（read.amazon.co.jp/notebook）に集まります。PC の Chrome / Edge に拡張機能を入れておくと、ノートブックを定期的に（既定 15 分ごと）確認し、新しい線だけを PC の bh serve に送ります。この画面には PC との同期で届きます。</p>
+          <ol class="help">
+            <li>PC で <span class="code">bh serve</span> を起動しておきます。</li>
+            <li>Chrome / Edge で <span class="code">chrome://extensions</span> を開き、「デベロッパー モード」をオン →「パッケージ化されていない拡張機能を読み込む」でリポジトリの <span class="code">extension</span> フォルダを選びます。</li>
+            <li>開いた設定画面に出るコマンド（<span class="code">bh config origin chrome-extension://…</span>）を PC で実行し、bh serve を再起動します。</li>
+            <li>同じブラウザで <a href="https://read.amazon.co.jp/notebook" target="_blank" rel="noopener">read.amazon.co.jp/notebook</a> にログインしておきます。</li>
+          </ol>
+          <p class="help">Amazon のパスワードや Cookie は保存しません。ブラウザを閉じている間と、線がノートブックに反映されるまでの数分は届きません。</p>
+        </details>
+        <details>
+          <summary>Kindle アプリの線を手動でまとめて取り込む（ブックマークレット）</summary>
+          <p class="help">PC を常に動かしていない場合はこちら。PC のブラウザで次の手順を 1 度設定すれば、全ての本のハイライトをまとめて取り込めます。</p>
           <ol class="help">
             <li>下のボタンをブックマークバーにドラッグして登録します（または「コピー」して、新しいブックマークの URL に貼り付けます）。</li>
             <li><a href="https://read.amazon.co.jp/notebook" target="_blank" rel="noopener">read.amazon.co.jp/notebook</a> を開いてログインします。</li>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kindle 自動取り込み</title>
+<style>
+  :root { --bg: #f7f6f2; --card: #fff; --text: #222; --muted: #666; --line: #ddd; --accent: #1f6f5c; --err: #b3261e; --ok: #1f6f5c; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1b1c1b; --card: #262826; --text: #eee; --muted: #aaa; --line: #3a3c3a; --accent: #6fc2a8; --err: #f2b8b5; --ok: #6fc2a8; } }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  .sub, .help { color: var(--muted); font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  label { display: block; margin-top: 12px; font-weight: 600; font-size: 14px; }
+  input, select { box-sizing: border-box; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  button:disabled { opacity: .6; cursor: default; }
+  code { display: block; margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-size: 13px; word-break: break-all; user-select: all; }
+  .ok { color: var(--ok); } .err { color: var(--err); }
+  ol { padding-left: 20px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Kindle 自動取り込み</h1>
+  <div class="sub">Kindle のノートブックを定期的に確認し、新しいハイライトを PC の bh serve に送ります。</div>
+
+  <div class="card">
+    <h2>状態</h2>
+    <div id="status">まだ取り込んでいません</div>
+    <div class="row">
+      <button class="primary" id="sync-now">今すぐ取り込む</button>
+      <button id="reset" title="前回までの記録を消して、全ての本を読み直します">全ての本を取り込み直す</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>はじめに（1 回だけ）</h2>
+    <ol class="help">
+      <li>PC で <b>bh serve</b> を起動しておきます。</li>
+      <li>次のコマンドを PC で実行し、この拡張からの接続を許可します（実行後に bh serve を再起動）。
+        <code id="origin-cmd"></code></li>
+      <li>このブラウザで <a id="notebook-link" href="https://read.amazon.co.jp/notebook" target="_blank" rel="noopener">Kindle のノートブック</a> を開き、Amazon にログインしておきます。</li>
+    </ol>
+    <p class="help">Amazon のパスワードや Cookie はどこにも保存しません。ブラウザのログイン状態をそのまま使うため、ブラウザを閉じている間は取り込みが止まります。</p>
+  </div>
+
+  <form class="card" id="settings">
+    <h2>設定</h2>
+    <label>PC（bh serve）の URL
+      <input name="companionUrl" type="url" required placeholder="http://localhost:8787">
+    </label>
+    <div class="help">http://localhost:… または Tailscale の https://….ts.net が使えます。</div>
+    <label>トークン（bh config token を設定した場合だけ）
+      <input name="token" type="password" autocomplete="off">
+    </label>
+    <label>Amazon
+      <select name="amazonHost">
+        <option value="read.amazon.co.jp">read.amazon.co.jp（日本）</option>
+        <option value="read.amazon.com">read.amazon.com（米国）</option>
+      </select>
+    </label>
+    <label>確認する間隔
+      <select name="intervalMin">
+        <option value="5">5 分ごと</option>
+        <option value="15">15 分ごと</option>
+        <option value="30">30 分ごと</option>
+        <option value="60">1 時間ごと</option>
+      </select>
+    </label>
+    <div class="help">Kindle アプリで引いた線がノートブックに出るまでにも数分かかります。</div>
+    <div class="row"><button class="primary" type="submit">保存</button><span id="saved" class="help"></span></div>
+  </form>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>
