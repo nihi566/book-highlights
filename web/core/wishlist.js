@@ -238,6 +238,24 @@ export function searchWishlist(books, q) {
   });
 }
 
+const SKIP_IN_PICKS = new Set(['unwanted', 'purchased', 'seen']);
+
+/**
+ * ホーム用の要約。items: [{ book, marks }]。
+ * kuCount は「Kindle Unlimited のみ」で絞り込んだ欲しい本の画面と同じ数（リンク先の件数と食い違わないように）。
+ * picks は今すぐ読める候補: KU で、購入済み・読みたくない・見たを除き、読みたいを先頭に最大 3 冊。
+ */
+export function wishlistSummary(items, limit = 3) {
+  const ku = items.filter(({ book }) => book.ku);
+  const wanted = ({ book, marks }) => book.wanted || marks.tag === 'wanted';
+  const picks = ku
+    .filter(({ book, marks }) => !book.purchased && !SKIP_IN_PICKS.has(marks.tag))
+    .sort((a, b) => wanted(b) - wanted(a) || a.book.index - b.book.index)
+    .slice(0, limit)
+    .map(({ book }) => book);
+  return { total: items.length, kuCount: ku.length, picks };
+}
+
 export function formatPrice(book) {
   if (book.ku) return 'Kindle Unlimited 対象';
   if (book.price === null) return '価格情報なし';

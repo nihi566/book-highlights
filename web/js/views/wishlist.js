@@ -32,14 +32,16 @@ export const wishlist = {
     const body = root.querySelector('#wl-body');
     const store = browserStore();
     const marksStore = store.canStore ? store : fallbackStore;
-    // 検索の「欲しい本で見る」・おすすめの印から来たときは、その語だけで絞り込んで開く
-    //（ほかの条件が残っていると、印の付いた本が 0 件になる）。次に普通に開いたときはその語を外す
-    const q = ctx?.query?.get('q');
-    if (q) {
-      Object.assign(filters, { q, shelf: 'all', sort: 'default', ku: false, min: '', max: '' });
+    // 検索の「欲しい本で見る」・おすすめの印から来たときは、その語だけで絞り込んで開く。
+    // ホームの「Kindle Unlimited 対象をすべて見る」（ku=1）は KU だけで絞り込んで開く
+    //（ほかの条件が残っていると、リンクに出した件数と合わない）。次に普通に開いたときはその条件を外す
+    const q = ctx?.query?.get('q') || '';
+    const ku = ctx?.query?.get('ku') === '1';
+    if (q || ku) {
+      Object.assign(filters, { q, shelf: 'all', sort: 'default', ku, min: '', max: '' });
       linkFilter = true;
     } else if (linkFilter) {
-      filters.q = '';
+      Object.assign(filters, { q: '', ku: false });
       linkFilter = false;
     }
     loadWishlist()
@@ -49,7 +51,7 @@ export const wishlist = {
           cleanupSyncedMarks(marksStore, book);
           return { book, marks: loadMarks(book, marksStore) };
         });
-        mountList(root, body, items, marksStore, w.lastScraped, { fromLink: Boolean(q) });
+        mountList(root, body, items, marksStore, w.lastScraped, { fromLink: Boolean(q || ku) });
       })
       .catch((e) => {
         if (!body.isConnected) return;

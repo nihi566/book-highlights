@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseWishlist, saveMarks, searchWishlist, titleKey, toggleMark } from '../web/core/wishlist.js';
+import { cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseWishlist, saveMarks, searchWishlist, titleKey, toggleMark, wishlistSummary } from '../web/core/wishlist.js';
 
 test('titleKey: 括弧のレーベル・版表記と記号・空白を落とす', () => {
   assert.equal(titleKey('731―石井四郎と細菌戦部隊の闇を暴く―（新潮文庫）'), titleKey('731 石井四郎と細菌戦部隊の闇を暴く'));
@@ -182,4 +182,27 @@ test('collectMarks: 保存できないブラウザでは公開データとの差
   const s = collectMarks(list, memoryStore(), { canStore: false });
   assert.deepEqual(s.items, [{ asin: 'B0AAAAAAA1', title: 'すごい本 上', tag: 'wanted', rating: null }]);
   assert.equal(s.unexported, 1);
+});
+
+test('wishlistSummary: ホームに出す件数と Kindle Unlimited で読める本（購入済み・読みたくない・見たを除き、読みたいを先頭に最大 3 冊）', () => {
+  const { books } = parseWishlist({ format: 'kindle-wishlist', version: 1, books: [
+    { asin: 'B0AAAAAAA1', title: 'KU 1', ku: true },
+    { asin: 'B0AAAAAAA2', title: '通常', price: 990 },
+    { asin: 'B0AAAAAAA3', title: 'KU 購入済み', ku: true, purchased: true },
+    { asin: 'B0AAAAAAA4', title: 'KU 読みたくない', ku: true },
+    { asin: 'B0AAAAAAA5', title: 'KU 見た', ku: true, tag: 'seen', rating: 4 },
+    { asin: 'B0AAAAAAA6', title: 'KU 2', ku: true },
+    { asin: 'B0AAAAAAA7', title: 'KU 読みたい（公開データ）', ku: true, wanted: true },
+    { asin: 'B0AAAAAAA8', title: 'KU 3', ku: true },
+    { asin: 'B0AAAAAAA9', title: 'KU 購入済み（このブラウザのタグ）', ku: true },
+  ] });
+  const store = memoryStore({ 'book-tag:B0AAAAAAA4': 'unwanted', 'book-tag:B0AAAAAAA9': 'purchased', 'book-tag:B0AAAAAAA8': 'wanted' });
+  const items = books.map((book) => ({ book, marks: loadMarks(book, store) }));
+  const s = wishlistSummary(items);
+  assert.equal(s.total, 9);
+  // 件数は「KU のみ」で絞り込んだ欲しい本の画面（#/wishlist?ku=1）と同じ数にする
+  assert.equal(s.kuCount, filterWishlist(items, { ku: true }).items.length);
+  assert.equal(s.kuCount, 8);
+  assert.deepEqual(s.picks.map((b) => b.asin), ['B0AAAAAAA7', 'B0AAAAAAA8', 'B0AAAAAAA1']);
+  assert.deepEqual(wishlistSummary([]), { total: 0, kuCount: 0, picks: [] });
 });
