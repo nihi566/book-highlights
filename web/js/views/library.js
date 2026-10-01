@@ -3,7 +3,7 @@ import { html } from '../html.js';
 import { bookHighlights, dailyPicks, libraryStats, listBooks, searchHighlights, SOURCES } from '../../core/model.js';
 import { vaultPaths } from '../../core/obsidian.js';
 import { normalizeText } from '../../core/text.js';
-import { formatPrice, searchWishlist } from '../../core/wishlist.js';
+import { browserStore, formatPrice, loadMarks, searchWishlist, wishlistSummary } from '../../core/wishlist.js';
 import { loadWishlist } from '../wishlist-data.js';
 import { bookRow, highlightCard, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
 
@@ -63,13 +63,39 @@ export const home = {
             <div class="card"><p>点が ${s.highlights} 件たまりました。ローカル LLM で点をつないで、線・面・立体にしてみましょう。</p>
             <a class="btn primary" href="#/knowledge">分析する</a></div>`}
 
+      <div id="home-wishlist"></div>
+
       <div class="section"><h2>最近の点</h2><a class="small" href="#/search">すべて見る</a></div>
       ${recent.map((h) => highlightCard(h, { library: lib, lines: idx.get(h.id) }))}
 
       <div class="section"><h2>Obsidian</h2></div>
       <div class="card row spread"><span class="help grow">ハイライトと分析結果を Vault に写します。</span><a class="btn" href="#/export">書き出す</a></div>`;
   },
+  mount(root) {
+    renderHomeWishlist(root.querySelector('#home-wishlist'));
+  },
 };
+
+/** ホームの「欲しい本」。Kindle Unlimited で読める本に気づけるように。読めないときは何も出さない（ホームを邪魔しない） */
+function renderHomeWishlist(box) {
+  if (!box) return;
+  loadWishlist()
+    .then((w) => {
+      if (!box.isConnected || !w.books.length) return;
+      // タグは読むだけ（ホームでは保存値を片付けない。欲しい本の画面と同じく、保存できないブラウザでは公開データのタグ）
+      const store = browserStore();
+      const s = wishlistSummary(w.books.map((book) => ({ book, marks: loadMarks(book, store) })));
+      box.innerHTML = String(html`<section class="home-wishlist">
+          <div class="section"><h2>欲しい本</h2><a class="small" href="#/wishlist">欲しい本へ</a></div>
+          <p class="small muted">欲しい本 ${s.total} 冊${s.kuCount ? ` ・ Kindle Unlimited 対象 ${s.kuCount} 冊` : ''}</p>
+          ${s.picks.length ? html`<ul class="book-list">${s.picks.map(wishlistHitRow)}</ul>` : ''}
+          ${s.kuCount ? html`<a class="small" href="#/wishlist?ku=1">Kindle Unlimited 対象をすべて見る（${s.kuCount} 冊）</a>` : ''}
+        </section>`);
+    })
+    .catch(() => {
+      if (box.isConnected) box.innerHTML = '';
+    });
+}
 
 export const books = {
   render({ state, query }) {

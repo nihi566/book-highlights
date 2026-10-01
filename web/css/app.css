@@ -252,7 +252,7 @@ a.wl-main:hover .title { text-decoration: underline; }
 .wl-star { width: 34px; height: 34px; }
 .wl-star.on { color: #d4a017; }
 .wl-export { margin-top: 16px; }
-.wishlist-hits { margin-bottom: 12px; }
+.wishlist-hits, .home-wishlist { margin-bottom: 12px; }
 .badge.wish { background: var(--accent-soft); color: var(--accent); }
 .badge.wish.similar { background: var(--surface-2); color: var(--ink-2); font-weight: 400; white-space: normal; }
 .rec-wish:not(:empty) { margin: 2px 0 4px; }
