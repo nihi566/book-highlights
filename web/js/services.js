@@ -2,7 +2,8 @@
 import { kv } from './db.js';
 import { state, save } from './state.js';
 import { mergeLibraries } from '../core/model.js';
-import { planVaultWrite } from '../core/obsidian.js';
+import { analysisStamp } from '../core/importing.js';
+import { loadVaultOwners, planVaultWrite } from '../core/obsidian.js';
 
 // ---- コンパニオンサーバ ----
 
@@ -42,10 +43,11 @@ export const companion = {
   merge: (library) => call('/api/library/merge', { method: 'POST', body: library }),
   analysis: () => call('/api/analysis').catch((e) => (e.status === 404 ? null : Promise.reject(e))),
   putAnalysis: (analysis) => call('/api/analysis', { method: 'PUT', body: analysis }),
-  startAnalyze: (mode = 'analyze') => call('/api/analyze', { method: 'POST', body: { mode } }),
+  // root: Vault 内のフォルダ名（PC 側の書き出し先をこの画面の設定に合わせる）
+  startAnalyze: (mode = 'analyze', root) => call('/api/analyze', { method: 'POST', body: { mode, root } }),
   job: () => call('/api/analyze'),
   cancel: () => call('/api/analyze', { method: 'DELETE' }),
-  exportVault: () => call('/api/obsidian/export', { method: 'POST', body: {} }),
+  exportVault: (root) => call('/api/obsidian/export', { method: 'POST', body: { root } }),
 };
 
 /** 同一オリジンでコンパニオンサーバが動いているか（http://localhost:8787 で開いた場合など） */
@@ -68,7 +70,7 @@ export async function syncWithPc() {
   const remote = await companion.analysis();
   const local = state.analysis;
   // 分析し直した時刻とおすすめを選び直した時刻の新しい方で比べる
-  const stamp = (a) => [a?.createdAt || '', a?.recommendedAt || ''].sort().pop();
+  const stamp = analysisStamp;
   let analysisDir = '';
   if (remote && stamp(remote) > stamp(local)) {
     state.analysis = remote;
@@ -111,20 +113,18 @@ async function resolve(dir, path, create) {
   return { dir: d, name };
 }
 
-export async function writeVaultFs(handle, files, root) {
+/** render(owners) は書き出すファイルの配列を返す関数（前回と同じファイルを同じ本に使い続けるため owners を渡す） */
+export async function writeVaultFs(handle, render, root) {
   if (!(await ensurePermission(handle))) throw new Error('フォルダへの書き込みが許可されませんでした');
-  const plan = await planVaultWrite(
-    files,
-    async (p) => {
-      try {
-        const { dir, name } = await resolve(handle, p, false);
-        return await (await (await dir.getFileHandle(name)).getFile()).text();
-      } catch {
-        return null;
-      }
-    },
-    root,
-  );
+  const read = async (p) => {
+    try {
+      const { dir, name } = await resolve(handle, p, false);
+      return await (await (await dir.getFileHandle(name)).getFile()).text();
+    } catch {
+      return null;
+    }
+  };
+  const plan = await planVaultWrite(render(await loadVaultOwners(read, root)), read, root);
   for (const f of plan.writes) {
     const { dir, name } = await resolve(handle, f.path, true);
     const w = await (await dir.getFileHandle(name, { create: true })).createWritable();

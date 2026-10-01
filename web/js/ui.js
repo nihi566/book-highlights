@@ -59,6 +59,13 @@ export function highlightCard(h, { library, lines = [], query = '', showBook = t
   </article>`;
 }
 
+/** 本タブの「読んだ本 / 欲しい本」の切り替え（タブバーに増やさず本タブの中で切り替える） */
+export function shelfSwitch(active) {
+  const item = (key, href, label) =>
+    html`<a class="chip ${active === key ? 'on' : ''}" href="${href}" ${active === key ? html`aria-current="page"` : ''}>${label}</a>`;
+  return html`<nav class="chips shelf-switch" aria-label="本の種類">${item('books', '#/books', '読んだ本')}${item('wishlist', '#/wishlist', '欲しい本')}</nav>`;
+}
+
 export function bookRow(b) {
   return html`<li><a class="book-item" href="#/book/${b.id}">
     <span class="book-spine" style="background:${spineColor(b.title)}" aria-hidden="true">${[...b.title][0]}</span>
@@ -96,3 +103,15 @@ export function openSheet(content, onSubmit) {
     if (e.target === dialog) dialog.close();
   }, { once: true });
 }
+
+const EXPORT_TRIGGERS = { sync: '同期のあと', import: '取り込みのあと', analysis: '分析のあと', manual: '手動', folder: 'このブラウザから' };
+
+/** 最後に Vault に書き出した結果を 1 行で（例: 9/27 18:05・同期のあと・書き込み 3 件） */
+export function lastExportText(last) {
+  if (!last?.at) return 'まだ書き出していません';
+  const d = new Date(last.at);
+  const when = `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+  const what = last.error ? `失敗: ${last.error}` : `書き込み ${last.written ?? 0} 件・変更なし ${last.unchanged ?? 0} 件`;
+  return `${when}・${EXPORT_TRIGGERS[last.trigger] || last.trigger || ''}・${what}`;
+}
+

@@ -107,7 +107,16 @@ ${list}
 
 export const RECOMMEND_KINDS = ['deepen', 'broaden', 'challenge'];
 
-export function recommendPrompt({ solid, planes, readTitles, count = 6, avoid = [] }) {
+/** おすすめへの反応から「好み」を伝える行（無ければ空） */
+export function preferenceLines(prefs = {}) {
+  const names = (list) => (list || []).slice(0, 20).map((f) => f.title).join('、');
+  const lines = [];
+  if (prefs.want?.length) lines.push(`- 読みたいと言った本: ${names(prefs.want)}（このような本を好む）`);
+  if (prefs.no?.length) lines.push(`- 興味なしとした本: ${names(prefs.no)}（このような方向は避ける）`);
+  return lines.join('\n');
+}
+
+export function recommendPrompt({ solid, planes, readTitles, count = 6, avoid = [], prefs = {} }) {
   const refs = planes.map((_, i) => `P${i + 1}`);
   const list = planes.map((p, i) => `P${i + 1}「${p.name}」: ${truncate(p.summary, 160)}`).join('\n');
   return {
@@ -122,7 +131,7 @@ ${list}
 
 この読者に「次に」読んでほしい本を ${count} 冊選んでください。
 - 読者がまだ読んでいない、実在する本だけを挙げる（書名と著者名は正確に。自信が無い本は挙げない）
-- 読者が既に読んだ本（挙げてはいけない）: ${readTitles.slice(0, 60).join('、')}${avoid.length ? `\n- 次の本も挙げてはいけない: ${avoid.join('、')}` : ''}
+- 読者が既に読んだ本（挙げてはいけない）: ${readTitles.slice(0, 60).join('、')}${avoid.length ? `\n- 次の本も挙げてはいけない: ${avoid.join('、')}` : ''}${preferenceLines(prefs) ? `\n${preferenceLines(prefs)}` : ''}
 - 日本語で読める本を優先する
 - kind は「deepen」（既存の面を掘り下げる）、「broaden」（隣の分野へつなぐ）、「challenge」（反対の立場・盲点を突く）をバランスよく
 
@@ -148,7 +157,7 @@ ${list}
 }
 
 /** おすすめ（書誌 DB を使う版）1: 本を探すための検索語を決める */
-export function searchPrompt({ solid, planes, count = 5 }) {
+export function searchPrompt({ solid, planes, count = 5, prefs = {} }) {
   const refs = planes.map((_, i) => `P${i + 1}`);
   const list = planes.map((p, i) => `P${i + 1}「${p.name}」: ${truncate(p.summary, 160)}`).join('\n');
   return {
@@ -162,7 +171,7 @@ ${list}
 まだ答えが無い問い: ${(solid?.questions || []).join(' / ') || '(なし)'}
 
 この読者が次に読む本を書店で探すための検索語を ${count} 個考えてください。
-- query は本のテーマを表す短い日本語（1〜3 語。例: 「習慣 行動科学」「ストア哲学」）
+- query は本のテーマを表す短い日本語（1〜3 語。例: 「習慣 行動科学」「ストア哲学」）${preferenceLines(prefs) ? `\n${preferenceLines(prefs)}` : ''}
 - kind は「deepen」（既存の面を掘り下げる）、「broaden」（隣の分野へつなぐ）、「challenge」（反対の立場・盲点を突く）をバランスよく
 
 出力する JSON:
@@ -187,7 +196,7 @@ ${list}
 }
 
 /** おすすめ（書誌 DB を使う版）2: 実在する候補の中から選ばせる */
-export function pickPrompt({ solid, planes, candidates, count = 6 }) {
+export function pickPrompt({ solid, planes, candidates, count = 6, prefs = {} }) {
   const refs = planes.map((_, i) => `P${i + 1}`);
   const list = planes.map((p, i) => `P${i + 1}「${p.name}」: ${truncate(p.summary, 120)}`).join('\n');
   const books = candidates.map((c, i) => `[${i + 1}] 『${truncate(c.title, 60)}』${c.authors ? ` ${truncate(c.authors, 40)}` : ''}${c.publishedDate ? `（${String(c.publishedDate).slice(0, 4)}）` : ''}${c.description ? ` — ${truncate(c.description, 100)}` : ''}`).join('\n');
@@ -203,7 +212,7 @@ ${list}
 ${books}
 
 候補の中から、この読者に次に読んでほしい本を最大 ${count} 冊選び、読者の知識に照らした理由を書いてください。
-- candidate は候補の番号
+- candidate は候補の番号${preferenceLines(prefs) ? `\n${preferenceLines(prefs)}` : ''}
 - kind は「deepen」（既存の面を掘り下げる）、「broaden」（隣の分野へつなぐ）、「challenge」（反対の立場・盲点を突く）
 
 出力する JSON:

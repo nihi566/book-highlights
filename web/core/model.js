@@ -17,7 +17,35 @@ export const SOURCES = {
 export const LIBRARY_VERSION = 1;
 
 export function emptyLibrary() {
-  return { version: LIBRARY_VERSION, books: {}, highlights: {}, updatedAt: null };
+  return { version: LIBRARY_VERSION, books: {}, highlights: {}, feedback: {}, updatedAt: null };
+}
+
+// ---- おすすめの本への反応（読んだ／読みたい／興味なし）。同期され、次のおすすめの選定に使う ----
+
+export const FEEDBACK_LABELS = { read: '読んだ', want: '読みたい', no: '興味なし' };
+
+export function feedbackFor(library, title) {
+  const f = library.feedback?.[bookKey(title)];
+  return f && f.status ? f : null;
+}
+
+/** 反応を付ける。同じ反応をもう一度付けると外す（status: ''） */
+export function setFeedback(library, { title, author = '' }, status, now = new Date().toISOString()) {
+  if (!Object.hasOwn(FEEDBACK_LABELS, status)) throw new Error(`不明な反応: ${status}`);
+  const key = bookKey(title);
+  library.feedback = library.feedback || {};
+  const cur = library.feedback[key];
+  const next = cur?.status === status ? '' : status;
+  library.feedback[key] = { key, title: cleanText(title), author: cleanText(author) || cur?.author || '', status: next, updatedAt: now };
+  library.updatedAt = now;
+  return library.feedback[key];
+}
+
+/** 反応ごとの書名の一覧 { read: [...], want: [...], no: [...] } */
+export function feedbackByStatus(library) {
+  const out = { read: [], want: [], no: [] };
+  for (const f of Object.values(library.feedback || {}).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))) if (out[f.status]) out[f.status].push(f);
+  return out;
 }
 
 export function bookIdFor(title) {
@@ -57,11 +85,14 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
       // 削除済みの本に再取り込みがあった場合は、本と一緒に消した点ごと復活させる（明示的な取り込み操作のため）
       delete book.deleted;
       book.updatedAt = now;
+      book.userUpdatedAt = now;
       for (const h of Object.values(library.highlights)) {
         if (h.bookId === bookId && h.deletedWithBook) {
+          keepUserStamp(h);
           delete h.deleted;
           delete h.deletedWithBook;
           h.updatedAt = now;
+          h.userUpdatedAt = now;
         }
       }
     }
@@ -71,7 +102,10 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
     if (!book.sources.includes(pb.source)) book.sources.push(pb.source);
 
     const existing = Object.values(library.highlights).filter((h) => h.bookId === bookId);
-    const incoming = dedupeContained(pb.highlights.map((h) => ({ ...h, text: cleanText(h.text), note: cleanText(h.note) })).filter((h) => h.text));
+    const cleaned = pb.highlights.map((h) => ({ ...h, text: cleanText(h.text), note: cleanText(h.note) })).filter((h) => h.text);
+    // 伸ばす前の短いハイライトが残るのは Kindle だけ。Play ブックスは現在のハイライトだけが並ぶので、包含関係で消さない
+    const extendable = pb.source === 'kindle';
+    const incoming = extendable ? dedupeContained(cleaned) : cleaned;
     for (const ph of incoming) {
       const id = highlightIdFor(bookId, ph.text);
       const current = library.highlights[id];
@@ -86,8 +120,9 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
       }
       // Kindle はハイライトを伸ばすと古い短い版も残るので、包含関係で置き換える
       const norm = normalizeText(ph.text);
-      const shorter = existing.find((h) => h.source === pb.source && !h.deleted && h.text.length < ph.text.length && norm.includes(normalizeText(h.text)) && locationsOverlap(h, ph));
-      if (existing.some((h) => h.source === pb.source && h.text.length > ph.text.length && normalizeText(h.text).includes(norm) && locationsOverlap(h, ph))) {
+      const sameSpot = (h) => extendable && h.source === pb.source && locationsOverlap(h, ph);
+      const shorter = existing.find((h) => sameSpot(h) && !h.deleted && h.text.length < ph.text.length && norm.includes(normalizeText(h.text)));
+      if (existing.some((h) => sameSpot(h) && h.text.length > ph.text.length && normalizeText(h.text).includes(norm))) {
         stats.unchanged++;
         continue;
       }
@@ -116,6 +151,8 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
         hl.tags = shorter.tags;
         hl.userNote = shorter.userNote;
         hl.importedAt = shorter.importedAt;
+        keepUserStamp(shorter);
+        if (shorter.userUpdatedAt) hl.userUpdatedAt = shorter.userUpdatedAt;
         shorter.deleted = true;
         shorter.supersededBy = id;
         shorter.updatedAt = now;
@@ -130,7 +167,13 @@ export function mergeParsed(library, parsedBooks, { now = new Date().toISOString
   return stats;
 }
 
+/** 古い版のデータ（userUpdatedAt 無し）で編集の跡があれば、updatedAt を進める前にその時刻を編集時刻として残す */
+function keepUserStamp(item) {
+  if (!item.userUpdatedAt && (item.favorite || item.tags?.length || item.userNote || (item.deleted && !item.supersededBy))) item.userUpdatedAt = item.updatedAt;
+}
+
 function fillMissing(target, src, now) {
+  keepUserStamp(target);
   let changed = false;
   for (const key of ['note', 'chapter', 'page', 'color', 'createdAt']) {
     if (!target[key] && src[key]) {
@@ -154,10 +197,11 @@ function numOrNull(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+/** 同じ箇所のハイライトか。位置が無ければページで比べ、どちらも無ければ別の箇所とみなす（消しすぎないように） */
 function locationsOverlap(a, b) {
   const as = numOrNull(a.location);
   const bs = numOrNull(b.location);
-  if (as == null || bs == null) return true;
+  if (as == null || bs == null) return Boolean(a.page) && String(a.page) === String(b.page ?? '');
   const ae = numOrNull(a.locationEnd) ?? as;
   const be = numOrNull(b.locationEnd) ?? bs;
   return as <= be + 1 && bs <= ae + 1;
@@ -181,19 +225,94 @@ export function dedupeContained(highlights) {
   return result;
 }
 
-/** 2 つのライブラリを統合する（PC とスマホの同期用）。項目ごとに updatedAt が新しい方を採用 */
+// 利用者が編集する欄（★・タグ・自分のメモ・削除）。取り込みで埋まる欄とは別の時刻（userUpdatedAt）で比べる
+const USER_FIELDS = ['favorite', 'tags', 'userNote', 'deleted', 'deletedWithBook'];
+const BOOK_USER_FIELDS = ['deleted'];
+
+const isBlank = (v) => v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length);
+const later = (a, b) => ((a || '') > (b || '') ? a : b) || null;
+
+/** 利用者の編集の時刻。古い版のデータ（userUpdatedAt 無し）は、編集の跡があれば updatedAt で代用する */
+function userStamp(item, fields) {
+  if (item.userUpdatedAt) return item.userUpdatedAt;
+  const edited = fields === BOOK_USER_FIELDS ? item.deleted : item.favorite || item.tags?.length || item.userNote || (item.deleted && !item.supersededBy);
+  return edited ? item.updatedAt || '' : '';
+}
+
+/** 同じ時刻どうしでも結果が向きに依らないよう、内容で順番を決める */
+function order(a, b, stampA, stampB) {
+  if (stampA !== stampB) return stampA < stampB ? [a, b] : [b, a];
+  return JSON.stringify(a) <= JSON.stringify(b) ? [a, b] : [b, a];
+}
+
+function mergeItem(a, b, userFields) {
+  // 取り込みで決まる欄: 新しい方を基本に、空欄はもう一方で埋める
+  const [older, newer] = order(a, b, a.updatedAt || '', b.updatedAt || '');
+  const out = { ...structuredClone(older), ...structuredClone(newer) };
+  for (const [k, v] of Object.entries(older)) if (!userFields.includes(k) && isBlank(out[k]) && !isBlank(v)) out[k] = structuredClone(v);
+  // 利用者の欄: 編集が新しい方をまとめて採用する
+  const ua = userStamp(a, userFields);
+  const ub = userStamp(b, userFields);
+  const [, winner] = order(a, b, ua, ub);
+  for (const k of userFields) {
+    if (k in winner) out[k] = structuredClone(winner[k]);
+    else delete out[k];
+  }
+  const stamp = later(a.userUpdatedAt, b.userUpdatedAt);
+  if (stamp) out.userUpdatedAt = stamp;
+  else delete out.userUpdatedAt;
+  out.updatedAt = later(a.updatedAt, b.updatedAt);
+  return out;
+}
+
+function mergeHighlight(a, b) {
+  const out = mergeItem(a, b, USER_FIELDS);
+  // 伸ばしたハイライトに置き換わった古い点は、どちらの端末から来ても消えたまま
+  const supersededBy = [a.supersededBy, b.supersededBy].filter(Boolean).sort()[0];
+  if (supersededBy) Object.assign(out, { deleted: true, supersededBy });
+  return out;
+}
+
+function mergeBook(a, b) {
+  const out = mergeItem(a, b, BOOK_USER_FIELDS);
+  const rank = (x) => (Object.keys(SOURCES).indexOf(x) + 1 || 99);
+  out.sources = [...new Set([...(a.sources || []), ...(b.sources || [])])].sort((x, y) => rank(x) - rank(y) || x.localeCompare(y));
+  out.createdAt = [a.createdAt, b.createdAt].filter(Boolean).sort()[0] || out.createdAt;
+  return out;
+}
+
+/**
+ * 2 つのライブラリを統合する（PC とスマホの同期用）。項目の欄ごとに統合し、どちら向きに統合しても同じ結果になる。
+ * - 取り込みで決まる欄（章・色・位置など）は新しい方を採り、空欄はもう一方で埋める
+ * - 利用者の欄（★・タグ・自分のメモ・削除）は、利用者が編集した時刻（userUpdatedAt）が新しい方を採る
+ */
 export function mergeLibraries(base, incoming) {
   const out = structuredClone(base);
-  for (const kind of ['books', 'highlights']) {
+  for (const [kind, merge] of [['books', mergeBook], ['highlights', mergeHighlight]]) {
+    out[kind] = out[kind] || {};
     for (const [id, item] of Object.entries(incoming[kind] || {})) {
       const cur = out[kind][id];
-      if (!cur || (item.updatedAt || '') > (cur.updatedAt || '')) {
-        out[kind][id] = structuredClone(item);
-        if (cur && kind === 'books') out[kind][id].sources = [...new Set([...(cur.sources || []), ...(item.sources || [])])];
-      }
+      out[kind][id] = cur ? merge(cur, item) : structuredClone(item);
     }
   }
-  out.updatedAt = [base.updatedAt, incoming.updatedAt].filter(Boolean).sort().pop() || null;
+  // 置き換わった古い点に、置き換え先より新しい自分の編集（もう一方の端末で未同期だったもの）があれば引き継ぐ
+  for (const h of Object.values(out.highlights)) {
+    const target = h.supersededBy && out.highlights[h.supersededBy];
+    if (!target || target.deleted) continue;
+    const hs = userStamp(h, USER_FIELDS);
+    if (hs && hs > userStamp(target, USER_FIELDS)) {
+      for (const k of ['favorite', 'tags', 'userNote']) target[k] = structuredClone(h[k]);
+      target.userUpdatedAt = hs;
+      target.updatedAt = later(target.updatedAt, hs);
+    }
+  }
+  // おすすめへの反応は、付けた時刻が新しい方
+  out.feedback = { ...(base.feedback || {}) };
+  for (const [key, f] of Object.entries(incoming.feedback || {})) {
+    const cur = out.feedback[key];
+    out.feedback[key] = structuredClone(cur ? order(cur, f, cur.updatedAt || '', f.updatedAt || '')[1] : f);
+  }
+  out.updatedAt = later(base.updatedAt, incoming.updatedAt);
   return out;
 }
 
@@ -256,7 +375,9 @@ export function updateHighlight(library, id, patch, now = new Date().toISOString
   const allowed = ['favorite', 'tags', 'userNote', 'deleted'];
   for (const k of allowed) if (k in patch) h[k] = patch[k];
   if (Array.isArray(h.tags)) h.tags = [...new Set(h.tags.map((t) => String(t).replace(/^#/, '').trim()).filter(Boolean))];
+  if (patch.deleted === false) delete h.deletedWithBook;
   h.updatedAt = now;
+  h.userUpdatedAt = now;
   library.updatedAt = now;
   return h;
 }
@@ -266,11 +387,13 @@ export function deleteBook(library, bookId, now = new Date().toISOString()) {
   if (!b) return;
   b.deleted = true;
   b.updatedAt = now;
+  b.userUpdatedAt = now;
   for (const h of Object.values(library.highlights)) {
     if (h.bookId === bookId && !h.deleted) {
       h.deleted = true;
       h.deletedWithBook = true;
       h.updatedAt = now;
+      h.userUpdatedAt = now;
     }
   }
   library.updatedAt = now;

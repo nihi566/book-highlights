@@ -7,6 +7,7 @@
 //   JSON       : このアプリのバックアップ（ライブラリ全体）
 
 import { isZip, readZip } from '../zip.js';
+import { BACKUP_FORMAT } from '../importing.js';
 import { looksLikeClippings, parseKindleClippings } from './kindle-clippings.js';
 import { isNotebookJson, looksLikeKindleExport, parseKindleExportHtml, parseNotebookJson } from './kindle-notebook.js';
 import { looksLikePlayBooksMarkdown, parsePlayBooksDocx, parsePlayBooksHtml, parsePlayBooksMarkdown, titleFromFileName } from './playbooks.js';
@@ -40,6 +41,16 @@ function ext(name) {
   return (String(name).match(/\.([a-z0-9]+)$/i)?.[1] || '').toLowerCase();
 }
 
+/** バックアップ（新形式: { format, library, analysis } / 旧形式: ライブラリに analysis を足したもの）→ { library, analysis } */
+function readBackup(data) {
+  if (data?.format === BACKUP_FORMAT && isLibraryBackup(data.library)) return { library: data.library, analysis: data.analysis || null };
+  if (isLibraryBackup(data)) {
+    const { analysis, ...library } = data;
+    return { library, analysis: analysis || null };
+  }
+  return null;
+}
+
 function isLibraryBackup(data) {
   return data && typeof data === 'object' && data.books && data.highlights && !Array.isArray(data.books) && typeof data.highlights === 'object';
 }
@@ -65,7 +76,8 @@ async function parseOne(name, bytes) {
     }
     if (data !== undefined) {
       if (isNotebookJson(data)) return { format: 'kindle-notebook', books: parseNotebookJson(data) };
-      if (isLibraryBackup(data)) return { format: 'library', library: data };
+      const backup = readBackup(data);
+      if (backup) return { format: 'library', backup };
       const arr = Array.isArray(data) ? data : data.books;
       if (Array.isArray(arr) && arr.every((b) => b && b.title && Array.isArray(b.highlights))) {
         return { format: 'parsed', books: arr.map((b) => ({ ...b, source: b.source === 'playbooks' ? 'playbooks' : b.source === 'kindle' ? 'kindle' : 'manual' })) };
@@ -87,11 +99,11 @@ async function parseOne(name, bytes) {
 
 /**
  * @param {{ name: string, bytes: Uint8Array }[]} files
- * @returns {{ books: object[], libraries: object[], results: { name, format, formatLabel, books, highlights, error }[] }}
+ * @returns {{ books: object[], backups: { library, analysis }[], results: { name, format, formatLabel, books, highlights, error }[] }}
  */
 export async function parseFiles(files) {
   const books = [];
-  const libraries = [];
+  const backups = [];
   const results = [];
   const queue = [...files];
   while (queue.length) {
@@ -107,11 +119,12 @@ export async function parseFiles(files) {
       for (const entry of r.entries) queue.push({ name: `${f.name}/${entry.name}`, bytes: entry.bytes });
       continue;
     }
-    if (r.library) libraries.push(r.library);
+    if (r.backup) backups.push(r.backup);
     if (r.books) books.push(...r.books);
-    const hl = r.books ? r.books.reduce((s, b) => s + b.highlights.length, 0) : r.library ? Object.keys(r.library.highlights).length : 0;
-    if (!r.error && !r.library && hl === 0) r.error = 'ハイライトが見つかりませんでした';
-    results.push({ name: f.name, format: r.format || '', formatLabel: FORMAT_LABELS[r.format] || '', books: r.books?.length ?? (r.library ? Object.keys(r.library.books).length : 0), highlights: hl, error: r.error || '' });
+    const lib = r.backup?.library;
+    const hl = r.books ? r.books.reduce((s, b) => s + b.highlights.length, 0) : lib ? Object.keys(lib.highlights).length : 0;
+    if (!r.error && !lib && hl === 0) r.error = 'ハイライトが見つかりませんでした';
+    results.push({ name: f.name, format: r.format || '', formatLabel: FORMAT_LABELS[r.format] || '', books: r.books?.length ?? (lib ? Object.keys(lib.books).length : 0), highlights: hl, error: r.error || '' });
   }
-  return { books, libraries, results };
+  return { books, backups, results };
 }

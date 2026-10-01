@@ -9,8 +9,10 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { REPO_ROOT, writeVault } from './store.js';
-import { libraryStats, mergeLibraries, mergeParsed } from '../web/core/model.js';
+import { REPO_ROOT, exportAndRecord, readVaultOwners, summarizePlan } from './store.js';
+import { safeFileName } from '../web/core/text.js';
+import { libraryStats, mergeLibraries } from '../web/core/model.js';
+import { applyImport } from '../web/core/importing.js';
 import { createLlmClient, normalizeBaseUrl } from '../web/core/analysis/llm.js';
 import { analyzeLibrary, recommendBooks, recommendationNote } from '../web/core/analysis/pipeline.js';
 import { parseFiles } from '../web/core/parsers/index.js';
@@ -30,7 +32,41 @@ const MIME = {
 const MAX_BODY = 50 * 1024 * 1024;
 
 // catalogFetch: おすすめの本を探す書誌 DB への fetch（テストで差し替える）
-export function createCompanionServer({ store, log = console.log, catalogFetch }) {
+export { summarizePlan };
+
+export function createCompanionServer({ store, log = console.log, catalogFetch, autoExportDelay = 800 }) {
+  // 同期・取り込み・分析結果の保存のあと、少し待ってから Vault を自動で書き出す（続けて来たら 1 回にまとめる）
+  let autoTimer = null;
+  let autoTrigger = '';
+  let autoPending = '';
+  function scheduleAutoExport(trigger) {
+    autoTrigger = trigger;
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(async () => {
+      try {
+        const cfg = await store.config();
+        if (!cfg.vault || cfg.autoExport === false) return;
+        // 分析中は書き出しを分析の後に回す（分析が失敗・中止しても、同期した内容は Vault に届く）
+        if (job.running) {
+          autoPending = autoTrigger;
+          return;
+        }
+        await store.lock(() => exportAndRecord(store, { trigger: autoTrigger }));
+      } catch (e) {
+        log(`[auto-export] ${e.message}`);
+      }
+    }, autoExportDelay);
+  }
+
+  /** Web アプリから届いた Vault 内のフォルダ名を使い、PC の設定にも残す（自動の書き出しや bh obsidian も同じ場所に） */
+  async function resolveRoot(requested, cfg) {
+    const root = typeof requested === 'string' && requested.trim() ? safeFileName(requested.trim()) : '';
+    if (!root || root === cfg.root) return cfg.root;
+    const saved = await store.config();
+    await store.saveConfig({ ...saved, root });
+    return root;
+  }
+
   const job = { running: false, stage: '', message: '', done: 0, total: 0, error: '', startedAt: null, finishedAt: null, vault: null, controller: null };
 
   function isAllowedOrigin(origin, host, cfg) {
@@ -86,6 +122,11 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
           stats: libraryStats(lib),
           llm: { chatModel: cfg.llm.chatModel, embedModel: cfg.llm.embedModel, configured: Boolean(cfg.llm.chatModel) },
           vault: Boolean(cfg.vault),
+          root: cfg.root,
+          vaultPath: cfg.vault ? path.join(cfg.vault, cfg.root) : '',
+          autoExport: cfg.autoExport !== false,
+          lastExport: (await store.state()).lastExport || null,
+          owners: cfg.vault ? await readVaultOwners(cfg.vault, cfg.root) : {},
           analysis: analysis ? { createdAt: analysis.createdAt, ...analysis.stats } : null,
           job: publicJob(),
         });
@@ -99,21 +140,22 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
           await store.saveLibrary(m);
           return m;
         });
+        scheduleAutoExport('sync');
         return send(res, 200, merged);
       }
       case 'POST /api/import': {
         // { files: [{ name, base64 }], auto? } を PC 側でパースして取り込む（auto: ブラウザ拡張の自動取り込み。削除した本を復活させない）
         const body = await readBody(req);
         const files = (body.files || []).map((f) => ({ name: f.name, bytes: Buffer.from(f.base64, 'base64') }));
-        const { books, libraries, results } = await parseFiles(files);
-        const stats = await store.lock(async () => {
-          let lib = await store.library();
-          for (const backup of libraries) lib = mergeLibraries(lib, backup);
-          const st = mergeParsed(lib, books, { reviveDeleted: !body.auto });
-          await store.saveLibrary(lib);
-          return st;
+        const parsed = await parseFiles(files);
+        const r = await store.lock(async () => {
+          const out = applyImport({ library: await store.library(), analysis: await store.analysis() }, parsed, { reviveDeleted: !body.auto });
+          await store.saveLibrary(out.library);
+          if (out.analysisChanged) await store.saveAnalysis(out.analysis);
+          return out;
         });
-        return send(res, 200, { stats, results });
+        scheduleAutoExport('import');
+        return send(res, 200, { stats: r.stats, results: parsed.results, analysisChanged: r.analysisChanged });
       }
       case 'GET /api/analysis': {
         const a = await store.analysis();
@@ -121,12 +163,14 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
       }
       case 'PUT /api/analysis': {
         await store.saveAnalysis(await readBody(req));
+        scheduleAutoExport('analysis');
         return send(res, 200, { ok: true });
       }
       case 'GET /api/analyze':
         return send(res, 200, publicJob());
       case 'POST /api/analyze': {
         const body = await readBody(req).catch(() => ({}));
+        await resolveRoot(body.root, cfg);
         if (!job.running) runJob(body.mode === 'recommend' ? 'recommend' : 'analyze');
         return send(res, 202, publicJob());
       }
@@ -134,8 +178,11 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
         job.controller?.abort();
         return send(res, 200, publicJob());
       case 'POST /api/obsidian/export': {
-        const plan = await writeVault(cfg.vault, await store.library(), await store.analysis(), { root: cfg.root });
-        return send(res, 200, summarizePlan(plan));
+        const body = await readBody(req).catch(() => ({}));
+        const root = await resolveRoot(body.root, cfg);
+        if (!cfg.vault) return send(res, 400, { error: 'PC で Obsidian の Vault フォルダが設定されていません（bh config vault <パス>）' });
+        const result = await store.lock(() => exportAndRecord(store, { root, trigger: 'manual' }));
+        return send(res, 200, result);
       }
       default:
         return send(res, 404, { error: `不明な API: ${route}` });
@@ -174,7 +221,7 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
       }
       if (cfg.vault) {
         job.message = 'Obsidian に書き出しています';
-        job.vault = summarizePlan(await writeVault(cfg.vault, library, await store.analysis(), { root: cfg.root }));
+        job.vault = await store.lock(() => exportAndRecord(store, { trigger: 'analysis' }));
       }
       job.stage = 'done';
       job.message = '完了しました';
@@ -185,6 +232,9 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
     } finally {
       job.running = false;
       job.finishedAt = new Date().toISOString();
+      // 分析が Vault まで書き出せなかったとき、分析中に届いた同期・取り込みの書き出しをここで行う
+      if (autoPending && (job.error || !job.vault)) scheduleAutoExport(autoPending);
+      autoPending = '';
     }
   }
 
@@ -234,9 +284,6 @@ export function createCompanionServer({ store, log = console.log, catalogFetch }
   return server;
 }
 
-export function summarizePlan(plan) {
-  return { written: plan.writes.length - 1, deleted: plan.deletes.length, unchanged: plan.unchanged, skipped: plan.skipped, orphaned: plan.orphaned };
-}
 
 function send(res, status, data) {
   if (data === undefined) {
