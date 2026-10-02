@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chunk, importBody, isReachableCompanionUrl, pickBooksToFetch } from '../extension/sync-core.js';
+import { chunk, importBody, isReachableCompanionUrl, pickBooksToFetch, statusReport } from '../extension/sync-core.js';
 import { parseFiles } from '../web/core/parsers/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -73,4 +73,16 @@ test('拡張: manifest の host_permissions と URL の判定が食い違って�
   assert.ok(manifest.host_permissions.includes('https://*.ts.net/*'));
   assert.ok(manifest.host_permissions.includes('https://read.amazon.co.jp/*'));
   assert.deepEqual(chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
+});
+
+test('拡張: PC への確認結果の報告には必要な項目だけを入れる', () => {
+  const ok = statusReport({ ok: true, at: 'x', added: 3, fetched: 9, books: [1], error: '', token: 'secret' }, { intervalMin: '30', token: 'secret', companionUrl: 'http://localhost:8787' });
+  assert.deepEqual(ok, { ok: true, needLogin: false, added: 3, intervalMin: 30, error: '' });
+  const ng = statusReport({ ok: false, needLogin: true, error: 'あ'.repeat(500) }, { intervalMin: 'abc' });
+  assert.deepEqual(Object.keys(ng).sort(), ['added', 'error', 'intervalMin', 'needLogin', 'ok']);
+  assert.equal(ng.intervalMin, 15);
+  assert.equal(ng.added, 0);
+  assert.equal(ng.needLogin, true);
+  assert.equal(ng.error.length, 300);
+  assert.equal(JSON.stringify(ng).includes('secret'), false);
 });

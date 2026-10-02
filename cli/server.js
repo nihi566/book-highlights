@@ -13,6 +13,7 @@ import { REPO_ROOT, exportAndRecord, readVaultOwners, summarizePlan } from './st
 import { safeFileName } from '../web/core/text.js';
 import { libraryStats, mergeLibraries } from '../web/core/model.js';
 import { applyImport } from '../web/core/importing.js';
+import { mergeKindleSync, normalizeKindleReport } from '../web/core/kindle-status.js';
 import { createLlmClient, normalizeBaseUrl } from '../web/core/analysis/llm.js';
 import { analyzeLibrary, recommendBooks, recommendationNote } from '../web/core/analysis/pipeline.js';
 import { parseFiles } from '../web/core/parsers/index.js';
@@ -117,6 +118,7 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
       case 'GET /api/info': {
         const lib = await store.library();
         const analysis = await store.analysis();
+        const st = await store.state();
         return send(res, 200, {
           app: 'book-highlights',
           stats: libraryStats(lib),
@@ -125,7 +127,8 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
           root: cfg.root,
           vaultPath: cfg.vault ? path.join(cfg.vault, cfg.root) : '',
           autoExport: cfg.autoExport !== false,
-          lastExport: (await store.state()).lastExport || null,
+          lastExport: st.lastExport || null,
+          kindleSync: st.kindleSync || null,
           owners: cfg.vault ? await readVaultOwners(cfg.vault, cfg.root) : {},
           analysis: analysis ? { createdAt: analysis.createdAt, ...analysis.stats } : null,
           job: publicJob(),
@@ -156,6 +159,20 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
         });
         scheduleAutoExport('import');
         return send(res, 200, { stats: r.stats, results: parsed.results, analysisChanged: r.analysisChanged });
+      }
+      case 'POST /api/kindle-status': {
+        // ブラウザ拡張の確認結果（正常 / ログイン切れ / 失敗など）を state.json に残す。本文はログに出さない
+        let report;
+        try {
+          report = normalizeKindleReport(await readBody(req));
+        } catch (e) {
+          return send(res, e.status || 400, { error: e.message });
+        }
+        await store.lock(async () => {
+          const st = await store.state();
+          await store.saveState({ ...st, kindleSync: mergeKindleSync(st.kindleSync, report, new Date().toISOString()) });
+        });
+        return send(res, 200, { ok: true });
       }
       case 'GET /api/analysis': {
         const a = await store.analysis();

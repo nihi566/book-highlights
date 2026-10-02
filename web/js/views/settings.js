@@ -4,7 +4,13 @@ import { libraryStats } from '../../core/model.js';
 import { ACCEPT } from '../../core/parsers/index.js';
 import { isoDate } from '../../core/text.js';
 import { fsSupported } from '../services.js';
-import { lastExportText } from '../ui.js';
+import { kindleSyncLines, lastExportText } from '../ui.js';
+
+/** 取り込み画面の Kindle 自動取り込みの状態欄の中身。拡張からの確認結果は PC が持っているので、PC モードで PC の情報を取れているときだけ出す */
+export function kindleSyncBlock(state) {
+  const lines = state.settings.ai.mode === 'companion' && state.pcInfo ? kindleSyncLines(state.pcInfo.kindleSync) : [];
+  return html`${lines.map((l) => html`<p class="small">${l}</p>`)}`;
+}
 
 export const importView = {
   render({ state }) {
@@ -18,6 +24,7 @@ export const importView = {
 
       <div class="section"><h2>Kindle</h2></div>
       <div class="card">
+        <div id="kindle-sync">${kindleSyncBlock(state)}</div>
         <details>
           <summary>Kindle アプリで読んでいる（おすすめ: 自動取り込みの拡張機能）</summary>
           <p class="help">アプリで引いた線は Amazon のノートブック（read.amazon.co.jp/notebook）に集まります。PC の Chrome / Edge に拡張機能を入れておくと、ノートブックを定期的に（既定 15 分ごと）確認し、新しい線だけを PC の bh serve に送ります。この画面には PC との同期で届きます。</p>

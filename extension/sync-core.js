@@ -50,6 +50,17 @@ export function isReachableCompanionUrl(url) {
   }
 }
 
+/** PC の /api/kindle-status に送る本文（確認の結果だけ。トークン・URL・本の一覧は含めない） */
+export function statusReport(status, settings) {
+  return {
+    ok: Boolean(status.ok),
+    needLogin: Boolean(status.needLogin),
+    added: Number.isInteger(status.added) && status.added >= 0 ? status.added : 0,
+    intervalMin: Number(settings.intervalMin) || DEFAULTS.intervalMin,
+    error: String(status.error || '').slice(0, 300),
+  };
+}
+
 export function chunk(list, size) {
   const out = [];
   for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
