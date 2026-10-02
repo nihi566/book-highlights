@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyImportedMarks, cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseMarksFile, openWishlistFilters, parseWishlist, saveMarks, searchWishlist, tagCounts, titleKey, toggleMark, wishlistSummary } from '../web/core/wishlist.js';
+import { applyImportedMarks, cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, inShelf, loadMarks, priceChange, priceTotal, shelfCounts, marksFile, memoryStore, parseMarksFile, openWishlistFilters, parseWishlist, saveMarks, searchWishlist, tagCounts, titleKey, toggleMark, wishlistSummary } from '../web/core/wishlist.js';
 
 test('titleKey: 括弧のレーベル・版表記と記号・空白を落とす', () => {
   assert.equal(titleKey('731―石井四郎と細菌戦部隊の闇を暴く―（新潮文庫）'), titleKey('731 石井四郎と細菌戦部隊の闇を暴く'));
@@ -51,7 +51,7 @@ test('parseWishlist: 形式を確かめて正規化する', () => {
   const w = parseWishlist(data([book(), book({ asin: 'B0AAAAAAA2', ku: true, price: null, tag: 'seen', rating: 4, kind: 'manga' })]));
   assert.equal(w.lastScraped, '2026-01-02T03:04:05');
   assert.equal(w.books.length, 2);
-  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, saved: { tag: '', rating: '', kind: 'book' }, index: 0 });
+  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, index: 0 });
   assert.deepEqual(w.books[1].saved, { tag: 'seen', rating: '4', kind: 'manga' });
 });
 
@@ -67,6 +67,27 @@ test('parseWishlist: 不正な値は捨てる（ASIN の形・価格・タグ・
   assert.equal(w.books[0].price, null);
   assert.deepEqual(w.books[0].saved, { tag: '', rating: '', kind: 'book' });
   assert.equal(w.books[1].saved.rating, '', '★は「見た」のときだけ');
+});
+
+test('parseWishlist: 値動き（前回価格・変わった日時・最安値）は今の価格がある本だけ読む', () => {
+  const trend = { price_prev: 1200, price_changed_at: '2026-09-30T09:00:00', price_low: 900 };
+  const w = parseWishlist(data([
+    book({ ...trend }),
+    book({ asin: 'B0AAAAAAA2', price: null, ku: true, ...trend }),
+    book({ asin: 'B0AAAAAAA3', price_prev: 'x', price_changed_at: 5, price_low: -1 }),
+  ]));
+  assert.deepEqual(w.books[0].trend, { prev: 1200, changedAt: '2026-09-30T09:00:00', low: 900 });
+  assert.equal(w.books[1].trend, null, 'KU・価格なしは比べられない');
+  assert.deepEqual(w.books[2].trend, { prev: null, changedAt: null, low: null }, '不正な値は捨てる');
+});
+
+test('priceChange: 前回から値下がり・値上がりした額と、記録上の最安値かどうか', () => {
+  const at = '2026-09-30T09:00:00';
+  assert.deepEqual(priceChange({ price: 900, trend: { prev: 1200, changedAt: at, low: 900 } }), { diff: -300, changedAt: at, lowest: true });
+  assert.deepEqual(priceChange({ price: 1500, trend: { prev: 1300, changedAt: at, low: 1100 } }), { diff: 200, changedAt: at, lowest: false });
+  assert.equal(priceChange({ price: 900, trend: { prev: null, changedAt: null, low: 900 } }), null, '一度も変わっていなければ出さない');
+  assert.equal(priceChange({ price: null, trend: null }), null);
+  assert.equal(priceChange({ price: 900, trend: null }), null, '古いデータ（値動きの項目なし）');
 });
 
 test('loadMarks: ブラウザに保存したタグ・★・種別が公開データより優先される（旧画面と同じキー）', () => {
@@ -153,6 +174,21 @@ test('filterWishlist: 並べ替え（価格なしは常に後ろ・評価は★�
   assert.equal(asins(filterWishlist(items(), { sort: 'title' })), '3124');
   const store = memoryStore({ 'book-tag:B0AAAAAAA2': 'seen', 'book-tag:B0AAAAAAA4': 'seen', 'book-rating:B0AAAAAAA4': '3' });
   assert.equal(asins(filterWishlist(items(store), { sort: 'rating' })), '4213');
+});
+
+test('inShelf / shelfCounts: 「購入済み」タグを付けた本は購入済みに移り、読みたいから外れる', () => {
+  const store = memoryStore({ 'book-tag:B0AAAAAAA1': 'purchased' });
+  const list = items(store);
+  assert.equal(asins(filterWishlist(list, { shelf: 'purchased' })), '13');
+  assert.equal(asins(filterWishlist(list, { shelf: 'wanted' })), '4');
+  assert.deepEqual(shelfCounts(list), { all: 4, wanted: 1, purchased: 2 });
+  assert.deepEqual(shelfCounts(items()), { all: 4, wanted: 2, purchased: 1 }, 'タグが無ければ公開データどおり');
+  assert.equal(inShelf(list[0], 'all'), true);
+});
+
+test('priceTotal: 表示中の本の合計金額（KU・価格なしは数えず、その冊数も返す）', () => {
+  assert.deepEqual(priceTotal(items()), { total: 1700, priced: 2, unpriced: 2 });
+  assert.deepEqual(priceTotal([]), { total: 0, priced: 0, unpriced: 0 });
 });
 
 test('formatPrice: KU・価格なし・通常', () => {

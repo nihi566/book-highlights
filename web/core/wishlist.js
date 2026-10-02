@@ -26,6 +26,7 @@ const ASIN = /^[A-Z0-9]{10}$/;
 
 const isTag = (t) => Object.hasOwn(TAG_LABELS, t);
 const isKind = (k) => k === 'manga' || k === 'book';
+const yen = (v) => (Number.isFinite(v) && v >= 0 ? v : null);
 
 /** wishlist.json を確かめて、画面で使う形にする。形式が違えば理由つきで失敗する */
 export function parseWishlist(data) {
@@ -36,14 +37,17 @@ export function parseWishlist(data) {
   const books = data.books.map((b, index) => {
     const tag = isTag(b?.tag) ? b.tag : '';
     const rating = tag === 'seen' && Number.isInteger(b.rating) && b.rating >= 1 && b.rating <= 5 ? String(b.rating) : '';
+    const price = yen(b?.price);
     return {
       asin: ASIN.test(b?.asin) ? b.asin : '',
       title: String(b?.title ?? ''),
-      price: Number.isFinite(b?.price) && b.price >= 0 ? b.price : null,
+      price,
       ku: b?.ku === true,
       wanted: b?.wanted === true,
       purchased: b?.purchased === true,
       saved: { tag, rating, kind: isKind(b?.kind) ? b.kind : 'book' },
+      // 値動き（kindle_system が付ける前回価格・変わった日時・最安値）。今の価格が無い本は比べられないので持たない
+      trend: price === null ? null : { prev: yen(b?.price_prev), changedAt: typeof b?.price_changed_at === 'string' ? b.price_changed_at : null, low: yen(b?.price_low) },
       index,
     };
   });
@@ -179,6 +183,34 @@ export function tagCounts(items) {
 }
 
 /**
+ * 分類（すべて/読みたい/購入済み）に入るか。「購入済み」タグを付けた本は、公開データの更新を待たずに
+ * 購入済みへ移し、読みたいから外す（買った本を読みたいに残さない）
+ */
+export function inShelf({ book, marks }, shelf = 'all') {
+  const purchased = book.purchased || marks.tag === 'purchased';
+  if (shelf === 'purchased') return purchased;
+  if (shelf === 'wanted') return book.wanted && !purchased;
+  return true;
+}
+
+export function shelfCounts(items) {
+  return Object.fromEntries(['all', 'wanted', 'purchased'].map((shelf) => [shelf, items.filter((item) => inShelf(item, shelf)).length]));
+}
+
+/** 本の合計金額。KU・価格なしの本は数えず、その冊数を unpriced で返す */
+export function priceTotal(items) {
+  const priced = items.filter(({ book }) => book.price !== null);
+  return { total: priced.reduce((sum, { book }) => sum + book.price, 0), priced: priced.length, unpriced: items.length - priced.length };
+}
+
+/** 前回の価格からの差（diff。負なら値下がり）と、記録上の最安値か。一度も変わっていなければ null */
+export function priceChange(book) {
+  const t = book.trend;
+  if (book.price === null || !t || t.prev === null) return null;
+  return { diff: book.price - t.prev, changedAt: t.changedAt, lowest: t.low !== null && book.price <= t.low };
+}
+
+/**
  * items: [{ book, marks }]。f: { shelf: all|wanted|purchased, q, ku, min, max, tag, kind, sort }
  * 戻り値の priceRangeInvalid は下限 > 上限（そのときは価格帯を無視する）
  */
@@ -189,11 +221,10 @@ export function filterWishlist(items, f = {}) {
   let max = priceValue(f.max);
   const priceRangeInvalid = !Number.isNaN(min) && !Number.isNaN(max) && min > max;
   if (priceRangeInvalid) min = max = NaN;
-  const shelf = f.shelf || 'all';
   const kind = f.kind || 'all';
-  const visible = items.filter(({ book, marks }) => {
-    if (shelf === 'wanted' && !book.wanted) return false;
-    if (shelf === 'purchased' && !book.purchased) return false;
+  const visible = items.filter((item) => {
+    const { book, marks } = item;
+    if (!inShelf(item, f.shelf)) return false;
     const hay = normalizeText(`${book.title} ${book.asin}`);
     if (!words.every((w) => hay.includes(w))) return false;
     if (f.ku && !book.ku) return false;
