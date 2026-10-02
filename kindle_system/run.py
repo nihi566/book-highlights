@@ -52,7 +52,8 @@ def publish() -> None:
     """
     「読みたい本」を GitHub Pages 公開用リポジトリへ公開する。
 
-    src/server.py の do_publish() と同じ判定順序（report生成 → git add →
+    書き出す前に git pull --rebase で公開用クローンを origin の最新に合わせる（失敗したら中断）。
+    以降は src/server.py の do_publish() と同じ判定順序（report生成 → git add →
     git diff --cached --quiet による差分判定 → 差分ありのみ git commit →
     push は常に試行）を、asyncio 非依存の subprocess.run で同期的に実装する
     （run.py はサーバー無しの単発バッチ実行のため、do_publish() の非同期
@@ -74,7 +75,7 @@ def publish() -> None:
         )
         sys.exit(1)
 
-    report.main()
+    report.require_public_site_repo(public_site_dir)
 
     git_env = os.environ.copy()
     # 認証切れの git コマンドが対話プロンプト待ちで無限にハングしないようにする
@@ -86,6 +87,24 @@ def publish() -> None:
             ["git"] + args, cwd=public_site_dir, env=git_env, shell=False
         )
         return result.returncode
+
+    # 書き出す前に公開用クローンを origin の最新へ合わせる。index.html 等を GitHub 側で
+    # 変えた後にクローンが古いままだと、push が毎回 non-fast-forward で拒否され続ける。
+    # 前回 push だけ失敗して残ったコミットは rebase で origin の上に積み直す。
+    if _run_git(["pull", "--rebase", "--autostash", "-q"]) != 0:
+        # 衝突で止まった rebase を残すと次回以降もずっと失敗するので取り消す（rebase 中でなければ何もしない）
+        subprocess.run(
+            ["git", "rebase", "--abort"], cwd=public_site_dir, env=git_env, shell=False,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        print(
+            f"エラー: 公開用リポジトリ（{public_site_dir}）を origin の最新に合わせられませんでした（git pull 失敗）。"
+            "通信状況を確認し、そのフォルダで git status を見て手元の変更を整理してから、もう一度実行してください。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    report.main()
 
     if _run_git(["add"] + PUBLISHED_FILES) != 0:
         print("エラー: git add に失敗しました。公開を中断しました。", file=sys.stderr)

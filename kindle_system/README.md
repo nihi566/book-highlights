@@ -34,6 +34,15 @@ python run.py sync [--workers N] [--limit N] [--start N] [--target kindle|bookme
   - `bookmeter`: 読書メーターの「読みたい本」同期のみ実行する
   - `both`: 両方を順に実行する（従来の `run.py sync` と同じ挙動）
 
+公開（`publish()`）は次の順に進み、途中で失敗したら終了コード 1 で止まる。
+
+1. 公開用クローン（`PUBLIC_SITE_DIR`）を `git pull --rebase` で origin の最新に合わせる
+   （GitHub 側で `index.html` 等を変えた後でも push が拒否されないように）
+2. `wishlist.json` を書き出す。ただし本が **0 冊、または公開中の半分未満に減った**ときは、
+   DB の不調とみなして書き換えずに止める。本当に減らしたときは `python report.py --allow-shrink`
+   で書き出してから、もう一度 `python run.py sync` を実行する
+3. 差分があれば commit し、push する
+
 ### 「欲しい本」フラグの更新
 
 ```
@@ -57,7 +66,7 @@ python run.py purchase <asin> --off
 再公開が必要な場合は `python run.py sync` を実行する。
 
 ```
-python report.py
+python report.py [--allow-shrink]
 ```
 
 蔵書一覧（読みたい本 / 購入済み本 / 全部）を `PUBLIC_SITE_DIR` 直下の

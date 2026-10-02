@@ -182,6 +182,85 @@ class MainIntegrationTest(unittest.TestCase):
         self.assertEqual((book["title"], book["wanted"], book["price"]), ("結合テスト本", True, 1000))
 
 
+class ShrinkGuardTest(unittest.TestCase):
+    """DB の不調で本が 0 冊（または急減）になったとき、公開中の wishlist.json を書き換えずに止めること。
+
+    止めないと run.py の publish() がそのまま commit・push し、欲しい本の一覧が空のまま公開される。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="report_shrink_test_")
+        os.makedirs(os.path.join(self.tmpdir, ".git"))
+        self._env = unittest.mock.patch.dict(
+            os.environ, {"PUBLIC_SITE_DIR": self.tmpdir, "PUBLIC_SITE_URL": "https://example.invalid/"}
+        )
+        self._env.start()
+        self.path = os.path.join(self.tmpdir, "wishlist.json")
+
+    def tearDown(self):
+        self._env.stop()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _publish_existing(self, count):
+        books = [{"asin": f"B0OLD{i:05d}"} for i in range(count)]
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump({"format": "kindle-wishlist", "version": 1, "books": books}, f)
+
+    def _books(self, count):
+        return [{"title": f"本{i}", "asin": f"B0NEW{i:05d}", "actual_price": 100} for i in range(count)]
+
+    def _run_main(self, count, **kwargs):
+        with unittest.mock.patch.object(report, "get_books", return_value=self._books(count)), unittest.mock.patch.object(
+            report, "get_book_marks", return_value={}
+        ):
+            report.main(**kwargs)
+
+    def _published_count(self):
+        with open(self.path, encoding="utf-8") as f:
+            return len(json.load(f)["books"])
+
+    def test_zero_books_stops_without_overwriting(self):
+        self._publish_existing(10)
+        with self.assertRaises(SystemExit) as cm:
+            self._run_main(0)
+        self.assertEqual(cm.exception.code, 1)
+        self.assertEqual(self._published_count(), 10)
+
+    def test_zero_books_stops_even_on_first_publish(self):
+        with self.assertRaises(SystemExit):
+            self._run_main(0)
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_less_than_half_stops_without_overwriting(self):
+        self._publish_existing(10)
+        with self.assertRaises(SystemExit) as cm:
+            self._run_main(4)
+        self.assertEqual(cm.exception.code, 1)
+        self.assertEqual(self._published_count(), 10)
+
+    def test_half_or_more_is_written(self):
+        self._publish_existing(10)
+        self._run_main(5)
+        self.assertEqual(self._published_count(), 5)
+
+    def test_allow_shrink_writes_even_when_sharply_decreased(self):
+        """本当に減らしたとき（読書メーターで整理した等）は --allow-shrink で書き出せる。"""
+        self._publish_existing(10)
+        self._run_main(1, allow_shrink=True)
+        self.assertEqual(self._published_count(), 1)
+
+    def test_unreadable_existing_file_compares_with_nothing(self):
+        """公開中のファイルが壊れていても書き出しは止めない（0 冊だけは止める）。"""
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write("{broken")
+        self._run_main(1)
+        self.assertEqual(self._published_count(), 1)
+
+    def test_cli_accepts_allow_shrink(self):
+        self.assertTrue(report.parse_args(["--allow-shrink"]).allow_shrink)
+        self.assertFalse(report.parse_args([]).allow_shrink)
+
+
 class HtmlGenerationRemovedTest(unittest.TestCase):
     """HTML を作る処理は book-highlights の JS に一本化したので、report.py に残さない（直す場所を 1 か所にする）。"""
 

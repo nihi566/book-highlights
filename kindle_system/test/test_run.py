@@ -109,8 +109,12 @@ class PublishGitSequenceTest(unittest.TestCase):
     def setUp(self):
         os.environ["PUBLIC_SITE_DIR"] = "/tmp/fake-public-site"
         os.environ["PUBLIC_SITE_URL"] = "https://example.github.io/site/"
+        # 公開用フォルダは実在しないので、フォルダ・.git の確認は通す
+        self._repo_check = patch("run.report.require_public_site_repo")
+        self._repo_check.start()
 
     def tearDown(self):
+        self._repo_check.stop()
         os.environ.pop("PUBLIC_SITE_DIR", None)
         os.environ.pop("PUBLIC_SITE_URL", None)
 
@@ -131,6 +135,7 @@ class PublishGitSequenceTest(unittest.TestCase):
         self.assertEqual(
             called_cmds,
             [
+                ["git", "pull", "--rebase", "--autostash", "-q"],
                 ["git", "add", "wishlist.json"],
                 ["git", "diff", "--cached", "--quiet", "--", "wishlist.json"],
                 ["git", "commit", "-m", "chore: update wishlist", "-q", "--", "wishlist.json"],
@@ -156,6 +161,7 @@ class PublishGitSequenceTest(unittest.TestCase):
         self.assertEqual(
             called_cmds,
             [
+                ["git", "pull", "--rebase", "--autostash", "-q"],
                 ["git", "add", "wishlist.json"],
                 ["git", "diff", "--cached", "--quiet", "--", "wishlist.json"],
                 ["git", "push", "-q"],
@@ -175,7 +181,10 @@ class PublishGitSequenceTest(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
         called_cmds = [call.args[0] for call in mock_subprocess_run.call_args_list]
-        self.assertEqual(called_cmds, [["git", "add", "wishlist.json"]])
+        self.assertEqual(
+            called_cmds,
+            [["git", "pull", "--rebase", "--autostash", "-q"], ["git", "add", "wishlist.json"]],
+        )
 
     @patch("run.subprocess.run")
     @patch("run.report.main")
@@ -195,6 +204,7 @@ class PublishGitSequenceTest(unittest.TestCase):
         self.assertEqual(
             called_cmds,
             [
+                ["git", "pull", "--rebase", "--autostash", "-q"],
                 ["git", "add", "wishlist.json"],
                 ["git", "diff", "--cached", "--quiet", "--", "wishlist.json"],
                 ["git", "commit", "-m", "chore: update wishlist", "-q", "--", "wishlist.json"],
@@ -215,6 +225,73 @@ class PublishGitSequenceTest(unittest.TestCase):
             run.publish()
 
         self.assertEqual(cm.exception.code, 1)
+
+
+class PublishPullBeforeGenerateTest(unittest.TestCase):
+    """公開用クローンが origin より古いと push が毎回拒否されるため、書き出す前に origin の最新へ合わせること。"""
+
+    def setUp(self):
+        os.environ["PUBLIC_SITE_DIR"] = "/tmp/fake-public-site"
+        os.environ["PUBLIC_SITE_URL"] = "https://example.github.io/site/"
+        # 公開用フォルダは実在しないので、フォルダ・.git の確認は通す
+        self._repo_check = patch("run.report.require_public_site_repo")
+        self._repo_check.start()
+
+    def tearDown(self):
+        self._repo_check.stop()
+        os.environ.pop("PUBLIC_SITE_DIR", None)
+        os.environ.pop("PUBLIC_SITE_URL", None)
+
+    @patch("run.subprocess.run")
+    @patch("run.report.main")
+    @patch("run._load_env_file")
+    def test_pulls_before_report_is_generated(self, mock_load_env, mock_report_main, mock_subprocess_run):
+        manager = Mock()
+        mock_subprocess_run.side_effect = _subprocess_run_side_effect({"git diff": 1})
+        manager.attach_mock(mock_subprocess_run, "git")
+        manager.attach_mock(mock_report_main, "report_main")
+
+        run.publish()
+
+        first_two = [c[0] for c in manager.mock_calls[:2]]
+        self.assertEqual(first_two, ["git", "report_main"])
+        self.assertEqual(manager.mock_calls[0].args[0], ["git", "pull", "--rebase", "--autostash", "-q"])
+
+    @patch("run.subprocess.run")
+    @patch("run.report.main")
+    @patch("run._load_env_file")
+    def test_pull_failure_stops_before_generating_and_aborts_rebase(
+        self, mock_load_env, mock_report_main, mock_subprocess_run
+    ):
+        mock_subprocess_run.side_effect = _subprocess_run_side_effect({"git pull": 1})
+
+        with self.assertRaises(SystemExit) as cm:
+            run.publish()
+
+        self.assertEqual(cm.exception.code, 1)
+        mock_report_main.assert_not_called()
+        called_cmds = [call.args[0] for call in mock_subprocess_run.call_args_list]
+        # 途中で止まった rebase を残すと、次回以降の自動公開もずっと失敗するので取り消す
+        self.assertEqual(
+            called_cmds,
+            [["git", "pull", "--rebase", "--autostash", "-q"], ["git", "rebase", "--abort"]],
+        )
+
+
+class PublishInvalidSiteDirTest(unittest.TestCase):
+    """PUBLIC_SITE_DIR の書き間違いは、git を走らせる前に設定の誤りとして案内して止めること。"""
+
+    @patch("run.subprocess.run")
+    @patch("run.report.main")
+    @patch("run._load_env_file")
+    def test_missing_dir_stops_before_git(self, mock_load_env, mock_report_main, mock_subprocess_run):
+        missing = os.path.join(BASE_DIR, "no-such-public-site-dir")
+        with patch.dict(os.environ, {"PUBLIC_SITE_DIR": missing, "PUBLIC_SITE_URL": "https://example.github.io/site/"}):
+            with self.assertRaises(SystemExit) as cm:
+                run.publish()
+        self.assertEqual(cm.exception.code, 1)
+        mock_subprocess_run.assert_not_called()
+        mock_report_main.assert_not_called()
 
 
 class SyncCommandTest(unittest.TestCase):
