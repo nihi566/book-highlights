@@ -4,10 +4,12 @@ import { libraryStats } from '../../core/model.js';
 import { ACCEPT } from '../../core/parsers/index.js';
 import { isoDate } from '../../core/text.js';
 import { fsSupported } from '../services.js';
-import { lastExportText } from '../ui.js';
+import { kindleSyncLines, lastExportText } from '../ui.js';
 
 export const importView = {
   render({ state }) {
+    // 拡張からの確認結果は PC が持っているので、PC モードで PC の情報を取れているときだけ出す
+    const kindleLines = state.settings.ai.mode === 'companion' && state.pcInfo ? kindleSyncLines(state.pcInfo.kindleSync) : [];
     return html`<a class="back" href="#/settings">‹ 設定</a>
       <div class="page-head"><div><h1>取り込み</h1><div class="sub">ファイルは端末の中だけで読み取ります</div></div></div>
       <label class="drop" id="drop">
@@ -18,6 +20,7 @@ export const importView = {
 
       <div class="section"><h2>Kindle</h2></div>
       <div class="card">
+        ${kindleLines.length ? html`<div id="kindle-sync">${kindleLines.map((l) => html`<p class="small">${l}</p>`)}</div>` : ''}
         <details>
           <summary>Kindle アプリで読んでいる（おすすめ: 自動取り込みの拡張機能）</summary>
           <p class="help">アプリで引いた線は Amazon のノートブック（read.amazon.co.jp/notebook）に集まります。PC の Chrome / Edge に拡張機能を入れておくと、ノートブックを定期的に（既定 15 分ごと）確認し、新しい線だけを PC の bh serve に送ります。この画面には PC との同期で届きます。</p>

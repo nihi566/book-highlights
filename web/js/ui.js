@@ -2,6 +2,7 @@
 import { html, mark } from './html.js';
 import { SOURCES } from '../core/model.js';
 import { hash, isoDate } from '../core/text.js';
+import { kindleSyncState } from '../core/kindle-status.js';
 
 export const COLOR_VAR = {
   yellow: 'var(--hl-yellow)',
@@ -106,12 +107,47 @@ export function openSheet(content, onSubmit) {
 
 const EXPORT_TRIGGERS = { sync: '同期のあと', import: '取り込みのあと', analysis: '分析のあと', manual: '手動', folder: 'このブラウザから' };
 
+/** 時刻を短く（例: 9/27 18:05） */
+function timeText(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
 /** 最後に Vault に書き出した結果を 1 行で（例: 9/27 18:05・同期のあと・書き込み 3 件） */
 export function lastExportText(last) {
   if (!last?.at) return 'まだ書き出していません';
-  const d = new Date(last.at);
-  const when = `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+  const when = timeText(last.at);
   const what = last.error ? `失敗: ${last.error}` : `書き込み ${last.written ?? 0} 件・変更なし ${last.unchanged ?? 0} 件`;
   return `${when}・${EXPORT_TRIGGERS[last.trigger] || last.trigger || ''}・${what}`;
 }
 
+
+/** 経過時間を短く（例: 50 分 / 2 時間 30 分 / 3 日） */
+function elapsedText(fromIso, nowIso) {
+  const min = Math.max(0, Math.floor((new Date(nowIso) - new Date(fromIso)) / 60000));
+  if (min < 60) return `${min} 分`;
+  if (min < 60 * 24) return min % 60 ? `${Math.floor(min / 60)} 時間 ${min % 60} 分` : `${Math.floor(min / 60)} 時間`;
+  return `${Math.floor(min / 60 / 24)} 日`;
+}
+
+/** ブラウザ拡張（Kindle 自動取り込み）の状態を、画面に出す文の並びにする（HTML ではない。出すときはエスケープされる） */
+export function kindleSyncLines(ks, now = new Date().toISOString()) {
+  const state = kindleSyncState(ks, now);
+  if (state === 'none') return ['自動取り込み: まだ拡張から連絡がありません（拡張機能を入れていない場合は、下の手順で設定できます）'];
+  const last = ks.lastCheck;
+  const checked = `最終確認 ${timeText(last.at)}`;
+  const result = { ok: `正常（${checked}）`, login: `Amazon のログインが切れています（${checked}）`, error: `失敗（${checked}）${last.error ? `: ${last.error}` : ''}` };
+  const lines = [];
+  if (state === 'stale') {
+    lines.push(`自動取り込み: 拡張から ${elapsedText(last.at, now)} 連絡がありません。PC のブラウザが閉じているか、PC に送れていない可能性があります`);
+    lines.push(`最後の結果: ${result[last.needLogin ? 'login' : last.ok ? 'ok' : 'error']}`);
+  } else if (state === 'ok') {
+    lines.push(`自動取り込み: ${result.ok}。線がノートブックに反映されるまで数分かかることがあります`);
+  } else if (state === 'login') {
+    lines.push(`自動取り込み: ${result.login}。PC のブラウザで read.amazon.co.jp/notebook にログインしてください`);
+  } else {
+    lines.push(`自動取り込み: ${result.error}`);
+  }
+  lines.push(ks.lastNew?.at ? `最後に新しい点: ${timeText(ks.lastNew.at)}・${ks.lastNew.added} 件` : '最後に新しい点: まだ届いていません');
+  return lines;
+}
