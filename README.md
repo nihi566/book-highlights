@@ -1,4 +1,4 @@
-# 点と線 — book-highlights
+# 本 — book-highlights
 
 Play ブックスと Kindle で線を引いた箇所（ハイライト）を 1 か所に集めて **Obsidian に写し**、PC の **ローカル LLM** がそれらの「点」を **線 → 面 → 立体** に組み立てて、次に読む本を提案するシステムです。
 

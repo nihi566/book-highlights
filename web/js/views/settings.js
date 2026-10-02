@@ -158,7 +158,7 @@ export const settingsView = {
         <div class="row"><button class="btn" data-action="backup">バックアップを保存</button><a class="btn" href="#/import">バックアップから戻す</a></div>
         <button class="btn danger" data-action="clear-all">この端末のデータをすべて消す</button>
       </div>
-      <p class="small muted" style="margin:24px 0 8px;text-align:center">点と線 — <a href="https://github.com/nihi566/book-highlights" target="_blank" rel="noopener">GitHub</a></p>`;
+      <p class="small muted" style="margin:24px 0 8px;text-align:center">本 — <a href="https://github.com/nihi566/book-highlights" target="_blank" rel="noopener">GitHub</a></p>`;
   },
   mount(root) {
     const form = root.querySelector('form[data-form="ai-settings"]');

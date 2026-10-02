@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "点と線 — Kindle 自動取り込み",
+  "name": "本 — Kindle 自動取り込み",
   "version": "0.1.0",
   "description": "Kindle のノートブックを定期的に確認し、新しいハイライトを PC の bh serve に送ります。",
   "permissions": ["alarms", "storage", "offscreen"],

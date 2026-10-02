@@ -1,6 +1,6 @@
 {
-  "name": "点と線 — 読書ハイライト",
-  "short_name": "点と線",
+  "name": "本 — 読書ハイライト",
+  "short_name": "本",
   "description": "Kindle と Play ブックスのハイライトを集めて Obsidian へ。ローカル LLM で知識を点→線→面→立体に。",
   "lang": "ja",
   "start_url": "./",
