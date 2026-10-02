@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseWishlist, saveMarks, searchWishlist, titleKey, toggleMark, wishlistSummary } from '../web/core/wishlist.js';
+import { applyImportedMarks, cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseMarksFile, parseWishlist, saveMarks, searchWishlist, tagCounts, titleKey, toggleMark, wishlistSummary } from '../web/core/wishlist.js';
 
 test('titleKey: 括弧のレーベル・版表記と記号・空白を落とす', () => {
   assert.equal(titleKey('731―石井四郎と細菌戦部隊の闇を暴く―（新潮文庫）'), titleKey('731 石井四郎と細菌戦部隊の闇を暴く'));
@@ -205,4 +205,88 @@ test('wishlistSummary: ホームに出す件数と Kindle Unlimited で読める
   assert.equal(s.kuCount, 8);
   assert.deepEqual(s.picks.map((b) => b.asin), ['B0AAAAAAA7', 'B0AAAAAAA8', 'B0AAAAAAA1']);
   assert.deepEqual(wishlistSummary([]), { total: 0, kuCount: 0, picks: [] });
+});
+
+const TAGGED = { format: 'kindle-wishlist', version: 1, books: [
+  { asin: 'B0CNT00001', title: '本1', tag: 'unwanted' },
+  { asin: 'B0CNT00002', title: '本2', tag: 'seen', rating: 4 },
+  { asin: 'B0CNT00003', title: '本3' },
+  { asin: 'B0CNT00004', title: '本4', tag: 'wanted' },
+] };
+
+test('tagCounts: タグの絞り込みの選択肢ごとに、選ぶと出る件数を返す', () => {
+  const { books } = parseWishlist(TAGGED);
+  const items = books.map((book) => ({ book, marks: loadMarks(book, memoryStore({ 'book-tag:B0CNT00003': 'purchased' })) }));
+  const counts = tagCounts(items);
+  assert.deepEqual(counts, { all: 4, 'hide-unwanted': 3, wanted: 1, unwanted: 1, purchased: 1, seen: 1, untagged: 0 });
+  for (const [filter, n] of Object.entries(counts)) {
+    assert.equal(filterWishlist(items, { tag: filter }).items.length, n, `絞り込みの結果と件数が一致する: ${filter}`);
+  }
+});
+
+test('parseMarksFile: 書き出しファイル（kindle-marks v1）を確かめ、使える項目だけ返す', () => {
+  const file = marksFile([
+    { asin: 'B0CNT00001', title: '本1', tag: 'seen', rating: 5 },
+    { asin: 'B0CNT00002', title: '本2', kind: 'manga' },
+    { asin: 'B0CNT00003', title: '本3', tag: '', rating: null },
+    { asin: 'B0CNT00004', title: '本4', tag: 'wanted', rating: 3 },
+    { asin: 'bad', tag: 'seen' },
+    { asin: 'B0CNT00005', tag: 'bogus', kind: 'novel' },
+  ]).data;
+  assert.deepEqual(parseMarksFile(JSON.parse(JSON.stringify(file))).entries, [
+    { asin: 'B0CNT00001', tag: 'seen', rating: '5' },
+    { asin: 'B0CNT00002', kind: 'manga' },
+    { asin: 'B0CNT00003', tag: '', rating: '' },
+    { asin: 'B0CNT00004', tag: 'wanted', rating: '' },
+  ]);
+  assert.equal(parseMarksFile(file).exportedAt, Date.parse(file.exported_at), '書き出した時刻も返す（端末側の新しい変更を上書きしないため）');
+  assert.equal(parseMarksFile({ format: 'kindle-marks', version: 1, items: [] }).exportedAt, 0);
+  assert.throws(() => parseMarksFile({ format: 'kindle-wishlist', version: 1, books: [] }), /書き出したタグのファイル/);
+  assert.throws(() => parseMarksFile(null), /書き出したタグのファイル/);
+  assert.throws(() => parseMarksFile({ format: 'kindle-marks', version: 2, items: [] }), /版（2）/);
+});
+
+test('applyImportedMarks: 読み込んだタグ・★・種別をブラウザに保存し、書き出すと同じ内容に戻る（端末の移し替え）', () => {
+  const { books } = parseWishlist(TAGGED);
+  // 移し元の端末
+  const from = memoryStore();
+  const fromItems = books.map((book) => ({ book, marks: loadMarks(book, from) }));
+  saveMarks(from, 'B0CNT00001', { tag: 'seen', rating: '5', kind: 'book' }, 'tag', 1);
+  saveMarks(from, 'B0CNT00003', { tag: '', rating: '', kind: 'manga' }, 'kind', 1);
+  for (const item of fromItems) item.marks = loadMarks(item.book, from);
+  const file = JSON.parse(JSON.stringify(marksFile(collectMarks(fromItems, from).items).data));
+
+  // 移し先の端末（何も保存していない）。一覧に無い本は飛ばす
+  file.items.push({ asin: 'B0NOTLIST1', title: '一覧に無い本', tag: 'wanted', rating: null });
+  const to = memoryStore();
+  const toItems = books.map((book) => ({ book, marks: loadMarks(book, to) }));
+  const result = applyImportedMarks(toItems, to, parseMarksFile(file), 2);
+  assert.deepEqual(result, { applied: 2, skipped: 1, kept: 0 });
+  assert.deepEqual(toItems[0].marks, { tag: 'seen', rating: '5', kind: 'book' });
+  assert.equal(toItems[2].marks.kind, 'manga');
+  assert.deepEqual(toItems[1].marks, { tag: 'seen', rating: '4', kind: 'book' }, 'ファイルに無い本はそのまま');
+  assert.equal(to.get('book-tag:B0NOTLIST1'), null);
+  // 画面を開き直しても（保存値から読み直しても）同じ
+  assert.deepEqual(loadMarks(books[0], to), { tag: 'seen', rating: '5', kind: 'book' });
+  assert.deepEqual(collectMarks(toItems, to).items, collectMarks(fromItems, from).items);
+});
+
+test('applyImportedMarks: ファイルを書き出した後にこの端末で変えた本は上書きしない（書き出していない唯一の変更を消さない）', () => {
+  const { books } = parseWishlist(TAGGED);
+  const store = memoryStore();
+  const items = books.map((book) => ({ book, marks: loadMarks(book, store) }));
+  const exportedAt = Date.parse('2026-10-01T00:00:00Z');
+  // 本3: ファイルより後に「見た ★5」を付けた / 本4: ファイルより前に変えた
+  saveMarks(store, 'B0CNT00003', { tag: 'seen', rating: '5', kind: 'book' }, 'tag', exportedAt + 1000);
+  saveMarks(store, 'B0CNT00004', { tag: 'purchased', rating: '', kind: 'book' }, 'tag', exportedAt - 1000);
+  for (const item of items) item.marks = loadMarks(item.book, store);
+  const file = { format: 'kindle-marks', version: 1, exported_at: new Date(exportedAt).toISOString(), items: [
+    { asin: 'B0CNT00003', tag: 'wanted', rating: null },
+    { asin: 'B0CNT00004', tag: 'wanted', rating: null },
+  ] };
+  const result = applyImportedMarks(items, store, parseMarksFile(file), exportedAt + 5000);
+  assert.deepEqual(result, { applied: 1, skipped: 0, kept: 1 });
+  assert.deepEqual(loadMarks(books[2], store), { tag: 'seen', rating: '5', kind: 'book' }, '新しい方（端末）が残る');
+  assert.equal(items[2].marks.tag, 'seen');
+  assert.equal(loadMarks(books[3], store).tag, 'wanted', '古い方（端末）はファイルで戻す');
 });
