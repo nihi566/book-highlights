@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyImportedMarks, cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseMarksFile, parseWishlist, saveMarks, searchWishlist, tagCounts, titleKey, toggleMark, wishlistSummary } from '../web/core/wishlist.js';
+import { applyImportedMarks, cleanupSyncedMarks, collectMarks, filterWishlist, findWishlistBook, formatPrice, loadMarks, marksFile, memoryStore, parseMarksFile, openWishlistFilters, parseWishlist, saveMarks, searchWishlist, tagCounts, titleKey, toggleMark, wishlistSummary } from '../web/core/wishlist.js';
 
 test('titleKey: 括弧のレーベル・版表記と記号・空白を落とす', () => {
   assert.equal(titleKey('731―石井四郎と細菌戦部隊の闇を暴く―（新潮文庫）'), titleKey('731 石井四郎と細菌戦部隊の闇を暴く'));
@@ -289,4 +289,31 @@ test('applyImportedMarks: ファイルを書き出した後にこの端末で変
   assert.deepEqual(loadMarks(books[2], store), { tag: 'seen', rating: '5', kind: 'book' }, '新しい方（端末）が残る');
   assert.equal(items[2].marks.tag, 'seen');
   assert.equal(loadMarks(books[3], store).tag, 'wanted', '古い方（端末）はファイルで戻す');
+});
+
+test('openWishlistFilters: リンクから開いた条件は描き直しで戻さず、普通に開き直したらリンク前の条件に戻す', () => {
+  const normal = { shelf: 'wanted', q: '自分の語', sort: 'price-asc', ku: false, min: '100', max: '900', tag: 'seen', kind: 'manga' };
+  // ホームの「Kindle Unlimited 対象をすべて見る」から開く: KU だけで絞り込み、それまでの条件は取っておく
+  let s = openWishlistFilters(normal, null, { ku: true });
+  assert.deepEqual(s.filters, { shelf: 'all', q: '', sort: 'default', ku: true, min: '', max: '', tag: 'all', kind: 'all' });
+  assert.equal(s.normal, normal);
+  // リンク先で利用者が条件を変えた後、同期などで同じ画面を描き直しても変えた条件のまま
+  const changed = { ...s.filters, shelf: 'wanted', q: '猫' };
+  s = openWishlistFilters(changed, s.normal, { ku: true, refresh: true });
+  assert.equal(s.filters, changed);
+  assert.equal(s.normal, normal);
+  // 別の画面から同じリンクをもう一度押したら、リンクの条件で開き直す（リンクに出した件数と合わせる）
+  s = openWishlistFilters(changed, s.normal, { ku: true });
+  assert.equal(s.filters.q, '');
+  assert.equal(s.filters.shelf, 'all');
+  assert.equal(s.normal, normal, 'リンクを続けて開いても、取っておくのは最初のリンクの前の条件');
+  // 検索のリンクに移っても同じ
+  s = openWishlistFilters(s.filters, s.normal, { q: '本' });
+  assert.equal(s.filters.q, '本');
+  assert.equal(s.filters.ku, false);
+  // 普通に開き直すと、リンク前の条件にそのまま戻る
+  assert.deepEqual(openWishlistFilters(s.filters, s.normal, {}), { filters: normal, normal: null });
+  // 普通に開いているときは条件を変えない（描き直しでも同じ）
+  assert.deepEqual(openWishlistFilters(normal, null, {}), { filters: normal, normal: null });
+  assert.deepEqual(openWishlistFilters(normal, null, { refresh: true }), { filters: normal, normal: null });
 });

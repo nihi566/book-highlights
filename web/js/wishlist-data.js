@@ -25,6 +25,9 @@ async function fetchWishlist() {
   throw lastError;
 }
 
+/** 読み込み済みなら { lastScraped, books }、まだなら null（描き直しで一覧をすぐ出し、表示位置を保つため） */
+export const cachedWishlist = () => loaded;
+
 /** { lastScraped, books }。失敗したら reject し、次の呼び出しで読み直す */
 export function loadWishlist() {
   if (loaded) return Promise.resolve(loaded);
