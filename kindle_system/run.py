@@ -17,6 +17,7 @@ import asyncio
 import glob
 import json
 import os
+import re
 import sys
 import subprocess
 import io
@@ -139,7 +140,7 @@ def publish() -> None:
 
 
 async def _run_sync(
-    xml_path: str, limit: int, start: int, workers: int, target: str
+    xml_path: str, limit: int, start: int, workers: int, target: str, only_asins: set = None
 ) -> None:
     """
     target に応じて Kindle クロール / 読書メーター同期を実行し、公開は常に1回行う。
@@ -156,13 +157,24 @@ async def _run_sync(
     """
     if target in ("kindle", "both"):
         await main_module.run_integration(
-            xml_path=xml_path, limit=limit, start=start, workers=workers
+            xml_path=xml_path, limit=limit, start=start, workers=workers, only_asins=only_asins
         )
     if target in ("bookmeter", "both"):
         result = await sync_bookmeter_wishlist(progress_cb=print)
         if result["failed_titles"]:
             print(f"[スキップ一覧] {', '.join(result['failed_titles'])}")
     publish()
+
+
+_ASIN_RE = re.compile(r"[A-Z0-9]{10}")
+
+
+def _parse_asin_list(value: str) -> set:
+    """`--asins` の値（カンマ区切りの ASIN）を集合にする。形式が違えば argparse のエラーにする。"""
+    asins = value.split(",")
+    if not asins or not all(_ASIN_RE.fullmatch(asin) for asin in asins):
+        raise argparse.ArgumentTypeError("ASIN は英大文字・数字 10 文字をカンマ区切りで指定してください。")
+    return set(asins)
 
 
 def cmd_sync(args: argparse.Namespace) -> None:
@@ -175,6 +187,13 @@ def cmd_sync(args: argparse.Namespace) -> None:
     キャッシュ XML が存在しなくても実行できる（存在チェックをスキップする）。
     """
     target = args.target
+    # 指定した本だけの再実行（scraping-hub で失敗した本だけを取り直す）は Kindle クロールだけを行う。
+    only_asins = getattr(args, "asins", None)
+    if only_asins:
+        if target == "bookmeter":
+            print("エラー: --asins は Kindle クロール用のため --target bookmeter とは併用できません。", file=sys.stderr)
+            sys.exit(2)
+        target = "kindle"
     xml_path = main_module.kindle_sample_extractor.DEFAULT_CACHE_PATH
     if target in ("kindle", "both") and not os.path.exists(xml_path):
         print(f"エラー: XML ファイルが見つかりません: {xml_path}", file=sys.stderr)
@@ -191,6 +210,7 @@ def cmd_sync(args: argparse.Namespace) -> None:
             start=args.start,
             workers=workers,
             target=target,
+            only_asins=only_asins,
         )
     )
 
@@ -364,6 +384,13 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["kindle", "bookmeter", "both"],
         default="both",
         help="実行対象（kindle: Kindleクロールのみ / bookmeter: 読書メーター同期のみ / both: 両方。デフォルト: both）",
+    )
+    sync_parser.add_argument(
+        "--asins",
+        type=_parse_asin_list,
+        default=None,
+        help="カンマ区切りの Sample ASIN。指定した本だけを Kindle クロールし直す（前回処理済みでも処理する。"
+        "読書メーター同期は行わない）",
     )
     sync_parser.set_defaults(func=cmd_sync)
 

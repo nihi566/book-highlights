@@ -12,6 +12,8 @@ git コマンドはすべてモックし、実クロール・実読書メータ�
 """
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import sys
@@ -733,6 +735,53 @@ class RecommendArgparseTest(unittest.TestCase):
             with self.subTest(argv=argv):
                 with self.assertRaises(SystemExit):
                     parser.parse_args(argv)
+
+
+class SyncOnlyAsinsTest(unittest.TestCase):
+    """--asins で指定した本だけを Kindle クロールし直す（scraping-hub の失敗した本の再実行用）。"""
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_asins_are_passed_and_bookmeter_sync_is_skipped(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        args = run.build_parser().parse_args(["sync", "--asins", "B000000001,B000000002"])
+
+        run.cmd_sync(args)
+
+        _, kwargs = mock_run_integration.call_args
+        self.assertEqual(kwargs["only_asins"], {"B000000001", "B000000002"})
+        mock_sync.assert_not_called()  # 読書メーター同期は再実行の対象外
+        mock_publish.assert_called_once()
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    def test_without_asins_runs_everything_as_before(
+        self, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        run.cmd_sync(run.build_parser().parse_args(["sync"]))
+
+        _, kwargs = mock_run_integration.call_args
+        self.assertIsNone(kwargs["only_asins"])
+        mock_sync.assert_called_once()
+
+    def test_rejects_malformed_asins(self):
+        parser = run.build_parser()
+        for value in ["", "B00,../x", "b000000001", "B000000001,"]:
+            with self.subTest(value=value):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit):
+                        parser.parse_args(["sync", "--asins", value])
+
+    def test_asins_cannot_be_combined_with_bookmeter_target(self):
+        args = run.build_parser().parse_args(["sync", "--asins", "B000000001", "--target", "bookmeter"])
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                run.cmd_sync(args)
 
 
 if __name__ == "__main__":
