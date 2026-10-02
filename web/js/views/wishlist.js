@@ -3,8 +3,8 @@
 import { html } from '../html.js';
 import { download } from '../services.js';
 import { shelfSwitch, spineColor, toast } from '../ui.js';
-import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, parseMarksFile, saveMarks, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
-import { loadWishlist } from '../wishlist-data.js';
+import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, saveMarks, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
+import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
 
 const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', rating: '評価が高い順' };
 const SHELVES = { all: 'すべて', wanted: '読みたい', purchased: '購入済み' };
@@ -13,8 +13,8 @@ const COVER = (asin) => `https://images-na.ssl-images-amazon.com/images/P/${asin
 // localStorage に保存できないブラウザ用。画面を移っても付けたタグが残るよう 1 つだけ持ち、
 // canStore: false のままにして「閉じる前に書き出して」の案内と公開データとの差の書き出しを使う（旧画面と同じ）
 const fallbackStore = { ...memoryStore(), canStore: false };
-const filters = { shelf: 'all', q: '', sort: 'default', ku: false, min: '', max: '' };
-let linkFilter = false; // いまの filters.q が検索・おすすめのリンクから入ったものか
+let filters = { shelf: 'all', q: '', sort: 'default', ku: false, min: '', max: '', tag: 'all', kind: 'all' };
+let normalFilters = null; // 検索・おすすめ・ホームのリンクから開いている間だけ、開く前の条件（openWishlistFilters）
 
 function lastScrapedText(iso) {
   if (!iso) return '未取得';
@@ -34,24 +34,23 @@ export const wishlist = {
     const marksStore = store.canStore ? store : fallbackStore;
     // 検索の「欲しい本で見る」・おすすめの印から来たときは、その語だけで絞り込んで開く。
     // ホームの「Kindle Unlimited 対象をすべて見る」（ku=1）は KU だけで絞り込んで開く
-    //（ほかの条件が残っていると、リンクに出した件数と合わない）。次に普通に開いたときはその条件を外す
+    //（ほかの条件が残っていると、リンクに出した件数と合わない）。次に普通に開いたときはリンク前の条件に戻す
     const q = ctx?.query?.get('q') || '';
     const ku = ctx?.query?.get('ku') === '1';
-    if (q || ku) {
-      Object.assign(filters, { q, shelf: 'all', sort: 'default', ku, min: '', max: '' });
-      linkFilter = true;
-    } else if (linkFilter) {
-      Object.assign(filters, { q: '', ku: false });
-      linkFilter = false;
-    }
+    ({ filters, normal: normalFilters } = openWishlistFilters(filters, normalFilters, { q, ku, refresh: Boolean(ctx?.refresh) }));
+    const show = (w) => {
+      const items = w.books.map((book) => {
+        cleanupSyncedMarks(marksStore, book);
+        return { book, marks: loadMarks(book, marksStore) };
+      });
+      mountList(root, body, items, marksStore, w.lastScraped);
+    };
+    // 読み込み済みならすぐ描く（同期のあとの描き直しで一覧が一瞬消え、表示位置が先頭に戻らないように）
+    const cached = cachedWishlist();
+    if (cached) return show(cached);
     loadWishlist()
       .then((w) => {
-        if (!body.isConnected) return;
-        const items = w.books.map((book) => {
-          cleanupSyncedMarks(marksStore, book);
-          return { book, marks: loadMarks(book, marksStore) };
-        });
-        mountList(root, body, items, marksStore, w.lastScraped, { fromLink: Boolean(q || ku) });
+        if (body.isConnected) show(w);
       })
       .catch((e) => {
         if (!body.isConnected) return;
@@ -71,11 +70,17 @@ function storedFilter(store, key, allowed) {
   return allowed.includes(v) ? v : 'all';
 }
 
-function mountList(root, body, items, store, lastScraped, { fromLink = false } = {}) {
+function mountList(root, body, items, store, lastScraped) {
   const count = (shelf) => items.filter(({ book }) => shelf === 'all' || book[shelf]).length;
-  // リンクから来たときは保存済みのタグ・種別の絞り込みを使わない（保存値は消さないので、次に普通に開けば戻る）
-  filters.tag = fromLink ? 'all' : storedFilter(store, KEYS.tagFilter, Object.keys(TAG_FILTER_LABELS));
-  filters.kind = fromLink ? 'all' : storedFilter(store, KEYS.kindFilter, ['manga', 'book']);
+  // リンクから開いている間は保存済みのタグ・種別の絞り込みを使わず、変えても保存しない（次に普通に開けば保存値に戻る）
+  const linked = normalFilters !== null;
+  const saveFilter = (key, value) => {
+    if (!linked) store.set(key, value);
+  };
+  if (!linked) {
+    filters.tag = storedFilter(store, KEYS.tagFilter, Object.keys(TAG_FILTER_LABELS));
+    filters.kind = storedFilter(store, KEYS.kindFilter, ['manga', 'book']);
+  }
   root.querySelector('#wl-sub').textContent = `欲しい本 ${items.length} 冊`;
   body.innerHTML = String(html`
     <p class="small muted">価格の最終取得: ${lastScrapedText(lastScraped)}</p>
@@ -131,14 +136,14 @@ function mountList(root, body, items, store, lastScraped, { fromLink = false } =
     }
     if (btn.dataset.wlKindFilter) {
       filters.kind = btn.dataset.wlKindFilter;
-      store.set(KEYS.kindFilter, filters.kind === 'all' ? null : filters.kind);
+      saveFilter(KEYS.kindFilter, filters.kind === 'all' ? null : filters.kind);
       setPressed('data-wl-kind-filter', filters.kind);
       return renderItems();
     }
     if (btn.id === 'wl-reset') {
       Object.assign(filters, { q: '', sort: 'default', ku: false, min: '', max: '', tag: 'all', kind: 'all' });
-      store.set(KEYS.tagFilter, null);
-      store.set(KEYS.kindFilter, null);
+      saveFilter(KEYS.tagFilter, null);
+      saveFilter(KEYS.kindFilter, null);
       $('wl-q').value = $('wl-min').value = $('wl-max').value = '';
       $('wl-sort').value = 'default';
       $('wl-tag').value = 'all';
@@ -165,7 +170,7 @@ function mountList(root, body, items, store, lastScraped, { fromLink = false } =
   const onInput = (id, key, transform = (el) => el.value) => {
     $(id).addEventListener(id === 'wl-ku' || id === 'wl-sort' || id === 'wl-tag' ? 'change' : 'input', (e) => {
       filters[key] = transform(e.target);
-      if (key === 'tag') store.set(KEYS.tagFilter, filters.tag === 'all' ? null : filters.tag);
+      if (key === 'tag') saveFilter(KEYS.tagFilter, filters.tag === 'all' ? null : filters.tag);
       renderItems();
     });
   };

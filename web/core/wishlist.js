@@ -144,6 +144,19 @@ export function cleanupSyncedMarks(store, book) {
   return true;
 }
 
+/**
+ * 欲しい本の画面を開いたときの絞り込み。filters: いまの条件、normal: リンクから開く前の条件（普通に開いているときは null）。
+ * 検索・おすすめ・ホームのリンク（q / ku）から来たときはその条件だけで開き（リンクに出した件数と合わせる）、それまでの条件を取っておく。
+ * 普通に開き直したら取っておいた条件に戻す。同じ画面の描き直し（refresh: 同期のあとなど）では、利用者がリンク先で変えた条件を残す
+ */
+export function openWishlistFilters(filters, normal, { q = '', ku = false, refresh = false } = {}) {
+  if (q || ku) {
+    if (refresh && normal) return { filters, normal };
+    return { filters: { ...filters, q, ku, shelf: 'all', sort: 'default', min: '', max: '', tag: 'all', kind: 'all' }, normal: normal ?? filters };
+  }
+  return { filters: normal ?? filters, normal: null };
+}
+
 const priceValue = (v) => (v === '' || v === undefined || v === null ? NaN : parseFloat(v));
 
 // 評価が高い順: ★の数、「見た」だけで★なしは★の付いた本の後、「見た」以外はさらに後

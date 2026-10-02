@@ -38,6 +38,7 @@ const ROUTES = [
 const view = document.getElementById('view');
 let shuffle = 0;
 let currentPath = null;
+let currentHash = null;
 
 function parseHash() {
   const raw = location.hash.replace(/^#/, '') || '/';
@@ -56,7 +57,9 @@ function render({ keepScroll = false } = {}) {
     }
   }
   if (!match) match = { view: home, tab: 'home', params: {} };
-  const ctx = { state, params: match.params, query, shuffle };
+  // refresh: 同じ画面の描き直し（同期・編集のあと）。別の画面から来たとき・リンクを押したときは false
+  const ctx = { state, params: match.params, query, shuffle, refresh: location.hash === currentHash };
+  currentHash = location.hash;
   const y = window.scrollY;
   view.innerHTML = String(match.view.render(ctx));
   match.view.mount?.(view, ctx);
