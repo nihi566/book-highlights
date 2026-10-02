@@ -149,8 +149,20 @@ def format_summary_line(counts: dict, resumed: int = 0) -> str:
 
 # ─── メインロジック ──────────────────────────────────────────────────────────
 
-async def run_integration(xml_path: str = None, limit: int = None, is_test: bool = False, start: int = None, workers: int = 1) -> None:
-    """統合フローの実行"""
+async def run_integration(
+    xml_path: str = None,
+    limit: int = None,
+    is_test: bool = False,
+    start: int = None,
+    workers: int = 1,
+    only_asins: set = None,
+) -> None:
+    """統合フローの実行
+
+    only_asins（Sample ASIN の集合）を渡すと、その本だけを処理し直す（scraping-hub の実行画面で
+    失敗した本だけを再実行するため）。この場合はレジューム（前回処理済みのスキップ）を使わず、
+    セッションファイルも作らない・消さない（全件処理の途中再開の状態を壊さないため）。
+    """
     print("=" * 60)
     print(f"  Kindle システム統合処理開始（並列数: {workers}）")
     print("=" * 60)
@@ -159,12 +171,16 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     print("  [OK] データベース初期化完了")
 
     # ── セッション管理: レジューム判定 ──────────────────────────────
-    session_start = get_or_create_session_start()
-    session_processed = get_session_processed_asins(session_start)
-    if session_processed:
-        print(f"  [Resume] このセッションで処理済みの本: {len(session_processed)} 件 → スキップします。")
+    if only_asins:
+        session_processed = set()
+        print(f"  [再実行] 指定した {len(only_asins)} 冊だけを処理します（前回処理済みでも処理し直します）。")
     else:
-        print(f"  [新規セッション] 全件フルスクレイピングを開始します。")
+        session_start = get_or_create_session_start()
+        session_processed = get_session_processed_asins(session_start)
+        if session_processed:
+            print(f"  [Resume] このセッションで処理済みの本: {len(session_processed)} 件 → スキップします。")
+        else:
+            print(f"  [新規セッション] 全件フルスクレイピングを開始します。")
 
     # 1. XML からサンプル本を取得
     print("  [1/4] XML パース中...")
@@ -176,13 +192,20 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
 
     print(f"  [OK] サンプル本を {len(samples)} 件取得しました。")
 
+    if only_asins:
+        found = {book["asin"] for book in samples}
+        for missing in sorted(set(only_asins) - found):
+            print(f"  [!] 指定した Sample ASIN が一覧に見つかりません: {missing}")
+        # 番号と全体数（[i/total]）は今回処理する本の中で振り直す
+        samples = [book for book in samples if book["asin"] in only_asins]
+
     if limit and limit > 0:
         samples = samples[:limit]
         print(f"  [!] 処理件数を {limit} 件に制限して実行します。")
 
     # 起動時のユーザー入力プロンプト (引数 start が指定されている場合はそれを優先しプロンプトをスキップ)
     manual_start = start
-    if manual_start is None:
+    if manual_start is None and not only_asins:
         try:
             print(f"[Start] 開始するインデックス番号を入力してください (1 ~ {len(samples)}) [Enterで通常開始]: ", end="", flush=True)
             user_input = input().strip()
@@ -360,8 +383,10 @@ async def run_integration(xml_path: str = None, limit: int = None, is_test: bool
     print("=" * 60)
 
     # 全処理完了: セッションファイルを削除し、次回は新規セッションとして実行されるようにする
-    clear_session()
-    print("  [OK] セッションをクリアしました。次回実行時は全件処理されます。")
+    # （指定した本だけの再実行は全件処理ではないので、途中再開の状態に触れない）
+    if not only_asins:
+        clear_session()
+        print("  [OK] セッションをクリアしました。次回実行時は全件処理されます。")
 
 
 

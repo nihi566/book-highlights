@@ -202,5 +202,54 @@ class RunIntegrationLogContractTest(unittest.TestCase):
         self.assertNotIn("✗", output)
 
 
+class RunIntegrationOnlyAsinsTest(unittest.TestCase):
+    """only_asins を渡すと、その Sample ASIN の本だけを処理し直す（失敗した本の再実行用。
+    scraping-hub backlog 20260926-retry-failed-books）。"""
+
+    SAMPLES = [
+        {"asin": "S1", "title": "本1"},
+        {"asin": "S2", "title": "本2（前回処理済みだが失敗していた）"},
+        {"asin": "S3", "title": "本3"},
+    ]
+
+    def _run(self, only_asins):
+        crawled = []
+
+        async def fake_crawl(paid_asin, **kwargs):
+            crawled.append(paid_asin)
+            return {"asin": paid_asin, "sell_price": 100, "point_value": 1}
+
+        buf = io.StringIO()
+        with patch.object(main, "init_db"), \
+             patch.object(main, "get_or_create_session_start") as session_start, \
+             patch.object(main, "get_session_processed_asins", return_value={"P2"}), \
+             patch.object(main, "extract_samples", return_value=list(self.SAMPLES)), \
+             patch.object(main, "get_purchased_asins", return_value=set()), \
+             patch.object(main, "get_paid_asin", side_effect=lambda s: {"S1": "P1", "S2": "P2", "S3": "P3"}[s]), \
+             patch.object(main, "crawl_price_info", new=AsyncMock(side_effect=fake_crawl)), \
+             patch.object(main, "save_price_history"), \
+             patch.object(main, "clear_session") as clear_session, \
+             patch("builtins.input") as prompt, \
+             contextlib.redirect_stdout(buf):
+            asyncio.run(main.run_integration(xml_path="dummy.xml", workers=1, only_asins=only_asins))
+        return buf.getvalue().splitlines(), crawled, session_start, clear_session, prompt
+
+    def test_processes_only_given_books_even_if_resume_would_skip_them(self):
+        lines, crawled, *_ = self._run({"S2", "S3", "S9"})
+
+        self.assertEqual(sorted(crawled), ["P2", "P3"])
+        starts = [l for l in lines if START_RE.match(l) and not RESULT_RE.match(l)]
+        # 番号と全体数は今回処理する本の中で振り直す（進捗表示の全体数が今回の冊数になる）
+        self.assertEqual([START_RE.match(l).group(2) + "/" + START_RE.match(l).group(3) for l in starts], ["1/2", "2/2"])
+        self.assertTrue(any("S9" in l and "見つかりません" in l for l in lines))
+
+    def test_does_not_touch_resume_session_or_ask_start_index(self):
+        _, _, session_start, clear_session, prompt = self._run({"S2"})
+
+        session_start.assert_not_called()
+        clear_session.assert_not_called()
+        prompt.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
