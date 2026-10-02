@@ -3,7 +3,7 @@
 import { html } from '../html.js';
 import { download } from '../services.js';
 import { shelfSwitch, spineColor, toast } from '../ui.js';
-import { browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, saveMarks, TAG_FILTER_LABELS, TAG_LABELS, toggleMark } from '../../core/wishlist.js';
+import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, parseMarksFile, saveMarks, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
 import { loadWishlist } from '../wishlist-data.js';
 
 const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', rating: '評価が高い順' };
@@ -94,7 +94,9 @@ function mountList(root, body, items, store, lastScraped, { fromLink = false } =
     <p class="empty" id="wl-empty" hidden>条件に一致する本がありません。検索語・種別・タグ・価格の条件を見直してください。</p>
     <div class="card wl-export">
       <p class="small" id="wl-marks-summary"></p>
-      <div class="row"><button type="button" class="btn small" id="wl-export">見た・評価を書き出す</button></div>
+      <div class="row"><button type="button" class="btn small" id="wl-export">見た・評価を書き出す</button><button type="button" class="btn small" id="wl-import">書き出したファイルを読み込む</button></div>
+      <input type="file" id="wl-import-file" accept=".json,application/json" hidden>
+      <p class="small muted">書き出したファイルは、別の端末やブラウザのデータを消した後に「読み込む」で戻せます。</p>
       <p class="small muted" id="wl-export-status" role="status"></p>
     </div>`);
 
@@ -103,6 +105,9 @@ function mountList(root, body, items, store, lastScraped, { fromLink = false } =
 
   const renderItems = () => {
     const r = filterWishlist(items, filters);
+    // タグの選択肢に、いまの分類（すべて/読みたい/購入済み）で選ぶと残る件数を出す
+    const counts = tagCounts(items.filter(({ book }) => filters.shelf === 'all' || book[filters.shelf]));
+    for (const option of $('wl-tag').options) option.textContent = `${TAG_FILTER_LABELS[option.value]}（${counts[option.value]}）`;
     $('wl-price-error').hidden = !r.priceRangeInvalid;
     $('wl-count').textContent = `${r.items.length}件 / 全${items.filter(({ book }) => filters.shelf === 'all' || book[filters.shelf]).length}件を表示`;
     $('wl-reset').hidden = !(filters.q.trim() || filters.ku || filters.min !== '' || filters.max !== '' || filters.tag !== 'all' || filters.kind !== 'all' || filters.sort !== 'default');
@@ -142,6 +147,7 @@ function mountList(root, body, items, store, lastScraped, { fromLink = false } =
       return renderItems();
     }
     if (btn.id === 'wl-export') return exportMarks();
+    if (btn.id === 'wl-import') return $('wl-import-file').click();
     const li = btn.closest('li[data-asin]');
     if (!li) return;
     const item = items.find(({ book }) => book.asin === li.dataset.asin);
@@ -169,6 +175,11 @@ function mountList(root, body, items, store, lastScraped, { fromLink = false } =
   onInput('wl-min', 'min');
   onInput('wl-max', 'max');
   onInput('wl-ku', 'ku', (el) => el.checked);
+  $('wl-import-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    e.target.value = ''; // 同じファイルをもう一度選んでも読み込めるように
+    if (file) importMarks(file);
+  });
 
   // 表紙が無い ASIN では 1x1 の透明画像が返るので、読み込めても外して背表紙の色を見せる
   const dropCover = (e) => {
@@ -189,6 +200,22 @@ function mountList(root, body, items, store, lastScraped, { fromLink = false } =
     store.set(KEYS.exportedAt, String(Date.now()));
     status.textContent = `${f.name} を書き出しました（${s.items.length}件）。PC で「python run.py import-marks ファイルのパス」を実行して取り込むと、「python run.py recommend」でローカル LLM のおすすめを出せます。`;
     toast('書き出しました');
+    renderItems();
+  }
+
+  async function importMarks(file) {
+    const status = $('wl-export-status');
+    let parsed;
+    try {
+      parsed = parseMarksFile(JSON.parse(await file.text()));
+    } catch (e) {
+      status.textContent = `${file.name} を読み込めませんでした（${e instanceof SyntaxError ? 'JSON の形式ではありません' : e.message}）。「見た・評価を書き出す」で保存したファイルを選んでください。`;
+      return;
+    }
+    const r = applyImportedMarks(items, store, parsed);
+    const notes = [r.kept && `このファイルより後にこの端末で変えた ${r.kept}件はそのままにしました`, r.skipped && `欲しい本の一覧に無い ${r.skipped}件は飛ばしました`].filter(Boolean);
+    status.textContent = `${file.name} から ${r.applied}件のタグ・★・種別を読み込みました${notes.length ? `（${notes.join('。')}）` : ''}。${store.canStore ? '' : 'このブラウザには保存できないため、画面を閉じると元に戻ります。'}`;
+    toast('読み込みました');
     renderItems();
   }
 

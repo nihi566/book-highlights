@@ -156,6 +156,15 @@ function matchesTag(tag, filter) {
   return true;
 }
 
+/** タグの絞り込みの選択肢（TAG_FILTER_LABELS のキー）ごとに、選ぶと残る件数。items: [{ book, marks }] */
+export function tagCounts(items) {
+  const counts = Object.fromEntries(Object.keys(TAG_FILTER_LABELS).map((k) => [k, 0]));
+  for (const { marks } of items) {
+    for (const filter of Object.keys(counts)) if (matchesTag(marks.tag, filter)) counts[filter]++;
+  }
+  return counts;
+}
+
 /**
  * items: [{ book, marks }]。f: { shelf: all|wanted|purchased, q, ku, min, max, tag, kind, sort }
  * 戻り値の priceRangeInvalid は下限 > 上限（そのときは価格帯を無視する）
@@ -299,4 +308,60 @@ const pad2 = (n) => String(n).padStart(2, '0');
 export function marksFile(items, now = new Date()) {
   const name = `kindle-marks-${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}-${pad2(now.getHours())}${pad2(now.getMinutes())}.json`;
   return { name, data: { format: 'kindle-marks', version: 1, exported_at: now.toISOString(), items } };
+}
+
+/**
+ * 書き出しファイル（kindle-marks v1）を確かめ、ブラウザに読み込める項目だけ返す（別の端末への移し替え・バックアップからの戻し）。
+ * { exportedAt（書き出した時刻のミリ秒。不明なら 0）, entries: [{ asin, tag?, rating?, kind? }] } を返す。
+ * tag を持つ項目は★も一緒に持つ（書き出しと同じ単位）。形式が違えば理由つきで失敗する
+ */
+export function parseMarksFile(data) {
+  if (!data || typeof data !== 'object' || data.format !== 'kindle-marks' || !Array.isArray(data.items)) {
+    throw new Error('書き出したタグのファイル（kindle-marks-….json）ではありません');
+  }
+  if (data.version !== 1) throw new Error(`タグのファイルの版（${data.version}）に対応していません。アプリを更新してください`);
+  const entries = [];
+  for (const it of data.items) {
+    if (!ASIN.test(it?.asin)) continue;
+    const entry = { asin: it.asin };
+    if (it.tag === '' || isTag(it.tag)) {
+      entry.tag = it.tag;
+      entry.rating = it.tag === 'seen' && Number.isInteger(it.rating) && it.rating >= 1 && it.rating <= 5 ? String(it.rating) : '';
+    }
+    if (isKind(it.kind)) entry.kind = it.kind;
+    if ('tag' in entry || 'kind' in entry) entries.push(entry);
+  }
+  return { exportedAt: Date.parse(data.exported_at) || 0, entries };
+}
+
+const sameAsEntry = (marks, entry) => Object.keys(entry).every((k) => k === 'asin' || marks[k] === entry[k]);
+
+/**
+ * 読み込んだ項目をブラウザに保存し、画面の状態（items の marks）も合わせる。一覧に無い本は飛ばす（skipped）。
+ * ファイルを書き出した後にこの端末で変えた本は上書きしない（kept）。書き出していない変更はこの端末にしか無いため
+ */
+export function applyImportedMarks(items, store, { exportedAt = 0, entries }, now = Date.now()) {
+  const result = { applied: 0, skipped: 0, kept: 0 };
+  for (const entry of entries) {
+    const targets = items.filter(({ book }) => book.asin === entry.asin);
+    if (!targets.length) {
+      result.skipped++;
+      continue;
+    }
+    if (storedAt(store, entry.asin) > exportedAt && !sameAsEntry(targets[0].marks, entry)) {
+      result.kept++;
+      continue;
+    }
+    for (const item of targets) {
+      const marks = { ...item.marks };
+      if ('tag' in entry) Object.assign(marks, { tag: entry.tag, rating: entry.rating });
+      if ('kind' in entry) marks.kind = entry.kind;
+      item.marks = marks;
+    }
+    for (const group of Object.keys(MARK_GROUPS)) {
+      if (MARK_GROUPS[group].some((field) => field in entry)) saveMarks(store, entry.asin, targets[0].marks, group, now);
+    }
+    result.applied++;
+  }
+  return result;
 }
