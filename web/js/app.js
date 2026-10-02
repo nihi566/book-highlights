@@ -6,7 +6,7 @@ import { buildBookmarklet, companion, detectServedByCompanion, download, fsSuppo
 import { openSheet, toast } from './ui.js';
 import { book, books, home, search } from './views/library.js';
 import { isolatedView, knowledge, lineView, planeView } from './views/knowledge.js';
-import { exportView, importView, settingsView } from './views/settings.js';
+import { exportView, importView, kindleSyncBlock, settingsView } from './views/settings.js';
 import { wishlist } from './views/wishlist.js';
 import { FEEDBACK_LABELS, deleteBook, emptyLibrary, mergeParsed, setFeedback, updateHighlight } from '../core/model.js';
 import { parseFiles } from '../core/parsers/index.js';
@@ -69,7 +69,7 @@ function render({ keepScroll = false } = {}) {
     else a.removeAttribute('aria-current');
   }
   // 書き出し・設定の画面では PC の出力先と最後に書き出した時刻を取り直す（10 秒に 1 回まで）
-  if ((path === '/export' || path === '/settings') && state.settings.ai.mode === 'companion' && Date.now() - (state.pcInfoAt || 0) > 10000) {
+  if (PC_INFO_PATHS.includes(path) && state.settings.ai.mode === 'companion' && Date.now() - (state.pcInfoAt || 0) > 10000) {
     state.pcInfoAt = Date.now();
     refreshPcInfo();
   }
@@ -298,7 +298,10 @@ async function sync({ quiet = false } = {}) {
   }
 }
 
-/** PC の状態（出力先・最後に Vault に書き出した結果）を取り直し、表示している画面に反映する */
+// PC の状態（出力先・最後の書き出し・拡張の確認結果）を表示する画面
+const PC_INFO_PATHS = ['/export', '/settings', '/import'];
+
+/** PC の状態（出力先・最後に Vault に書き出した結果・拡張の確認結果）を取り直し、表示している画面に反映する */
 async function refreshPcInfo() {
   // PC を設定していないとき（GitHub Pages で開いただけ）は localhost に問い合わせない
   if (state.settings.ai.mode !== 'companion' || !(state.servedByCompanion || state.settings.ai.companionUrl)) return;
@@ -315,7 +318,11 @@ async function refreshPcInfo() {
   const { path } = parseHash();
   // 入力中の欄があるときは描き直さない（書きかけの設定を消さない）
   const typing = document.activeElement?.matches?.('#view input:not([type="checkbox"]):not([type="radio"]), #view textarea, #view select');
-  if ((path === '/export' || path === '/settings') && !typing) render({ keepScroll: true });
+  // 取り込み画面は状態欄だけ差し替える（描き直すと取り込み結果の表示と開いた説明が消える）
+  if (path === '/import') {
+    const box = document.querySelector('#view #kindle-sync');
+    if (box) box.innerHTML = String(kindleSyncBlock(state));
+  } else if (PC_INFO_PATHS.includes(path) && !typing) render({ keepScroll: true });
 }
 
 let folderTimer;

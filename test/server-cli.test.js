@@ -138,6 +138,53 @@ test('コンパニオンサーバ: CORS・Host・トークンの制限', async (
   );
 });
 
+test('コンパニオンサーバ: 拡張の確認結果を記録し /api/info で返す', async () => {
+  await withServer(async ({ base, store }) => {
+    const post = (body, headers = {}) => fetch(`${base}/api/kindle-status`, { method: 'POST', headers, body: JSON.stringify(body) });
+    const info = async () => (await fetch(`${base}/api/info`)).json();
+    assert.equal((await info()).kindleSync, null);
+
+    // 既存の lastExport を消さない
+    await store.saveState({ lastExport: { at: '2026-10-01T00:00:00.000Z', trigger: 'manual' } });
+    const r = await post({ ok: true, added: 5, intervalMin: 15, token: 'leak' });
+    assert.equal(r.status, 200);
+    assert.deepEqual(await r.json(), { ok: true });
+    const i1 = await info();
+    assert.deepEqual({ ok: i1.kindleSync.lastCheck.ok, added: i1.kindleSync.lastCheck.added, intervalMin: i1.kindleSync.lastCheck.intervalMin, error: i1.kindleSync.lastCheck.error, needLogin: i1.kindleSync.lastCheck.needLogin }, { ok: true, added: 5, intervalMin: 15, error: '', needLogin: false });
+    assert.equal(i1.kindleSync.lastNew.added, 5);
+    assert.equal(i1.lastExport.trigger, 'manual');
+    assert.equal(JSON.stringify(await store.state()).includes('leak'), false);
+
+    // 失敗の報告のあとも「最後に新しい点」は残る
+    await post({ ok: false, added: 0, error: '読めません' });
+    const i2 = await info();
+    assert.equal(i2.kindleSync.lastCheck.ok, false);
+    assert.equal(i2.kindleSync.lastCheck.error, '読めません');
+    assert.equal(i2.kindleSync.lastNew.added, 5);
+    assert.ok(i2.kindleSync.lastSuccessAt);
+
+    // 不正な本文は 400 で、保存内容は変わらない
+    const before = await store.state();
+    const bad = await post({ ok: 'yes' });
+    assert.equal(bad.status, 400);
+    assert.ok((await bad.json()).error);
+    assert.deepEqual(await store.state(), before);
+  });
+});
+
+test('コンパニオンサーバ: 確認結果の記録もトークンと Origin の制限を受ける', async () => {
+  await withServer(
+    async ({ base, store }) => {
+      const send = (headers) => fetch(`${base}/api/kindle-status`, { method: 'POST', headers, body: JSON.stringify({ ok: true }) });
+      assert.equal((await send({})).status, 401);
+      assert.equal((await send({ 'X-BH-Token': 'secret', Origin: 'https://evil.example.com' })).status, 403);
+      assert.equal((await send({ 'X-BH-Token': 'secret' })).status, 200);
+      assert.ok((await store.state()).kindleSync);
+    },
+    { token: 'secret' },
+  );
+});
+
 test('コンパニオンサーバ: LLM 中継・ライブラリ同期・静的ファイル', async () => {
   await withServer(async ({ base, fake }) => {
     const models = await (await fetch(`${base}/llm/v1/models`)).json();
