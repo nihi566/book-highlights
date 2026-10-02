@@ -3,7 +3,7 @@ import { html } from './html.js';
 import { kv, requestPersistence } from './db.js';
 import { loadCache, loadState, save, saveCache, state } from './state.js';
 import { buildBookmarklet, companion, detectServedByCompanion, download, fsSupported, pickVault, savedVault, syncWithPc, writeVaultFs } from './services.js';
-import { openSheet, toast } from './ui.js';
+import { kindleAlertBlock, openSheet, toast } from './ui.js';
 import { book, books, home, search } from './views/library.js';
 import { isolatedView, knowledge, lineView, planeView } from './views/knowledge.js';
 import { exportView, importView, kindleSyncBlock, settingsView } from './views/settings.js';
@@ -299,7 +299,9 @@ async function sync({ quiet = false } = {}) {
 }
 
 // PC の状態（出力先・最後の書き出し・拡張の確認結果）を表示する画面
-const PC_INFO_PATHS = ['/export', '/settings', '/import'];
+const PC_INFO_PATHS = ['/export', '/settings', '/import', '/'];
+// 描き直さず、欄だけ差し替える画面（描き直すと取り込み結果の表示・開いた説明・今日の点の「別の点」が消える）
+const PC_INFO_BOXES = { '/import': ['#kindle-sync', kindleSyncBlock], '/': ['#kindle-alert', kindleAlertBlock] };
 
 /** PC の状態（出力先・最後に Vault に書き出した結果・拡張の確認結果）を取り直し、表示している画面に反映する */
 async function refreshPcInfo() {
@@ -318,10 +320,11 @@ async function refreshPcInfo() {
   const { path } = parseHash();
   // 入力中の欄があるときは描き直さない（書きかけの設定を消さない）
   const typing = document.activeElement?.matches?.('#view input:not([type="checkbox"]):not([type="radio"]), #view textarea, #view select');
-  // 取り込み画面は状態欄だけ差し替える（描き直すと取り込み結果の表示と開いた説明が消える）
-  if (path === '/import') {
-    const box = document.querySelector('#view #kindle-sync');
-    if (box) box.innerHTML = String(kindleSyncBlock(state));
+  const partial = PC_INFO_BOXES[path];
+  if (partial) {
+    const [selector, block] = partial;
+    const box = document.querySelector(`#view ${selector}`);
+    if (box) box.innerHTML = String(block(state));
   } else if (PC_INFO_PATHS.includes(path) && !typing) render({ keepScroll: true });
 }
 

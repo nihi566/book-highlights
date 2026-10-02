@@ -151,3 +151,16 @@ export function kindleSyncLines(ks, now = new Date().toISOString()) {
   lines.push(ks.lastNew?.at ? `最後に新しい点: ${timeText(ks.lastNew.at)}・${ks.lastNew.added} 件` : '最後に新しい点: まだ届いていません');
   return lines;
 }
+
+const ALERT_STATES = ['login', 'error', 'stale'];
+
+/** ホームに出す自動取り込みの警告（1 行）。拡張を使っていない・正常なときは空文字 */
+export function kindleSyncAlert(ks, now = new Date().toISOString()) {
+  return ALERT_STATES.includes(kindleSyncState(ks, now)) ? kindleSyncLines(ks, now)[0] : '';
+}
+
+/** ホームの警告欄の中身。PC モードで PC の情報を取れているときだけ出す。押すと取り込み画面で詳しく見られる */
+export function kindleAlertBlock(state) {
+  const text = state.settings.ai.mode === 'companion' && state.pcInfo ? kindleSyncAlert(state.pcInfo.kindleSync) : '';
+  return text ? html`<a class="notice err" href="#/import" style="display:block;margin-bottom:12px;text-decoration:none">${text}（詳しく）</a>` : '';
+}

@@ -90,3 +90,28 @@ test('Kindle 状態: 画面に出す文言', async () => {
   assert.equal(kindleSyncLines(mk(), at(50))[0], '自動取り込み: 拡張から 50 分 連絡がありません。PC のブラウザが閉じているか、PC に送れていない可能性があります');
   assert.match(kindleSyncLines(mk(), at(60 * 24 * 3))[0], /^自動取り込み: 拡張から 3 日 連絡がありません/);
 });
+
+test('Kindle 状態: ホームの警告は異常のときだけ 1 行出す', async () => {
+  const { kindleSyncAlert } = await import('../web/js/ui.js');
+  const mk = (o = {}) => ({ lastCheck: { at: T0, ok: true, error: '', needLogin: false, added: 0, intervalMin: 15, ...o } });
+  const at = (m) => minutesLater(T0, m);
+
+  // 拡張を使っていない・正常なときは出さない
+  assert.equal(kindleSyncAlert(null, T0), '');
+  assert.equal(kindleSyncAlert(mk(), at(1)), '');
+
+  assert.match(kindleSyncAlert(mk({ ok: false, needLogin: true }), at(1)), /^自動取り込み: Amazon のログインが切れています/);
+  assert.match(kindleSyncAlert(mk({ ok: false, error: '3 冊を読み取れませんでした' }), at(1)), /^自動取り込み: 失敗（最終確認 .+）: 3 冊を読み取れませんでした$/);
+  assert.match(kindleSyncAlert(mk(), at(150)), /^自動取り込み: 拡張から 2 時間 30 分 連絡がありません/);
+});
+
+test('Kindle 状態: ホームの警告欄は PC モードで PC の情報があるときだけ', async () => {
+  const { kindleAlertBlock } = await import('../web/js/ui.js');
+  const pcInfo = { kindleSync: { lastCheck: { at: new Date().toISOString(), ok: false, needLogin: true, error: '<b>x</b>', added: 0, intervalMin: 15 } } };
+  const st = (mode, info) => ({ settings: { ai: { mode } }, pcInfo: info });
+  assert.equal(String(kindleAlertBlock(st('direct', pcInfo))), '');
+  assert.equal(String(kindleAlertBlock(st('companion', null))), '');
+  const out = String(kindleAlertBlock(st('companion', pcInfo)));
+  assert.match(out, /href="#\/import"/);
+  assert.match(out, /ログインが切れています/);
+});
