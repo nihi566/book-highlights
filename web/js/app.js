@@ -1,4 +1,4 @@
-// 点と線 — Web アプリ本体（ルーティング・操作）
+// 本 — Web アプリ本体（ルーティング・操作）
 import { html } from './html.js';
 import { kv, requestPersistence } from './db.js';
 import { loadCache, loadState, save, saveCache, state } from './state.js';
