@@ -37,7 +37,8 @@ export function parseWishlist(data) {
   const books = data.books.map((b, index) => {
     const tag = isTag(b?.tag) ? b.tag : '';
     const rating = tag === 'seen' && Number.isInteger(b.rating) && b.rating >= 1 && b.rating <= 5 ? String(b.rating) : '';
-    const price = yen(b?.price);
+    // KU の本は価格を持たない扱いにする（画面は「Kindle Unlimited 対象」と出すので、合計・値動きにも入れない）
+    const price = b?.ku === true ? null : yen(b?.price);
     return {
       asin: ASIN.test(b?.asin) ? b.asin : '',
       title: String(b?.title ?? ''),

@@ -78,6 +78,9 @@ test('parseWishlist: 値動き（前回価格・変わった日時・最安値�
   ]));
   assert.deepEqual(w.books[0].trend, { prev: 1200, changedAt: '2026-09-30T09:00:00', low: 900 });
   assert.equal(w.books[1].trend, null, 'KU・価格なしは比べられない');
+  const ku = parseWishlist(data([book({ ku: true, price: 700, ...trend })])).books[0];
+  assert.equal(ku.price, null, 'KU の本は価格があっても数えない（画面は Kindle Unlimited 対象と出す）');
+  assert.equal(ku.trend, null);
   assert.deepEqual(w.books[2].trend, { prev: null, changedAt: null, low: null }, '不正な値は捨てる');
 });
 
@@ -88,6 +91,7 @@ test('priceChange: 前回から値下がり・値上がりした額と、記録�
   assert.equal(priceChange({ price: 900, trend: { prev: null, changedAt: null, low: 900 } }), null, '一度も変わっていなければ出さない');
   assert.equal(priceChange({ price: null, trend: null }), null);
   assert.equal(priceChange({ price: 900, trend: null }), null, '古いデータ（値動きの項目なし）');
+  assert.deepEqual(priceChange({ price: 900, trend: { prev: 900, changedAt: at, low: 900 } }), { diff: 0, changedAt: at, lowest: true }, '差が 0 でも最安値は判定する');
 });
 
 test('loadMarks: ブラウザに保存したタグ・★・種別が公開データより優先される（旧画面と同じキー）', () => {

@@ -8,6 +8,7 @@ import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
 
 const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', rating: '評価が高い順' };
 const SHELVES = { all: 'すべて', wanted: '読みたい', purchased: '購入済み' };
+const shelfLabel = (shelf, n) => `${SHELVES[shelf]} ${n}`;
 const COVER = (asin) => `https://images-na.ssl-images-amazon.com/images/P/${asin}.09.MZZZZZZZ.jpg`;
 
 // localStorage に保存できないブラウザ用。画面を移っても付けたタグが残るよう 1 つだけ持ち、
@@ -84,7 +85,7 @@ function mountList(root, body, items, store, lastScraped) {
   root.querySelector('#wl-sub').textContent = `欲しい本 ${items.length} 冊`;
   body.innerHTML = String(html`
     <p class="small muted">価格の最終取得: ${lastScrapedText(lastScraped)}</p>
-    <div class="chips" role="group" aria-label="表示する分類">${Object.entries(SHELVES).map(([k, label]) => html`<button type="button" class="chip" data-wl-shelf="${k}" aria-pressed="${String(filters.shelf === k)}">${label} ${shelfCount[k]}</button>`)}</div>
+    <div class="chips" role="group" aria-label="表示する分類">${Object.entries(SHELVES).map(([k, label]) => html`<button type="button" class="chip" data-wl-shelf="${k}" aria-pressed="${String(filters.shelf === k)}">${shelfLabel(k, shelfCount[k])}</button>`)}</div>
     <div class="search-box wl-search" role="search"><input type="search" id="wl-q" value="${filters.q}" placeholder="書名・ASIN で絞り込む（空白で AND）" aria-label="書名・ASIN で絞り込む" autocomplete="off"></div>
     <div class="wl-controls">
       <label class="wl-field"><span>並べ替え</span><select id="wl-sort">${Object.entries(SORTS).map(([k, label]) => html`<option value="${k}" ${filters.sort === k ? 'selected' : ''}>${label}</option>`)}</select></label>
@@ -116,7 +117,7 @@ function mountList(root, body, items, store, lastScraped) {
     for (const option of $('wl-tag').options) option.textContent = `${TAG_FILTER_LABELS[option.value]}（${counts[option.value]}）`;
     // 「購入済み」タグの付け外しで分類の件数が変わる
     const shelves = shelfCounts(items);
-    for (const b of body.querySelectorAll('[data-wl-shelf]')) b.textContent = `${SHELVES[b.dataset.wlShelf]} ${shelves[b.dataset.wlShelf]}`;
+    for (const b of body.querySelectorAll('[data-wl-shelf]')) b.textContent = shelfLabel(b.dataset.wlShelf, shelves[b.dataset.wlShelf]);
     $('wl-price-error').hidden = !r.priceRangeInvalid;
     $('wl-count').textContent = `${r.items.length}件 / 全${inCurrentShelf.length}件を表示${totalText(r.items)}`;
     $('wl-reset').hidden = !(filters.q.trim() || filters.ku || filters.min !== '' || filters.max !== '' || filters.tag !== 'all' || filters.kind !== 'all' || filters.sort !== 'default');
@@ -240,17 +241,18 @@ function totalText(visible) {
 
 function changeBadges(book) {
   const c = priceChange(book);
-  if (!c || c.diff === 0) return '';
+  if (!c) return '';
   const d = new Date(c.changedAt ?? NaN); // null を渡すと 1970/1/1 になる
   const when = Number.isNaN(d.getTime()) ? '' : `（${d.getMonth() + 1}/${d.getDate()}）`;
   const amount = `¥${Math.abs(c.diff).toLocaleString('ja-JP')}`;
-  return html` <span class="badge ${c.diff < 0 ? 'down' : 'up'}">${amount} ${c.diff < 0 ? '値下がり' : '値上がり'}${when}</span>${c.lowest ? html` <span class="badge down">最安値</span>` : ''}`;
+  const moved = c.diff === 0 ? '' : html` <span class="badge ${c.diff < 0 ? 'down' : 'up'}">${amount} ${c.diff < 0 ? '値下がり' : '値上がり'}${when}</span>`;
+  return html`${moved}${c.lowest ? html` <span class="badge down">最安値</span>` : ''}`;
 }
 
 function itemRow({ book, marks }) {
   const other = marks.kind === 'manga' ? 'book' : 'manga';
   const cover = html`<span class="wl-cover" style="background:${spineColor(book.title)}" aria-hidden="true">${[...book.title][0] || ''}${book.asin ? html`<img src="${COVER(book.asin)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>`;
-  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${book.wanted ? html` <span class="badge">読みたい</span>` : ''}${book.purchased ? html` <span class="badge">購入済み</span>` : ''}</span></span>`;
+  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'wanted') ? html` <span class="badge">読みたい</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}</span></span>`;
   const value = parseInt(marks.rating, 10) || 0;
   return html`<li class="wl-item" data-asin="${book.asin}">
     ${book.asin ? html`<a class="wl-main" href="https://www.amazon.co.jp/dp/${book.asin}" target="_blank" rel="noopener noreferrer" aria-label="${book.title}（Amazon で開く）">${cover}${text}</a>` : html`<div class="wl-main">${cover}${text}</div>`}
