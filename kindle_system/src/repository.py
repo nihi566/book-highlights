@@ -570,6 +570,24 @@ def get_price_history(paid_asin: str) -> list:
         return [dict(row) for row in result]
 
 
+def get_paid_price_points() -> list:
+    """全冊の有料価格の記録を、本ごと・timestamp 昇順で 1 回の問い合わせで取得する。
+
+    wishlist.json の値動き（前回価格・最安値。report.summarize_price_changes）用。
+    KU の行（価格が 0 で保存される）と価格取得に失敗した行（actual_price が None）は除く。
+    同じ timestamp の行は id 順にする（順序が揺れると前回価格が変わり、公開データに無駄な差分が出る）。
+    """
+    query = text("""
+        SELECT paid_asin, actual_price, timestamp
+        FROM price_history
+        WHERE is_unlimited = 0 AND actual_price IS NOT NULL
+        ORDER BY paid_asin ASC, timestamp ASC, id ASC
+    """)
+    with get_session() as session:
+        result = session.exec(query).mappings().all()
+        return [dict(row) for row in result]
+
+
 _GET_BOOKS_WHERE_CLAUSES = {
     "wanted": "WHERE m.is_wanted = 1",
     "purchased": "WHERE m.is_purchased = 1",

@@ -1221,6 +1221,62 @@ class GetPriceHistoryTest(unittest.TestCase):
         self.assertIsNone(history[0]["actual_price"])
 
 
+class GetPaidPricePointsTest(unittest.TestCase):
+    """repository.get_paid_price_points()（wishlist.json の値動き用に、全冊の有料価格の記録を
+    1 回の問い合わせで取る）のテスト。KU・価格なしの行を除き、本ごと・時刻順に返すこと。
+    """
+
+    # 一時 DB と行の追加は GetPriceHistoryTest と同じ（継承するとそちらのテストまで二重に流れる）
+    setUp = GetPriceHistoryTest.setUp
+    tearDown = GetPriceHistoryTest.tearDown
+    _insert_price = GetPriceHistoryTest._insert_price
+
+    def test_returns_paid_prices_of_all_books_ordered_by_asin_and_time(self):
+        from sqlmodel import Session
+
+        with Session(self.engine) as session:
+            self._insert_price(session, "B0BBBBBBB2", sell_price=700, timestamp="2026-01-01T00:00:00")
+            self._insert_price(session, "B0AAAAAAA1", sell_price=900, timestamp="2026-02-01T00:00:00")
+            self._insert_price(session, "B0AAAAAAA1", sell_price=1000, timestamp="2026-01-01T00:00:00", point_value=100)
+            session.commit()
+
+        self.assertEqual(
+            repository.get_paid_price_points(),
+            [
+                {"paid_asin": "B0AAAAAAA1", "actual_price": 900, "timestamp": "2026-01-01T00:00:00"},
+                {"paid_asin": "B0AAAAAAA1", "actual_price": 900, "timestamp": "2026-02-01T00:00:00"},
+                {"paid_asin": "B0BBBBBBB2", "actual_price": 700, "timestamp": "2026-01-01T00:00:00"},
+            ],
+        )
+
+    def test_skips_unlimited_and_missing_prices(self):
+        """KU の期間は価格が 0 で保存され、取得失敗は None になる。どちらも値動きに数えない。"""
+        from sqlmodel import Session
+
+        with Session(self.engine) as session:
+            self._insert_price(session, "B0KUKUKUK1", sell_price=0, timestamp="2026-01-01T00:00:00", is_unlimited=1)
+            self._insert_price(session, "B0NULLNUL1", sell_price=None, timestamp="2026-01-01T00:00:00")
+            session.commit()
+
+        self.assertEqual(repository.get_paid_price_points(), [])
+
+    def test_unlimited_period_between_paid_prices_is_skipped(self):
+        """有料 1000 → KU → 有料 800 は、KU の行を飛ばして 1000 → 800 の値下がりになる。"""
+        from sqlmodel import Session
+        import report
+
+        with Session(self.engine) as session:
+            self._insert_price(session, "B0KUMIDDL1", sell_price=1000, timestamp="2026-01-01T00:00:00")
+            self._insert_price(session, "B0KUMIDDL1", sell_price=0, timestamp="2026-01-02T00:00:00", is_unlimited=1)
+            self._insert_price(session, "B0KUMIDDL1", sell_price=800, timestamp="2026-01-03T00:00:00")
+            session.commit()
+
+        self.assertEqual(
+            report.summarize_price_changes(repository.get_paid_price_points()),
+            {"B0KUMIDDL1": {"prev": 1000, "changed_at": "2026-01-03T00:00:00", "low": 800}},
+        )
+
+
 class GetBooksFilterTest(unittest.TestCase):
     """repository.get_books(filter="all")（静的レポート用の全件取得関数）のテスト。
 

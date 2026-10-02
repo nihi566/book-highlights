@@ -69,8 +69,23 @@ class BuildWishlistTest(unittest.TestCase):
                 "tag": "",
                 "rating": None,
                 "scraped_at": "2026-01-02T03:04:05",
+                "price_prev": None,
+                "price_changed_at": None,
+                "price_low": None,
             },
         )
+
+    def test_price_trend_is_published_for_paid_book(self):
+        trend = {"prev": 1000, "changed_at": "2026-01-02T03:04:05", "low": 800}
+        book = report.build_wishlist([self._book(price_trend=trend)])["books"][0]
+        self.assertEqual((book["price_prev"], book["price_changed_at"], book["price_low"]), (1000, "2026-01-02T03:04:05", 800))
+
+    def test_price_trend_is_dropped_when_book_has_no_price(self):
+        """KU・価格未取得の本は今の価格が無いので、前回価格・最安値と比べられない。"""
+        trend = {"prev": 1000, "changed_at": "2026-01-02T03:04:05", "low": 800}
+        for book in (self._book(is_unlimited=1, actual_price=0, price_trend=trend), self._book(actual_price=None, price_trend=trend)):
+            data = report.build_wishlist([book])["books"][0]
+            self.assertEqual((data["price_prev"], data["price_changed_at"], data["price_low"]), (None, None, None))
 
     def test_unlimited_book_has_no_price(self):
         """KU の本は価格が 0 で保存されるため、0 円と誤表示しないよう price を null にする。"""
@@ -103,6 +118,40 @@ class BuildWishlistTest(unittest.TestCase):
         self.assertEqual(book["kind"], report.classify_kind("普通の本"))
 
 
+class SummarizePriceChangesTest(unittest.TestCase):
+    """summarize_price_changes() が有料価格の記録（本ごと・時刻順）から、前回価格・変わった日時・最安値を出すこと。"""
+
+    def _points(self, asin, prices):
+        return [
+            {"paid_asin": asin, "actual_price": price, "timestamp": f"2026-01-0{i + 1}T00:00:00"}
+            for i, price in enumerate(prices)
+        ]
+
+    def test_unchanged_price_has_no_previous_price(self):
+        self.assertEqual(
+            report.summarize_price_changes(self._points("B0AAAAAAA1", [1000, 1000])),
+            {"B0AAAAAAA1": {"prev": None, "changed_at": None, "low": 1000}},
+        )
+
+    def test_drop_records_previous_price_and_when_it_changed(self):
+        self.assertEqual(
+            report.summarize_price_changes(self._points("B0AAAAAAA1", [1000, 1000, 800])),
+            {"B0AAAAAAA1": {"prev": 1000, "changed_at": "2026-01-03T00:00:00", "low": 800}},
+        )
+
+    def test_latest_change_wins_and_lowest_is_kept(self):
+        self.assertEqual(
+            report.summarize_price_changes(self._points("B0AAAAAAA1", [1000, 800, 1200])),
+            {"B0AAAAAAA1": {"prev": 800, "changed_at": "2026-01-03T00:00:00", "low": 800}},
+        )
+
+    def test_books_are_summarized_separately(self):
+        points = self._points("B0AAAAAAA1", [1000, 900]) + self._points("B0BBBBBBB2", [500])
+        result = report.summarize_price_changes(points)
+        self.assertEqual(result["B0AAAAAAA1"]["prev"], 1000)
+        self.assertEqual(result["B0BBBBBBB2"], {"prev": None, "changed_at": None, "low": 500})
+
+
 class MainIntegrationTest(unittest.TestCase):
     """main() が get_books / get_book_marks の結果を wishlist.json へ正しく書き出すことのテスト。
 
@@ -117,8 +166,11 @@ class MainIntegrationTest(unittest.TestCase):
             self._saved_env[key] = os.environ.get(key)
         os.environ["PUBLIC_SITE_DIR"] = self.tmpdir
         os.environ["PUBLIC_SITE_URL"] = "https://example.invalid/"
+        self._points = unittest.mock.patch.object(report, "get_paid_price_points", return_value=[])
+        self.mock_points = self._points.start()
 
     def tearDown(self):
+        self._points.stop()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
         for key, value in self._saved_env.items():
             if value is None:
@@ -168,8 +220,17 @@ class MainIntegrationTest(unittest.TestCase):
         self._run_main_with_marks({})
         self.assertFalse(os.path.exists(os.path.join(self.tmpdir, "index.html")))
 
-    def test_main_reads_books_and_marks_but_not_price_history(self):
-        """価格履歴は画面が無くなって使わないので、1 冊ごとの問い合わせもしない。"""
+    def test_main_publishes_price_trend_from_paid_price_points(self):
+        self.mock_points.return_value = [
+            {"paid_asin": "B0INTEG1", "actual_price": 1200, "timestamp": "2026-01-01T00:00:00"},
+            {"paid_asin": "B0INTEG1", "actual_price": 1000, "timestamp": "2026-01-05T00:00:00"},
+        ]
+        self._run_main_with_marks({})
+        book = json.loads(self._read_wishlist_text())["books"][0]
+        self.assertEqual((book["price_prev"], book["price_changed_at"], book["price_low"]), (1200, "2026-01-05T00:00:00", 1000))
+
+    def test_main_reads_books_marks_and_price_points_once_not_per_book(self):
+        """価格の記録は全冊分を 1 回で取る（1 冊ごとに履歴を問い合わせない）。"""
         fake_book = {"title": "結合テスト本", "asin": "B0INTEG1", "actual_price": 1000, "is_unlimited": 0, "is_wanted": 1}
         with unittest.mock.patch.object(report, "get_books", return_value=[fake_book]) as mock_get_books, unittest.mock.patch.object(
             report, "get_book_marks", return_value={}
@@ -177,6 +238,7 @@ class MainIntegrationTest(unittest.TestCase):
             report.main()
         mock_get_books.assert_called_once_with(filter="all")
         mock_get_marks.assert_called_once_with()
+        self.mock_points.assert_called_once_with()
         self.assertFalse(hasattr(report, "get_price_history"))
         book = json.loads(self._read_wishlist_text())["books"][0]
         self.assertEqual((book["title"], book["wanted"], book["price"]), ("結合テスト本", True, 1000))
@@ -195,9 +257,12 @@ class ShrinkGuardTest(unittest.TestCase):
             os.environ, {"PUBLIC_SITE_DIR": self.tmpdir, "PUBLIC_SITE_URL": "https://example.invalid/"}
         )
         self._env.start()
+        self._points = unittest.mock.patch.object(report, "get_paid_price_points", return_value=[])
+        self._points.start()
         self.path = os.path.join(self.tmpdir, "wishlist.json")
 
     def tearDown(self):
+        self._points.stop()
         self._env.stop()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 

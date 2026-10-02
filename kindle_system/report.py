@@ -39,7 +39,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
 from src.book_kind import KINDS, classify_kind
-from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_book_marks, get_books
+from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_book_marks, get_books, get_paid_price_points
 
 # book-highlights アプリが読む欲しい本のデータ（wishlist.json）の形式名と版
 WISHLIST_FILE_FORMAT = "kindle-wishlist"
@@ -62,6 +62,25 @@ def _resolve_mark(book: dict) -> tuple:
     return kind, tag, rating if tag == "seen" and is_valid_rating else None
 
 
+def summarize_price_changes(points: list) -> dict:
+    """
+    有料価格の記録（repository.get_paid_price_points() の戻り値。本ごと・時刻順）から、本ごとに
+    {"prev": 直前の価格, "changed_at": 今の価格に変わった日時, "low": 記録上の最安値} を返す。
+    一度も変わっていなければ prev / changed_at は None。
+    """
+    result = {}
+    for point in points:
+        asin, price = point["paid_asin"], point["actual_price"]
+        summary = result.get(asin)
+        if summary is None:
+            result[asin] = {"prev": None, "changed_at": None, "low": price, "current": price}
+            continue
+        if price != summary["current"]:
+            summary.update(prev=summary["current"], changed_at=str(point["timestamp"]), current=price)
+        summary["low"] = min(summary["low"], price)
+    return {asin: {k: v for k, v in s.items() if k != "current"} for asin, s in result.items()}
+
+
 def build_wishlist(books: list) -> dict:
     """
     欲しい本のデータ（book-highlights アプリが同じオリジンから fetch する wishlist.json）を組み立てる。
@@ -69,6 +88,7 @@ def build_wishlist(books: list) -> dict:
     画面は持たずデータだけを渡す。価格は index.html と同じく KU の本（価格が 0 で保存される）と
     未取得の本を null にする。生成時刻は載せない（自動公開のたびに差分が出て、データが同じでも
     コミットが増えるため）。最終取得日時は index.html と同じく各本の最新価格の timestamp の最大値。
+    値動き（book["price_trend"] = summarize_price_changes の 1 件）は、今の価格がある本にだけ載せる。
     """
     timestamps = [str(book["timestamp"]) for book in books if book.get("timestamp")]
     items = []
@@ -76,11 +96,13 @@ def build_wishlist(books: list) -> dict:
         is_ku = bool(book.get("is_unlimited"))
         actual_price = book.get("actual_price")
         kind, tag, rating = _resolve_mark(book)
+        price = None if is_ku or actual_price is None else actual_price
+        trend = (book.get("price_trend") or {}) if price is not None else {}
         items.append(
             {
                 "asin": book.get("asin") or "",
                 "title": book.get("title") or UNKNOWN_TITLE,
-                "price": None if is_ku or actual_price is None else actual_price,
+                "price": price,
                 "ku": is_ku,
                 "wanted": bool(book.get("is_wanted")),
                 "purchased": bool(book.get("is_purchased")),
@@ -88,6 +110,9 @@ def build_wishlist(books: list) -> dict:
                 "tag": tag,
                 "rating": rating,
                 "scraped_at": str(book["timestamp"]) if book.get("timestamp") else None,
+                "price_prev": trend.get("prev"),
+                "price_changed_at": trend.get("changed_at"),
+                "price_low": trend.get("low"),
             }
         )
     return {
@@ -177,7 +202,7 @@ def main(allow_shrink: bool = False) -> None:
     git リポジトリの作業ツリーであることの確認を行ってから書き出す。
 
     repository.get_books(filter="all") で全件を1回取得し、取り込み済みのタグ・★・種別を付けて
-    wishlist.json にする（価格履歴は画面が無くなったので問い合わせない）。
+    wishlist.json にする。値動き（前回価格・最安値）用の価格の記録も全冊分を 1 回で取る（1 冊ごとに問い合わせない）。
     0 冊・急減のときは書き出さずに SystemExit(1) する（allow_shrink=True なら書き出す）。
     """
     _load_env_file(os.path.join(BASE_DIR, ".env"))
@@ -192,12 +217,14 @@ def main(allow_shrink: bool = False) -> None:
     # 種別（マンガ/本）の上書きは常に載せるが、「見た」・★評価・読みたくない等のタグは読書記録
     # なので、PUBLISH_MARKS=1 のときだけ公開する（既定では DB とローカル LLM だけで使う）。
     marks = get_book_marks()
+    trends = summarize_price_changes(get_paid_price_points())
     publish_marks = os.environ.get("PUBLISH_MARKS", "").strip().lower() in ("1", "true", "yes")
     for book in books:
         mark = marks.get(book["asin"])
         if mark and not publish_marks:
             mark = {"kind": mark.get("kind")}
         book["mark"] = mark
+        book["price_trend"] = trends.get(book["asin"])
     wishlist_path = os.path.join(public_site_dir, "wishlist.json")
     reason = _shrink_error(len(books), _published_book_count(wishlist_path))
     if reason and not allow_shrink:
