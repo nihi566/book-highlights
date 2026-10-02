@@ -5,7 +5,7 @@ import { vaultPaths } from '../../core/obsidian.js';
 import { normalizeText } from '../../core/text.js';
 import { browserStore, formatPrice, loadMarks, searchWishlist, wishlistSummary } from '../../core/wishlist.js';
 import { loadWishlist } from '../wishlist-data.js';
-import { bookRow, highlightCard, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
+import { bookRow, highlightCard, kindleAlertBlock, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
 
 const flow = html`<div class="flow" aria-label="点から立体へ">
   <div class="f-point"><b>点</b>線を引いた一文</div>
@@ -19,8 +19,10 @@ export const home = {
     const lib = state.library;
     const s = libraryStats(lib);
     const a = state.analysis;
+    // 自動取り込みの異常はスマホで最初に開くホームで気づけるようにする（中身は PC の情報を取り直したときに差し替える）
+    const alert = html`<div id="kindle-alert">${kindleAlertBlock(state)}</div>`;
     if (!s.highlights) {
-      return html`<section class="card hero">
+      return html`${alert}<section class="card hero">
           <h1>本に引いた線を、<br>知識の立体へ。</h1>
           <p class="help">Kindle と Play ブックスのハイライトを 1 か所に集め、Obsidian に写します。PC のローカル LLM が「点」をつないで「線」「面」「立体」に組み立て、次に読む本も提案します。</p>
           ${flow}
@@ -40,7 +42,7 @@ export const home = {
     const picks = dailyPicks(lib, 3, today);
     const idx = lineIndex(a);
     const recent = searchHighlights(lib, '').slice(0, 5);
-    return html`
+    return html`${alert}
       <div class="stats">
         <a class="stat point" href="#/search"><b>${s.highlights}</b><span>点</span></a>
         <a class="stat line" href="#/knowledge"><b>${a ? a.lines.length : '–'}</b><span>線</span></a>
