@@ -44,15 +44,24 @@ test('searchWishlist: 空白で AND・書名と ASIN・#タグ語は無視', () 
   assert.deepEqual(searchWishlist(books, '  '), []);
 });
 
-const book = (over = {}) => ({ asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, kind: 'book', tag: '', rating: null, scraped_at: '2026-01-01T00:00:00', ...over });
+const book = (over = {}) => ({ asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, sources: ['bookmeter'], kind: 'book', tag: '', rating: null, scraped_at: '2026-01-01T00:00:00', ...over });
 const data = (books, over = {}) => ({ format: 'kindle-wishlist', version: 1, last_scraped: '2026-01-02T03:04:05', books, ...over });
 
 test('parseWishlist: 形式を確かめて正規化する', () => {
   const w = parseWishlist(data([book(), book({ asin: 'B0AAAAAAA2', ku: true, price: null, tag: 'seen', rating: 4, kind: 'manga' })]));
   assert.equal(w.lastScraped, '2026-01-02T03:04:05');
   assert.equal(w.books.length, 2);
-  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, scrapedAt: '2026-01-01T00:00:00', history: [], priceReason: '', index: 0 });
+  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, sources: ['bookmeter'], saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, scrapedAt: '2026-01-01T00:00:00', history: [], priceReason: '', index: 0 });
   assert.deepEqual(w.books[1].saved, { tag: 'seen', rating: '4', kind: 'manga' });
+});
+
+test('parseWishlist: どこから来た本か（sources）。知らない値は捨て、項目が無い古いデータは読みたいフラグから推し量る', () => {
+  const sources = (over) => parseWishlist(data([book(over)])).books[0].sources;
+  assert.deepEqual(sources({ sources: ['kindle', 'bookmeter'] }), ['kindle', 'bookmeter']);
+  assert.deepEqual(sources({ sources: ['kindle', 'evil', 1] }), ['kindle']);
+  assert.deepEqual(sources({ sources: [] }), []);
+  assert.deepEqual(sources({ sources: undefined, wanted: true }), ['bookmeter']);
+  assert.deepEqual(sources({ sources: undefined, wanted: false }), ['kindle']);
 });
 
 test('parseWishlist: 形式違い・版違いは理由つきで失敗する', () => {
@@ -136,10 +145,10 @@ test('cleanupSyncedMarks: 書き出し済みで公開データに追いついた
 
 function items(store = memoryStore()) {
   const w = parseWishlist(data([
-    book({ asin: 'B0AAAAAAA1', title: 'すごい本 上', price: 1200, wanted: true }),
-    book({ asin: 'B0AAAAAAA2', title: 'まんが 1巻', price: null, ku: true, wanted: false, kind: 'manga' }),
-    book({ asin: 'B0AAAAAAA3', title: 'あの本', price: 500, wanted: false, purchased: true }),
-    book({ asin: 'B0AAAAAAA4', title: '価格なし', price: null, wanted: true }),
+    book({ asin: 'B0AAAAAAA1', title: 'すごい本 上', price: 1200, wanted: true, sources: ['kindle', 'bookmeter'] }),
+    book({ asin: 'B0AAAAAAA2', title: 'まんが 1巻', price: null, ku: true, wanted: false, sources: ['kindle'], kind: 'manga' }),
+    book({ asin: 'B0AAAAAAA3', title: 'あの本', price: 500, wanted: false, sources: ['kindle'], purchased: true }),
+    book({ asin: 'B0AAAAAAA4', title: '価格なし', price: null, wanted: true, sources: ['bookmeter'] }),
   ]));
   return w.books.map((b) => ({ book: b, marks: loadMarks(b, store) }));
 }
@@ -147,8 +156,10 @@ const asins = (r) => r.items.map((i) => i.book.asin.slice(-1)).join('');
 
 test('filterWishlist: 分類・検索（空白で AND・ASIN も対象）', () => {
   assert.equal(asins(filterWishlist(items(), {})), '1234');
-  assert.equal(asins(filterWishlist(items(), { shelf: 'wanted' })), '14');
+  assert.equal(asins(filterWishlist(items(), { shelf: 'kindle' })), '12', '購入済みは Kindle に入れない');
+  assert.equal(asins(filterWishlist(items(), { shelf: 'bookmeter' })), '14', '両方から来た本は両方に入る');
   assert.equal(asins(filterWishlist(items(), { shelf: 'purchased' })), '3');
+  assert.equal(asins(filterWishlist(items(), { shelf: 'wanted' })), '1234', '廃止した「読みたい」の分類は「すべて」と同じ');
   assert.equal(asins(filterWishlist(items(), { q: 'すごい 上' })), '1');
   assert.equal(asins(filterWishlist(items(), { q: 'すごい 下' })), '');
   assert.equal(asins(filterWishlist(items(), { q: 'b0aaaaaaa3' })), '3');
@@ -221,13 +232,14 @@ test('parseMarksFile: 廃止した「読みたくない」はタグなしとし�
   assert.deepEqual(entries, [{ asin: 'B0CNT00001', tag: '', rating: '' }]);
 });
 
-test('inShelf / shelfCounts: 「購入済み」タグを付けた本は購入済みに移り、読みたいから外れる', () => {
+test('inShelf / shelfCounts: 「購入済み」タグを付けた本は購入済みに移り、Kindle・読書メーターから外れる', () => {
   const store = memoryStore({ 'book-tag:B0AAAAAAA1': 'purchased' });
   const list = items(store);
   assert.equal(asins(filterWishlist(list, { shelf: 'purchased' })), '13');
-  assert.equal(asins(filterWishlist(list, { shelf: 'wanted' })), '4');
-  assert.deepEqual(shelfCounts(list), { all: 4, wanted: 1, purchased: 2 });
-  assert.deepEqual(shelfCounts(items()), { all: 4, wanted: 2, purchased: 1 }, 'タグが無ければ公開データどおり');
+  assert.equal(asins(filterWishlist(list, { shelf: 'kindle' })), '2');
+  assert.equal(asins(filterWishlist(list, { shelf: 'bookmeter' })), '4');
+  assert.deepEqual(shelfCounts(list), { all: 4, kindle: 1, bookmeter: 1, purchased: 2 });
+  assert.deepEqual(shelfCounts(items()), { all: 4, kindle: 2, bookmeter: 2, purchased: 1 }, 'タグが無ければ公開データどおり');
   assert.equal(inShelf(list[0], 'all'), true);
 });
 
@@ -373,13 +385,13 @@ test('applyImportedMarks: ファイルを書き出した後にこの端末で変
 });
 
 test('openWishlistFilters: リンクから開いた条件は描き直しで戻さず、普通に開き直したらリンク前の条件に戻す', () => {
-  const normal = { shelf: 'wanted', q: '自分の語', sort: 'price-asc', ku: false, min: '100', max: '900', tag: 'seen', kind: 'manga' };
+  const normal = { shelf: 'kindle', q: '自分の語', sort: 'price-asc', ku: false, min: '100', max: '900', tag: 'seen', kind: 'manga' };
   // ホームの「Kindle Unlimited 対象をすべて見る」から開く: KU だけで絞り込み、それまでの条件は取っておく
   let s = openWishlistFilters(normal, null, { ku: true });
   assert.deepEqual(s.filters, { shelf: 'all', reading: 'all', q: '', sort: 'default', ku: true, min: '', max: '', tag: 'all', kind: 'all' });
   assert.equal(s.normal, normal);
   // リンク先で利用者が条件を変えた後、同期などで同じ画面を描き直しても変えた条件のまま
-  const changed = { ...s.filters, shelf: 'wanted', q: '猫' };
+  const changed = { ...s.filters, shelf: 'kindle', q: '猫' };
   s = openWishlistFilters(changed, s.normal, { ku: true, refresh: true });
   assert.equal(s.filters, changed);
   assert.equal(s.normal, normal);

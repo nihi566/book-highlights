@@ -37,6 +37,10 @@ const PRICE_REASON_LABELS = {
   not_scraped: 'まだ取得していません',
 };
 const yen = (v) => (Number.isFinite(v) && v >= 0 ? v : null);
+// どこから来た本か（kindle_system の report.py が付ける sources）。kindle は Kindle のサンプル、bookmeter は読書メーターの読みたい本
+const SOURCES = ['kindle', 'bookmeter'];
+// sources が無い古いデータは、読書メーターから来た本にだけ立つ wanted から推し量る
+const parseSources = (b) => (Array.isArray(b?.sources) ? SOURCES.filter((s) => b.sources.includes(s)) : [b?.wanted === true ? 'bookmeter' : 'kindle']);
 
 /** wishlist.json を確かめて、画面で使う形にする。形式が違えば理由つきで失敗する */
 export function parseWishlist(data) {
@@ -56,6 +60,7 @@ export function parseWishlist(data) {
       ku: b?.ku === true,
       wanted: b?.wanted === true,
       purchased: b?.purchased === true,
+      sources: parseSources(b),
       saved: { tag, rating, kind: isKind(b?.kind) ? b.kind : 'book' },
       // 値動き（kindle_system が付ける前回価格・変わった日時・最安値）。今の価格が無い本は比べられないので持たない
       trend: price === null ? null : { prev: yen(b?.price_prev), changedAt: typeof b?.price_changed_at === 'string' ? b.price_changed_at : null, low: yen(b?.price_low) },
@@ -205,18 +210,18 @@ export function tagCounts(items) {
 }
 
 /**
- * 分類（すべて/読みたい/購入済み）に入るか。「購入済み」タグを付けた本は、公開データの更新を待たずに
- * 購入済みへ移し、読みたいから外す（買った本を読みたいに残さない）
+ * 分類（すべて/Kindle/読書メーター/購入済み）に入るか。Kindle・読書メーターは来た先で分け、両方から来た本は両方に入る。
+ * 「購入済み」タグを付けた本は、公開データの更新を待たずに購入済みへ移し、Kindle・読書メーターから外す（買った本を残さない）
  */
 export function inShelf({ book, marks }, shelf = 'all') {
   const purchased = book.purchased || marks.tag === 'purchased';
   if (shelf === 'purchased') return purchased;
-  if (shelf === 'wanted') return book.wanted && !purchased;
+  if (SOURCES.includes(shelf)) return book.sources.includes(shelf) && !purchased;
   return true;
 }
 
 export function shelfCounts(items) {
-  return Object.fromEntries(['all', 'wanted', 'purchased'].map((shelf) => [shelf, items.filter((item) => inShelf(item, shelf)).length]));
+  return Object.fromEntries(['all', ...SOURCES, 'purchased'].map((shelf) => [shelf, items.filter((item) => inShelf(item, shelf)).length]));
 }
 
 /**
@@ -281,7 +286,7 @@ export function priceSparkline(history, { width = 120, height = 28, pad = 3 } = 
 }
 
 /**
- * items: [{ book, marks, reading? }]。f: { shelf: all|wanted|purchased, reading: all|unread|reading（購入済みのときだけ使う）, q, ku, min, max, tag, kind, sort }
+ * items: [{ book, marks, reading? }]。f: { shelf: all|kindle|bookmeter|purchased, reading: all|unread|reading（購入済みのときだけ使う）, q, ku, min, max, tag, kind, sort }
  * 戻り値の priceRangeInvalid は下限 > 上限（そのときは価格帯を無視する）
  */
 export function filterWishlist(items, f = {}) {
