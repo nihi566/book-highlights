@@ -6,7 +6,7 @@ import { shelfSwitch, spineColor, toast } from '../ui.js';
 import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceTotal, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
 import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
 
-const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', rating: '評価が高い順' };
+const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', 'price-drop': '値下がり額が大きい順', rating: '評価が高い順' };
 const SHELVES = { all: 'すべて', wanted: '読みたい', purchased: '購入済み' };
 const shelfLabel = (shelf, n) => `${SHELVES[shelf]} ${n}`;
 const COVER = (asin) => `https://images-na.ssl-images-amazon.com/images/P/${asin}.09.MZZZZZZZ.jpg`;

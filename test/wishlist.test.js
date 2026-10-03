@@ -357,3 +357,16 @@ test('openWishlistFilters: リンクから開いた条件は描き直しで戻�
   assert.deepEqual(openWishlistFilters(normal, null, {}), { filters: normal, normal: null });
   assert.deepEqual(openWishlistFilters(normal, null, { refresh: true }), { filters: normal, normal: null });
 });
+
+test('filterWishlist: 値下がり額が大きい順（値下がりした本が先・値上がり / 変化なし / 価格なしは元の順で後ろ）', () => {
+  const w = parseWishlist(data([
+    book({ asin: 'B0AAAAAAA1', title: '値上がり', price: 1500, price_prev: 1200 }),
+    book({ asin: 'B0AAAAAAA2', title: '少し値下がり', price: 900, price_prev: 1000 }),
+    book({ asin: 'B0AAAAAAA3', title: '変化なし', price: 800 }),
+    book({ asin: 'B0AAAAAAA4', title: '大きく値下がり', price: 500, price_prev: 1500 }),
+    book({ asin: 'B0AAAAAAA5', title: 'KU', price: null, ku: true }),
+    book({ asin: 'B0AAAAAAA6', title: '同じ額の値下がり', price: 400, price_prev: 500 }),
+  ]));
+  const list = w.books.map((b) => ({ book: b, marks: loadMarks(b, memoryStore()) }));
+  assert.equal(asins(filterWishlist(list, { sort: 'price-drop' })), '426135', '同じ下げ幅は元の順');
+});
