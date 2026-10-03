@@ -169,7 +169,7 @@ export function cleanupSyncedMarks(store, book) {
 export function openWishlistFilters(filters, normal, { q = '', ku = false, refresh = false } = {}) {
   if (q || ku) {
     if (refresh && normal) return { filters, normal };
-    return { filters: { ...filters, q, ku, shelf: 'all', sort: 'default', min: '', max: '', tag: 'all', kind: 'all' }, normal: normal ?? filters };
+    return { filters: { ...filters, q, ku, shelf: 'all', reading: 'all', sort: 'default', min: '', max: '', tag: 'all', kind: 'all' }, normal: normal ?? filters };
   }
   return { filters: normal ?? filters, normal: null };
 }
@@ -209,6 +209,34 @@ export function shelfCounts(items) {
   return Object.fromEntries(['all', 'wanted', 'purchased'].map((shelf) => [shelf, items.filter((item) => inShelf(item, shelf)).length]));
 }
 
+/**
+ * 本棚（model.js の listBooks の結果。線のある本だけ）から、欲しい本の読書の状況
+ * { count, lastHighlightedAt } を引く関数を作る。ASIN で照合し、無ければ書名（titleKey）で照合する。線が無ければ null
+ */
+export function readingLookup(shelfBooks) {
+  const byAsin = new Map();
+  const byTitle = new Map();
+  for (const b of shelfBooks) {
+    const r = { count: b.count, lastHighlightedAt: b.lastHighlightedAt };
+    if (ASIN.test(b.asin)) byAsin.set(b.asin, r);
+    const key = titleKey(b.title);
+    if (key && !byTitle.has(key)) byTitle.set(key, r);
+  }
+  return (book) => byAsin.get(book.asin) || byTitle.get(titleKey(book.title)) || null;
+}
+
+/** 購入済みの本を「まだ線が無い」（unread）と「読書中」（reading）に分けたか。items: [{ book, marks, reading }] */
+export function matchesReading(item, reading = 'all') {
+  if (reading === 'unread') return !item.reading;
+  if (reading === 'reading') return Boolean(item.reading);
+  return true;
+}
+
+export function readingCounts(items) {
+  const purchased = items.filter((item) => inShelf(item, 'purchased'));
+  return Object.fromEntries(['all', 'unread', 'reading'].map((r) => [r, purchased.filter((item) => matchesReading(item, r)).length]));
+}
+
 /** 本の合計金額。KU・価格なしの本は数えず、その冊数を unpriced で返す */
 export function priceTotal(items) {
   const priced = items.filter(({ book }) => book.price !== null);
@@ -223,7 +251,7 @@ export function priceChange(book) {
 }
 
 /**
- * items: [{ book, marks }]。f: { shelf: all|wanted|purchased, q, ku, min, max, tag, kind, sort }
+ * items: [{ book, marks, reading? }]。f: { shelf: all|wanted|purchased, reading: all|unread|reading（購入済みのときだけ使う）, q, ku, min, max, tag, kind, sort }
  * 戻り値の priceRangeInvalid は下限 > 上限（そのときは価格帯を無視する）
  */
 export function filterWishlist(items, f = {}) {
@@ -237,6 +265,7 @@ export function filterWishlist(items, f = {}) {
   const visible = items.filter((item) => {
     const { book, marks } = item;
     if (!inShelf(item, f.shelf)) return false;
+    if (f.shelf === 'purchased' && !matchesReading(item, f.reading)) return false;
     const hay = normalizeText(`${book.title} ${book.asin}`);
     if (!words.every((w) => hay.includes(w))) return false;
     if (f.ku && !book.ku) return false;

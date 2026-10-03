@@ -376,7 +376,7 @@ test('openWishlistFilters: リンクから開いた条件は描き直しで戻�
   const normal = { shelf: 'wanted', q: '自分の語', sort: 'price-asc', ku: false, min: '100', max: '900', tag: 'seen', kind: 'manga' };
   // ホームの「Kindle Unlimited 対象をすべて見る」から開く: KU だけで絞り込み、それまでの条件は取っておく
   let s = openWishlistFilters(normal, null, { ku: true });
-  assert.deepEqual(s.filters, { shelf: 'all', q: '', sort: 'default', ku: true, min: '', max: '', tag: 'all', kind: 'all' });
+  assert.deepEqual(s.filters, { shelf: 'all', reading: 'all', q: '', sort: 'default', ku: true, min: '', max: '', tag: 'all', kind: 'all' });
   assert.equal(s.normal, normal);
   // リンク先で利用者が条件を変えた後、同期などで同じ画面を描き直しても変えた条件のまま
   const changed = { ...s.filters, shelf: 'wanted', q: '猫' };
@@ -410,4 +410,34 @@ test('filterWishlist: 値下がり額が大きい順（値下がりした本が�
   ]));
   const list = w.books.map((b) => ({ book: b, marks: loadMarks(b, memoryStore()) }));
   assert.equal(asins(filterWishlist(list, { sort: 'price-drop' })), '426135', '同じ下げ幅は元の順');
+});
+
+test('積読: 購入済みの本を本棚と ASIN（無ければ書名）で照合し、「まだ線が無い」「読書中」に分けて絞り込む', async () => {
+  const { readingLookup, readingCounts } = await import('../web/core/wishlist.js');
+  const wl = parseWishlist({
+    format: 'kindle-wishlist',
+    version: 1,
+    books: [
+      { asin: 'B0RD000001', title: '線を引いた本', purchased: true },
+      { asin: 'B0RD000002', title: '積んだ本', purchased: true },
+      { asin: 'B0RD000003', title: '書名で一致する本（新潮文庫）', purchased: true },
+      { asin: 'B0RD000004', title: '欲しいだけの本', wanted: true },
+    ],
+  });
+  // listBooks の結果（線のある本だけ）
+  const shelf = [
+    { asin: 'B0RD000001', title: '別の書名', count: 12, lastHighlightedAt: '2026-09-30T10:00:00.000Z' },
+    { asin: '', title: '書名で一致する本', count: 1, lastHighlightedAt: '2026-08-01T00:00:00.000Z' },
+    { asin: 'B0RD000004', title: '欲しいだけの本', count: 3, lastHighlightedAt: '2026-07-01T00:00:00.000Z' },
+  ];
+  const lookup = readingLookup(shelf);
+  const its = wl.books.map((book) => ({ book, marks: loadMarks(book, memoryStore()), reading: lookup(book) }));
+  assert.deepEqual(its[0].reading, { count: 12, lastHighlightedAt: '2026-09-30T10:00:00.000Z' });
+  assert.equal(its[1].reading, null);
+  assert.equal(its[2].reading.count, 1, '本棚側に ASIN が無くても書名で照合する');
+  assert.deepEqual(readingCounts(its), { all: 3, unread: 1, reading: 2 }, '数えるのは購入済みだけ');
+  const titles = (f) => filterWishlist(its, f).items.map((i) => i.book.title);
+  assert.deepEqual(titles({ shelf: 'purchased', reading: 'unread' }), ['積んだ本']);
+  assert.deepEqual(titles({ shelf: 'purchased', reading: 'reading' }), ['線を引いた本', '書名で一致する本（新潮文庫）']);
+  assert.equal(titles({ shelf: 'all', reading: 'unread' }).length, 4, '購入済み以外の分類では使わない');
 });

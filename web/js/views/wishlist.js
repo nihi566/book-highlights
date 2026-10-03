@@ -3,18 +3,23 @@
 import { html } from '../html.js';
 import { download } from '../services.js';
 import { spineColor, toast } from '../ui.js';
-import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceTotal, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
+import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceTotal, readingCounts, readingLookup, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
+import { listBooks } from '../../core/model.js';
+import { isoDate } from '../../core/text.js';
 import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
 
 const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', 'price-drop': '値下がり額が大きい順', 'scraped-desc': 'スクレイピングの最新順', rating: '評価が高い順' };
 const SHELVES = { all: 'すべて', wanted: '読みたい', purchased: '購入済み' };
 const shelfLabel = (shelf, n) => `${SHELVES[shelf]} ${n}`;
+// 購入済みの内訳（本棚の線の有無で分ける）
+const READINGS = { all: 'すべて', unread: 'まだ線が無い', reading: '読書中' };
+const readingLabel = (reading, n) => `${READINGS[reading]} ${n}`;
 const COVER = (asin) => `https://images-na.ssl-images-amazon.com/images/P/${asin}.09.MZZZZZZZ.jpg`;
 
 // localStorage に保存できないブラウザ用。画面を移っても付けたタグが残るよう 1 つだけ持ち、
 // canStore: false のままにして「閉じる前に書き出して」の案内と公開データとの差の書き出しを使う（旧画面と同じ）
 const fallbackStore = { ...memoryStore(), canStore: false };
-let filters = { shelf: 'all', q: '', sort: 'default', ku: false, min: '', max: '', tag: 'all', kind: 'all' };
+let filters = { shelf: 'all', reading: 'all', q: '', sort: 'default', ku: false, min: '', max: '', tag: 'all', kind: 'all' };
 let normalFilters = null; // 検索・おすすめ・ホームのリンクから開いている間だけ、開く前の条件（openWishlistFilters）
 
 function lastScrapedText(iso) {
@@ -44,9 +49,11 @@ export const wishlist = {
     const ku = ctx?.query?.get('ku') === '1';
     ({ filters, normal: normalFilters } = openWishlistFilters(filters, normalFilters, { q, ku, refresh: Boolean(ctx?.refresh) }));
     const show = (w) => {
+      // 購入済みの本を読み始めたか（本棚に線があるか）を引く
+      const reading = readingLookup(ctx?.state?.library ? listBooks(ctx.state.library) : []);
       const items = w.books.map((book) => {
         cleanupSyncedMarks(marksStore, book);
-        return { book, marks: loadMarks(book, marksStore) };
+        return { book, marks: loadMarks(book, marksStore), reading: reading(book) };
       });
       mountList(root, body, items, marksStore, w.lastScraped);
     };
@@ -90,6 +97,7 @@ function mountList(root, body, items, store, lastScraped) {
   body.innerHTML = String(html`
     <p class="small muted">価格の最終取得: ${lastScrapedText(lastScraped)}</p>
     <div class="chips" role="group" aria-label="表示する分類">${Object.entries(SHELVES).map(([k, label]) => html`<button type="button" class="chip" data-wl-shelf="${k}" aria-pressed="${String(filters.shelf === k)}">${shelfLabel(k, shelfCount[k])}</button>`)}</div>
+    <div class="chips" role="group" aria-label="購入済みの内訳" id="wl-reading" ${filters.shelf === 'purchased' ? '' : 'hidden'}>${Object.keys(READINGS).map((k) => html`<button type="button" class="chip" data-wl-reading="${k}" aria-pressed="${String(filters.reading === k)}"></button>`)}</div>
     <div class="search-box wl-search" role="search"><input type="search" id="wl-q" value="${filters.q}" placeholder="書名・ASIN で絞り込む（空白で AND）" aria-label="書名・ASIN で絞り込む" autocomplete="off"></div>
     <div class="wl-controls">
       <label class="wl-field"><span>並べ替え</span><select id="wl-sort">${Object.entries(SORTS).map(([k, label]) => html`<option value="${k}" ${filters.sort === k ? 'selected' : ''}>${label}</option>`)}</select></label>
@@ -122,9 +130,12 @@ function mountList(root, body, items, store, lastScraped) {
     // 「購入済み」タグの付け外しで分類の件数が変わる
     const shelves = shelfCounts(items);
     for (const b of body.querySelectorAll('[data-wl-shelf]')) b.textContent = shelfLabel(b.dataset.wlShelf, shelves[b.dataset.wlShelf]);
+    const readings = readingCounts(items);
+    for (const b of body.querySelectorAll('[data-wl-reading]')) b.textContent = readingLabel(b.dataset.wlReading, readings[b.dataset.wlReading]);
+    $('wl-reading').hidden = filters.shelf !== 'purchased';
     $('wl-price-error').hidden = !r.priceRangeInvalid;
     $('wl-count').textContent = `${r.items.length}件 / 全${inCurrentShelf.length}件を表示${totalText(r.items)}`;
-    $('wl-reset').hidden = !(filters.q.trim() || filters.ku || filters.min !== '' || filters.max !== '' || filters.tag !== 'all' || filters.kind !== 'all' || filters.sort !== 'default');
+    $('wl-reset').hidden = !((filters.shelf === 'purchased' && filters.reading !== 'all') || filters.q.trim() || filters.ku || filters.min !== '' || filters.max !== '' || filters.tag !== 'all' || filters.kind !== 'all' || filters.sort !== 'default');
     $('wl-empty').hidden = r.items.length !== 0;
     list.innerHTML = String(html`${r.items.map(itemRow)}`);
     const s = collectMarks(items, store);
@@ -143,6 +154,11 @@ function mountList(root, body, items, store, lastScraped) {
       setPressed('data-wl-shelf', filters.shelf);
       return renderItems();
     }
+    if (btn.dataset.wlReading) {
+      filters.reading = btn.dataset.wlReading;
+      setPressed('data-wl-reading', filters.reading);
+      return renderItems();
+    }
     if (btn.dataset.wlKindFilter) {
       filters.kind = btn.dataset.wlKindFilter;
       saveFilter(KEYS.kindFilter, filters.kind === 'all' ? null : filters.kind);
@@ -150,7 +166,8 @@ function mountList(root, body, items, store, lastScraped) {
       return renderItems();
     }
     if (btn.id === 'wl-reset') {
-      Object.assign(filters, { q: '', sort: 'default', ku: false, min: '', max: '', tag: 'all', kind: 'all' });
+      Object.assign(filters, { reading: 'all', q: '', sort: 'default', ku: false, min: '', max: '', tag: 'all', kind: 'all' });
+      setPressed('data-wl-reading', 'all');
       saveFilter(KEYS.tagFilter, null);
       saveFilter(KEYS.kindFilter, null);
       $('wl-q').value = $('wl-min').value = $('wl-max').value = '';
@@ -265,9 +282,17 @@ function historyBlock(book) {
   </details>`;
 }
 
-function itemRow({ book, marks }) {
+// 購入済みの本に、読み始めたか（本棚の線の数と最後に線を引いた日）を出す
+function readingBadge(item) {
+  if (!inShelf(item, 'purchased')) return '';
+  const r = item.reading;
+  if (!r) return html` <span class="badge">まだ線が無い</span>`;
+  return html` <span class="badge">線 ${r.count} 本${r.lastHighlightedAt ? `・最終 ${isoDate(r.lastHighlightedAt)}` : ''}</span>`;
+}
+
+function itemRow({ book, marks, reading }) {
   const cover = html`<span class="wl-cover" style="background:${spineColor(book.title)}" aria-hidden="true">${[...book.title][0] || ''}${book.asin ? html`<img src="${COVER(book.asin)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>`;
-  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'wanted') ? html` <span class="badge">読みたい</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}</span></span>`;
+  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'wanted') ? html` <span class="badge">読みたい</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}${readingBadge({ book, marks, reading })}</span></span>`;
   const value = parseInt(marks.rating, 10) || 0;
   return html`<li class="wl-item" data-asin="${book.asin}">
     ${book.asin ? html`<a class="wl-main" href="https://www.amazon.co.jp/dp/${book.asin}" target="_blank" rel="noopener noreferrer" aria-label="${book.title}（Amazon で開く）">${cover}${text}</a>` : html`<div class="wl-main">${cover}${text}</div>`}
