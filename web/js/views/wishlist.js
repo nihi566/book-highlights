@@ -1,4 +1,4 @@
-// 価格チェックの画面（スクレイピングした欲しい本の価格と、その履歴）。データは kindle-wishlist-site が公開する wishlist.json を読むだけで、
+// 価格チェックの画面（スクレイピングした欲しい本の価格と、その履歴）。データは kindle_system が web/wishlist-site/ に書き出す wishlist.json を読むだけで、
 // タグ・★・種別はブラウザ（localStorage）に旧画面と同じキーで保存する（core/wishlist.js）。
 import { html } from '../html.js';
 import { download } from '../services.js';
