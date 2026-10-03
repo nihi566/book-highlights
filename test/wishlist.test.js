@@ -441,3 +441,13 @@ test('積読: 購入済みの本を本棚と ASIN（無ければ書名）で照�
   assert.deepEqual(titles({ shelf: 'purchased', reading: 'reading' }), ['線を引いた本', '書名で一致する本（新潮文庫）']);
   assert.equal(titles({ shelf: 'all', reading: 'unread' }).length, 4, '購入済み以外の分類では使わない');
 });
+
+test('Amazon の URL: おすすめの書名で Kindle ストアを検索する URL を作り、ASIN があれば商品ページにする', async () => {
+  const { amazonKindleUrl } = await import('../web/core/wishlist.js');
+  assert.equal(amazonKindleUrl({ title: '習慣の科学 & 実践 #1' }), 'https://www.amazon.co.jp/s?k=%E7%BF%92%E6%85%A3%E3%81%AE%E7%A7%91%E5%AD%A6%20%26%20%E5%AE%9F%E8%B7%B5%20%231&i=digital-text');
+  assert.equal(amazonKindleUrl({ title: '  余白  ' }), 'https://www.amazon.co.jp/s?k=%E4%BD%99%E7%99%BD&i=digital-text');
+  assert.equal(amazonKindleUrl({ title: '本', asin: 'B0H28J797V' }), 'https://www.amazon.co.jp/dp/B0H28J797V');
+  // ASIN の形でない値は URL に入れず、書名の検索にする
+  assert.equal(amazonKindleUrl({ title: '本', asin: '../evil?x=1' }), 'https://www.amazon.co.jp/s?k=%E6%9C%AC&i=digital-text');
+  assert.equal(amazonKindleUrl({ title: '' }), '');
+});
