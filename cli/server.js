@@ -244,7 +244,8 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
         }
         await store.saveAnalysis(analysis);
       }
-      if (cfg.vault) {
+      // autoexport off なら分析・おすすめの後も書き出さない（同期・取り込みと同じ扱い）
+      if (cfg.vault && cfg.autoExport !== false) {
         job.message = 'Obsidian に書き出しています';
         job.vault = await store.lock(() => exportAndRecord(store, { trigger: 'analysis' }));
       }

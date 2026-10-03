@@ -135,7 +135,8 @@ async function main() {
         }
         printRecommendations(analysis);
       }
-      if (cfg.vault) await exportVault(store, { trigger: 'analysis' });
+      if (cfg.vault && cfg.autoExport !== false) await exportVault(store, { trigger: 'analysis' });
+      else if (cfg.vault) console.log('自動書き出しがオフのため、Obsidian には書き出していません（bh obsidian で書き出せます）');
       break;
     }
     case 'serve': {

@@ -225,3 +225,43 @@ test('CLI: import → obsidian → 自分のメモが再出力で残る', async 
   assert.match(search.stdout, /1 件/);
   await assert.rejects(run('node', [BH, 'analyze'], { env }), /チャットモデルが未設定/);
 });
+
+test('autoexport off: PC の分析が完了しても Vault に書き出さない（サーバ）', async () => {
+  await withServer(
+    async ({ base, vault }) => {
+      await fetch(`${base}/api/import`, {
+        method: 'POST',
+        body: JSON.stringify({ files: [{ name: 'My Clippings.txt', base64: await b64(fixture('My Clippings.txt')) }, { name: 'playbooks-ja.html', base64: await b64(fixture('playbooks-ja.html')) }] }),
+      });
+      const start = await fetch(`${base}/api/analyze`, { method: 'POST', body: '{}' });
+      assert.equal(start.status, 202);
+      let job;
+      for (let i = 0; i < 100; i++) {
+        job = await (await fetch(`${base}/api/analyze`)).json();
+        if (!job.running) break;
+        await new Promise((res) => setTimeout(res, 50));
+      }
+      assert.equal(job.stage, 'done');
+      assert.equal(job.vault, null);
+      assert.deepEqual(readdirSync(vault), []);
+      assert.equal((await (await fetch(`${base}/api/info`)).json()).lastExport, null);
+    },
+    { autoExport: false },
+  );
+});
+
+test('autoexport off: bh analyze のあとも Vault に書き出さない（CLI）', async () => {
+  const dataDir = tmp('bh-cli-off-');
+  const vault = tmp('bh-cli-off-vault-');
+  const fake = await startFakeLlm();
+  try {
+    await createStore(dataDir).saveConfig({ vault, autoExport: false, llm: { baseUrl: fake.url, chatModel: 'fake-chat', embedModel: 'fake-embed' } });
+    const env = { ...process.env, BH_DATA: dataDir };
+    await run('node', [BH, 'import', fixture('My Clippings.txt'), fixture('playbooks-ja.html')], { env });
+    const out = await run('node', [BH, 'analyze', '--no-recommend'], { env });
+    assert.doesNotMatch(out.stdout, /Obsidian: 書き込み/);
+    assert.deepEqual(readdirSync(vault), []);
+  } finally {
+    await fake.close();
+  }
+});
