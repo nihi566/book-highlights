@@ -72,8 +72,14 @@ class BuildWishlistTest(unittest.TestCase):
                 "price_prev": None,
                 "price_changed_at": None,
                 "price_low": None,
+                "price_history": [],
             },
         )
+
+    def test_price_history_is_published_as_is(self):
+        history = [{"at": "2026-01-01T00:00:00", "price": 1000, "ku": False}]
+        book = report.build_wishlist([self._book(price_history=history)])["books"][0]
+        self.assertEqual(book["price_history"], history)
 
     def test_price_trend_is_published_for_paid_book(self):
         trend = {"prev": 1000, "changed_at": "2026-01-02T03:04:05", "low": 800}
@@ -152,6 +158,38 @@ class SummarizePriceChangesTest(unittest.TestCase):
         self.assertEqual(result["B0BBBBBBB2"], {"prev": None, "changed_at": None, "low": 500})
 
 
+class SummarizePriceHistoryTest(unittest.TestCase):
+    """summarize_price_history() が価格の記録（本ごと・時刻順）を、本ごとのスクレイピングの履歴にすること。"""
+
+    def test_each_scrape_becomes_one_row_with_ku_and_failures(self):
+        points = [
+            {"paid_asin": "B0AAAAAAA1", "actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
+            {"paid_asin": "B0AAAAAAA1", "actual_price": 0, "is_unlimited": 1, "timestamp": "2026-01-02T00:00:00"},
+            {"paid_asin": "B0AAAAAAA1", "actual_price": None, "is_unlimited": 0, "timestamp": "2026-01-03T00:00:00"},
+            {"paid_asin": "B0BBBBBBB2", "actual_price": 500, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
+        ]
+        self.assertEqual(
+            report.summarize_price_history(points),
+            {
+                "B0AAAAAAA1": [
+                    {"at": "2026-01-01T00:00:00", "price": 1000, "ku": False},
+                    {"at": "2026-01-02T00:00:00", "price": None, "ku": True},
+                    {"at": "2026-01-03T00:00:00", "price": None, "ku": False},
+                ],
+                "B0BBBBBBB2": [{"at": "2026-01-01T00:00:00", "price": 500, "ku": False}],
+            },
+        )
+
+    def test_keeps_only_latest_rows_per_book(self):
+        """毎日スクレイピングしても公開データが際限なく大きくならないよう、新しい方から上限件数だけ残す。"""
+        points = [
+            {"paid_asin": "B0AAAAAAA1", "actual_price": 100 + i, "is_unlimited": 0, "timestamp": f"2026-01-{i + 1:02d}T00:00:00"}
+            for i in range(5)
+        ]
+        rows = report.summarize_price_history(points, limit=3)["B0AAAAAAA1"]
+        self.assertEqual([r["price"] for r in rows], [102, 103, 104])
+
+
 class MainIntegrationTest(unittest.TestCase):
     """main() が get_books / get_book_marks の結果を wishlist.json へ正しく書き出すことのテスト。
 
@@ -168,9 +206,12 @@ class MainIntegrationTest(unittest.TestCase):
         os.environ["PUBLIC_SITE_URL"] = "https://example.invalid/"
         self._points = unittest.mock.patch.object(report, "get_paid_price_points", return_value=[])
         self.mock_points = self._points.start()
+        self._all_points = unittest.mock.patch.object(report, "get_all_price_points", return_value=[])
+        self.mock_all_points = self._all_points.start()
 
     def tearDown(self):
         self._points.stop()
+        self._all_points.stop()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
         for key, value in self._saved_env.items():
             if value is None:
@@ -229,6 +270,14 @@ class MainIntegrationTest(unittest.TestCase):
         book = json.loads(self._read_wishlist_text())["books"][0]
         self.assertEqual((book["price_prev"], book["price_changed_at"], book["price_low"]), (1200, "2026-01-05T00:00:00", 1000))
 
+    def test_main_publishes_price_history_from_all_price_points(self):
+        self.mock_all_points.return_value = [
+            {"paid_asin": "B0INTEG1", "actual_price": 1000, "is_unlimited": 0, "timestamp": "2026-01-01T00:00:00"},
+        ]
+        self._run_main_with_marks({})
+        book = json.loads(self._read_wishlist_text())["books"][0]
+        self.assertEqual(book["price_history"], [{"at": "2026-01-01T00:00:00", "price": 1000, "ku": False}])
+
     def test_main_reads_books_marks_and_price_points_once_not_per_book(self):
         """価格の記録は全冊分を 1 回で取る（1 冊ごとに履歴を問い合わせない）。"""
         fake_book = {"title": "結合テスト本", "asin": "B0INTEG1", "actual_price": 1000, "is_unlimited": 0, "is_wanted": 1}
@@ -259,10 +308,13 @@ class ShrinkGuardTest(unittest.TestCase):
         self._env.start()
         self._points = unittest.mock.patch.object(report, "get_paid_price_points", return_value=[])
         self._points.start()
+        self._all_points = unittest.mock.patch.object(report, "get_all_price_points", return_value=[])
+        self._all_points.start()
         self.path = os.path.join(self.tmpdir, "wishlist.json")
 
     def tearDown(self):
         self._points.stop()
+        self._all_points.stop()
         self._env.stop()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 

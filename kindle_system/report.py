@@ -8,7 +8,7 @@ report.py
 同じオリジンからこの wishlist.json を fetch して表示する。見た目・操作を変えるときは book-highlights を直す。
 公開リポジトリの index.html はその画面へ移動する静的ページで、ここでは作らない（上書きしない）。
 
-画面ではタグ（読みたい / 読みたくない / 購入済み / 見た）・「見た」本の★評価・種別
+画面ではタグ（読みたい / 購入済み / 読んだ。旧画面の「読みたくない」は廃止）・「見た」本の★評価・種別
 （マンガ / 本）をブラウザに保存でき、「見た・評価を書き出す」で JSON にして
 `run.py import-marks` で DB に取り込める（ローカル LLM のおすすめ `run.py recommend` に使う）。
 取り込んだタグ・★を wishlist.json に載せるのは PUBLISH_MARKS=1 のときだけ（種別の上書きは常に載せる）。
@@ -39,11 +39,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
 from src.book_kind import KINDS, classify_kind
-from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_book_marks, get_books, get_paid_price_points
+from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_all_price_points, get_book_marks, get_books, get_paid_price_points
 
 # book-highlights アプリが読む欲しい本のデータ（wishlist.json）の形式名と版
 WISHLIST_FILE_FORMAT = "kindle-wishlist"
 WISHLIST_FILE_VERSION = 1
+# 1 冊あたりに載せるスクレイピングの履歴の上限（新しい方から）。毎日取得しても wishlist.json が際限なく大きくならないように
+MAX_PRICE_HISTORY_PER_BOOK = 50
 
 
 def _resolve_mark(book: dict) -> tuple:
@@ -81,6 +83,20 @@ def summarize_price_changes(points: list) -> dict:
     return {asin: {k: v for k, v in s.items() if k != "current"} for asin, s in result.items()}
 
 
+def summarize_price_history(points: list, limit: int = MAX_PRICE_HISTORY_PER_BOOK) -> dict:
+    """
+    価格の記録（repository.get_all_price_points() の戻り値。本ごと・時刻順）から、本ごとの
+    スクレイピングの履歴 [{"at": 取得日時, "price": 価格（KU・取得失敗は None）, "ku": KU か}] を返す。
+    古い順で、新しい方から limit 件だけ残す。
+    """
+    result = {}
+    for point in points:
+        is_ku = bool(point["is_unlimited"])
+        price = None if is_ku else point["actual_price"]
+        result.setdefault(point["paid_asin"], []).append({"at": str(point["timestamp"]), "price": price, "ku": is_ku})
+    return {asin: rows[-limit:] for asin, rows in result.items()}
+
+
 def build_wishlist(books: list) -> dict:
     """
     欲しい本のデータ（book-highlights アプリが同じオリジンから fetch する wishlist.json）を組み立てる。
@@ -89,6 +105,7 @@ def build_wishlist(books: list) -> dict:
     未取得の本を null にする。生成時刻は載せない（自動公開のたびに差分が出て、データが同じでも
     コミットが増えるため）。最終取得日時は index.html と同じく各本の最新価格の timestamp の最大値。
     値動き（book["price_trend"] = summarize_price_changes の 1 件）は、今の価格がある本にだけ載せる。
+    スクレイピングの履歴（book["price_history"] = summarize_price_history の 1 件）は全冊に載せる（無ければ空）。
     """
     timestamps = [str(book["timestamp"]) for book in books if book.get("timestamp")]
     items = []
@@ -113,6 +130,7 @@ def build_wishlist(books: list) -> dict:
                 "price_prev": trend.get("prev"),
                 "price_changed_at": trend.get("changed_at"),
                 "price_low": trend.get("low"),
+                "price_history": book.get("price_history") or [],
             }
         )
     return {
@@ -218,6 +236,7 @@ def main(allow_shrink: bool = False) -> None:
     # なので、PUBLISH_MARKS=1 のときだけ公開する（既定では DB とローカル LLM だけで使う）。
     marks = get_book_marks()
     trends = summarize_price_changes(get_paid_price_points())
+    histories = summarize_price_history(get_all_price_points())
     publish_marks = os.environ.get("PUBLISH_MARKS", "").strip().lower() in ("1", "true", "yes")
     for book in books:
         mark = marks.get(book["asin"])
@@ -225,6 +244,7 @@ def main(allow_shrink: bool = False) -> None:
             mark = {"kind": mark.get("kind")}
         book["mark"] = mark
         book["price_trend"] = trends.get(book["asin"])
+        book["price_history"] = histories.get(book["asin"], [])
     wishlist_path = os.path.join(public_site_dir, "wishlist.json")
     reason = _shrink_error(len(books), _published_book_count(wishlist_path))
     if reason and not allow_shrink:
