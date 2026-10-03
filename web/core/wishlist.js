@@ -330,6 +330,13 @@ export function wishlistSummary(items, limit = 3) {
   return { total: items.length, kuCount: ku.length, picks };
 }
 
+/** Amazon（Kindle 版）を開く URL。ASIN があれば商品ページ、無ければ Kindle ストアを書名で検索する */
+export function amazonKindleUrl({ title, asin } = {}) {
+  if (ASIN.test(asin)) return `https://www.amazon.co.jp/dp/${asin}`;
+  const q = String(title || '').trim();
+  return q ? `https://www.amazon.co.jp/s?k=${encodeURIComponent(q)}&i=digital-text` : '';
+}
+
 export function formatPrice(book) {
   if (book.ku) return 'Kindle Unlimited 対象';
   if (book.price === null) return '価格情報なし';

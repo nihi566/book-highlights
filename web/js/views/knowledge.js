@@ -4,7 +4,7 @@ import { FEEDBACK_LABELS, feedbackByStatus, feedbackFor, libraryStats } from '..
 import { layoutKnowledgeMap } from '../../core/obsidian.js';
 import { isoDate, truncate } from '../../core/text.js';
 import { highlightCard, lineIndex } from '../ui.js';
-import { findWishlistBook } from '../../core/wishlist.js';
+import { amazonKindleUrl, findWishlistBook } from '../../core/wishlist.js';
 import { loadWishlist } from '../wishlist-data.js';
 
 const STAGES = [
@@ -109,6 +109,13 @@ export const knowledge = {
           // 前方一致は続編・派生本のこともあるので言い切らず、欲しい本側の書名を見せる
           const label = found.exact ? (b.purchased ? '購入済み' : '欲しい本に登録済み') : `欲しい本に似た書名: ${b.title}`;
           slot.innerHTML = String(html`<a class="badge wish ${found.exact ? '' : 'similar'}" href="#/wishlist?q=${encodeURIComponent(b.asin || b.title)}">${label}</a>`);
+          // 書名が一致した欲しい本の ASIN が分かれば、検索ではなく商品ページを開く
+          const amazon = card.querySelector('.rec-amazon');
+          const dp = found.exact && b.asin ? amazonKindleUrl({ asin: b.asin }) : '';
+          if (amazon && dp) {
+            amazon.href = dp;
+            amazon.textContent = 'Amazon で開く（Kindle 版）';
+          }
         }
       })
       .catch(() => {});
@@ -141,11 +148,17 @@ function recCard(a, r, i, library) {
       <p class="small">${r.reason}</p>
       ${r.query ? html`<p class="small muted">「${r.query}」で探した本</p>` : ''}
       ${v ? html`<a class="small" href="${link || '#'}" target="_blank" rel="noopener noreferrer">✓ ${v.source || '書誌データベース'}: ${v.title}${v.publishedDate ? `（${String(v.publishedDate).slice(0, 4)}）` : ''}</a>` : r.verified === false ? html`<p class="small" style="color:var(--warn)">⚠ 書誌データベースで見つかりませんでした</p>` : html`<p class="small muted">未確認</p>`}
+      ${amazonLink(v?.title || r.title)}
       <div class="chips rec-feedback" role="group" aria-label="この本への反応（次のおすすめに使います）">
         ${Object.entries(FEEDBACK_LABELS).map(([status, label]) => html`<button type="button" class="chip" data-action="rec-feedback" data-i="${i}" data-status="${status}" aria-pressed="${String(reaction === status)}">${label}</button>`)}
       </div>
     </div>
   </article>`;
+}
+
+function amazonLink(title) {
+  const url = amazonKindleUrl({ title });
+  return url ? html`<p class="small"><a class="rec-amazon" href="${url}" target="_blank" rel="noopener noreferrer">Amazon で探す（Kindle 版）</a></p>` : '';
 }
 
 /** 立体を放射状の図にする（中心=核、内側=面、外側=線）。Obsidian の Canvas と同じ配置 */
