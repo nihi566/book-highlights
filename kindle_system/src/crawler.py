@@ -98,6 +98,43 @@ async def apply_stealth(page) -> None:
     """)
 
 
+# ─── 表紙画像の URL ────────────────────────────────────────────────────────────
+# scraping-hub の実行画面が本ごとの表に表紙を出すため、読み込み済みのページから URL を読み、
+# `[Worker-N] Image URL : <URL>` の 1 行で出す（scraping-hub の logParser.js と形を揃える）。
+# 画像そのものはハブの画面（ブラウザ）が配信元から直接読むので、ここでは文字を 1 つ読むだけ。
+
+_COVER_IMAGE_SCRIPT = """
+() => {
+    const selectors = ['#ebooksImgBlkFront', '#imgBlkFront', '#landingImage', '#main-image'];
+    for (const sel of selectors) {
+        const img = document.querySelector(sel);
+        if (!img) continue;
+        const src = img.getAttribute('data-old-hires') || img.currentSrc || img.src || '';
+        if (src.startsWith('https://')) return src;
+    }
+    return '';
+}
+"""
+_IMAGE_URL_RE = re.compile(r"https://\S+")
+
+
+async def extract_cover_image_url(page) -> str:
+    """表紙画像の URL（https のもの）を返す。取れない・失敗したときは空文字（処理は止めない）。"""
+    try:
+        value = await page.evaluate(_COVER_IMAGE_SCRIPT)
+    except Exception:
+        return ""
+    if isinstance(value, str) and _IMAGE_URL_RE.fullmatch(value):
+        return value
+    return ""
+
+
+def format_image_url_line(prefix: str, url: str) -> str:
+    """`  [Worker-N] Image URL   : <URL>` の行を組み立てる（Sample ASIN / Profile の行と桁を揃える）。
+    単独実行（Worker 無し）では接頭辞を付けず、他の行と同じ空白 2 つで始める。"""
+    return f"  {prefix} Image URL   : {url}" if prefix else f"  Image URL   : {url}"
+
+
 # ─── 価格抽出ロジック ──────────────────────────────────────────────────────────
 
 async def _try_get_text(page, selector: str) -> str:
@@ -413,6 +450,11 @@ async def crawl_price_info(
                 if signal != "ok":
                     await ban_coordinator.report_ban(signal, worker_id=worker_id)
                     return result
+
+            # ── 表紙画像の URL（scraping-hub の表示用。取れなければ出さない） ──
+            image_url = await extract_cover_image_url(page)
+            if image_url:
+                print(format_image_url_line(prefix, image_url))
 
             # ── 価格取得 ──────────────────────────────────────────
             print(f"  {prefix}[1/3] 販売価格を取得中...")
