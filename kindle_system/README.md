@@ -36,6 +36,9 @@ python run.py sync [--workers N] [--limit N] [--start N] [--target kindle|bookme
 
 公開（`publish()`）は次の順に進み、途中で失敗したら終了コード 1 で止まる。
 
+0. 公開先（`PUBLIC_SITE_DIR` = book-highlights の作業ツリー）が **main ブランチ・rebase / merge の途中でない・
+   `wishlist.json` / `feed.xml` 以外に未コミットの変更が無い**ことを確かめる。どれかに当たれば git を何も変えずに止まる
+   （人や他のセッションの作業を壊したり、データのコミットに巻き込んだりしないため。作業は worktree で行う）
 1. 公開用クローン（`PUBLIC_SITE_DIR`）を `git pull --rebase` で origin の最新に合わせる
    （PR のマージ等で main が進んでいても push が拒否されないように）
 2. `wishlist.json` を書き出す。ただし本が **0 冊、または公開中の半分未満に減った**ときは、

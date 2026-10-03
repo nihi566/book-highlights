@@ -113,10 +113,14 @@ class PublishGitSequenceTest(unittest.TestCase):
         os.environ["PUBLIC_SITE_URL"] = "https://example.github.io/site/"
         # 公開用フォルダは実在しないので、フォルダ・.git の確認は通す
         self._repo_check = patch("run.report.require_public_site_repo")
+        # 作業ツリーの状態の確認は test_publish_guard.py で本物の git を使って確かめる
+        self._guard = patch("run.ensure_safe_to_publish")
+        self._guard.start()
         self._repo_check.start()
 
     def tearDown(self):
         self._repo_check.stop()
+        self._guard.stop()
         os.environ.pop("PUBLIC_SITE_DIR", None)
         os.environ.pop("PUBLIC_SITE_URL", None)
 
@@ -237,10 +241,14 @@ class PublishPullBeforeGenerateTest(unittest.TestCase):
         os.environ["PUBLIC_SITE_URL"] = "https://example.github.io/site/"
         # 公開用フォルダは実在しないので、フォルダ・.git の確認は通す
         self._repo_check = patch("run.report.require_public_site_repo")
+        # 作業ツリーの状態の確認は test_publish_guard.py で本物の git を使って確かめる
+        self._guard = patch("run.ensure_safe_to_publish")
+        self._guard.start()
         self._repo_check.start()
 
     def tearDown(self):
         self._repo_check.stop()
+        self._guard.stop()
         os.environ.pop("PUBLIC_SITE_DIR", None)
         os.environ.pop("PUBLIC_SITE_URL", None)
 
@@ -278,6 +286,27 @@ class PublishPullBeforeGenerateTest(unittest.TestCase):
             called_cmds,
             [["git", "pull", "--rebase", "--autostash", "-q"], ["git", "rebase", "--abort"]],
         )
+
+
+class PublishGuardTest(unittest.TestCase):
+    """公開先の作業ツリーが公開できる状態でなければ、pull も書き出しもしないこと。"""
+
+    @patch("run.subprocess.run")
+    @patch("run.report.main")
+    @patch("run._load_env_file")
+    @patch("run.report.require_public_site_repo")
+    @patch("run.ensure_safe_to_publish", side_effect=SystemExit(1))
+    def test_guard_failure_stops_before_any_git_change(
+        self, mock_guard, mock_repo_check, mock_load_env, mock_report_main, mock_subprocess_run
+    ):
+        with patch.dict(os.environ, {"PUBLIC_SITE_DIR": "/tmp/fake-public-site", "PUBLIC_SITE_URL": "https://example.github.io/site/"}):
+            with self.assertRaises(SystemExit) as cm:
+                run.publish()
+
+        self.assertEqual(cm.exception.code, 1)
+        mock_guard.assert_called_once()
+        mock_subprocess_run.assert_not_called()
+        mock_report_main.assert_not_called()
 
 
 class PublishInvalidSiteDirTest(unittest.TestCase):

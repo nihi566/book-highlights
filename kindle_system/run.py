@@ -21,6 +21,7 @@ import re
 import sys
 import subprocess
 import io
+from typing import Optional
 
 # Windows CP932 環境での文字化け防止（main.py / report.py と同じ対処）
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
@@ -47,6 +48,59 @@ MARKS_FILE_GLOB = "kindle-marks-*.json"
 # report.main() が PUBLIC_SITE_DIR に書き出し、publish() が公開するファイル。
 # 公開先は book-highlights の web/wishlist-site/。この 2 つ以外は commit しない（他の作業中の変更を巻き込まない）。
 PUBLISHED_FILES = ["wishlist.json", "feed.xml"]
+
+# GitHub Pages は main への push でだけ公開される（book-highlights の .github/workflows/pages.yml）
+PUBLISH_BRANCH = "main"
+
+# これがリポジトリの git フォルダにあれば、誰かが rebase / merge / cherry-pick の途中
+_IN_PROGRESS_MARKERS = ("rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD")
+
+
+def _git_output(args: list, cwd: str, git_env: dict) -> Optional[str]:
+    """git の標準出力（末尾の改行を除く。status --porcelain の行頭の空白は意味を持つので先頭は削らない）。失敗したら None。"""
+    result = subprocess.run(
+        ["git"] + args, cwd=cwd, env=git_env, shell=False, capture_output=True, text=True
+    )
+    return result.stdout.rstrip() if result.returncode == 0 else None
+
+
+def ensure_safe_to_publish(public_site_dir: str, git_env: dict) -> None:
+    """
+    公開先は人や他のセッションが作業する book-highlights の作業ツリーの中なので、
+    pull・commit・push で他の作業を壊したり巻き込んだりしないことを先に確かめる。
+    main 以外のブランチ / rebase・merge の途中 / 公開する 2 ファイル以外の（追跡中の）変更があれば、
+    git を何も変えずに終了コード 1 で止める（未追跡のファイルは pull にも commit にも関わらないので許す）。
+    """
+    problems = []
+    branch = _git_output(["rev-parse", "--abbrev-ref", "HEAD"], public_site_dir, git_env)
+    if branch != PUBLISH_BRANCH:
+        problems.append(f"ブランチが {PUBLISH_BRANCH} ではありません（今: {branch}）")
+
+    git_dir = _git_output(["rev-parse", "--absolute-git-dir"], public_site_dir, git_env)
+    if git_dir and any(os.path.exists(os.path.join(git_dir, m)) for m in _IN_PROGRESS_MARKERS):
+        problems.append("rebase / merge / cherry-pick の途中です")
+
+    prefix = _git_output(["rev-parse", "--show-prefix"], public_site_dir, git_env) or ""
+    allowed = {prefix + name for name in PUBLISHED_FILES}
+    status = _git_output(
+        ["-c", "core.quotePath=false", "status", "--porcelain", "--untracked-files=no"],
+        public_site_dir, git_env,
+    )
+    if status is None:
+        problems.append("git status を読めませんでした")
+    else:
+        others = [line[3:] for line in status.splitlines() if line[3:] not in allowed]
+        if others:
+            problems.append("公開するファイル以外に未コミットの変更があります: " + ", ".join(others[:5]))
+
+    if problems:
+        print(
+            f"エラー: 公開先（{public_site_dir}）のリポジトリが公開できる状態ではないので、何も変えずに中断しました。\n  - "
+            + "\n  - ".join(problems)
+            + f"\nそのリポジトリで {PUBLISH_BRANCH} に戻し、作業中の変更を commit するか worktree に移してから、もう一度実行してください。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def publish() -> None:
@@ -82,6 +136,10 @@ def publish() -> None:
     # 認証切れの git コマンドが対話プロンプト待ちで無限にハングしないようにする
     # （do_publish() と同じ対処。無人バッチ実行では標準入力を操作する手段が無い）。
     git_env["GIT_TERMINAL_PROMPT"] = "0"
+
+    # 下の rebase --abort や autostash が他の人の作業を壊さないよう、git を変える前に確かめる
+    # （これを通れば、autostash が退避するのは公開する 2 ファイルだけになる）
+    ensure_safe_to_publish(public_site_dir, git_env)
 
     def _run_git(args: list) -> int:
         result = subprocess.run(
