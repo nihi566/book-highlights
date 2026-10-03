@@ -43,6 +43,22 @@ python run.py sync [--workers N] [--limit N] [--start N] [--target kindle|bookme
    で書き出してから、もう一度 `python run.py sync` を実行する
 3. 差分があれば commit し、push する
 
+### 毎日の自動更新（Windows のタスクスケジューラ）
+
+`python run.py sync` を毎日 1 回、タスクスケジューラから実行する。登録・解除は PowerShell で行う（管理者権限は不要）。
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\register_scheduled_sync.ps1 [-At 06:00] [-Python <python.exe>]
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\register_scheduled_sync.ps1 -DryRun      (登録せず中身を表示)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\register_scheduled_sync.ps1 -Unregister  (解除)
+```
+
+- `-At`: 実行する時刻（既定 `06:00`）。Amazon への取得は 1 日 1 回だけ
+- `-Python`: 使う python.exe（省略時はこのリポジトリの `.venv`、無ければ PATH の python.exe）
+- PC が止まっていて時刻を逃した回は、起動してログオンした後に 1 回だけ実行する。前回が終わっていなければ重ねて起動しない（3 時間で打ち切る）
+- 登録したユーザーがログオンしている間だけ動く（パスワードを保存しない）。`.env` はいつもどおり読まれる
+- 実行結果は `data/logs/scheduled_sync.log` に追記される（開始・出力・終了コード）。タスクスケジューラの「前回の実行結果」が 0 以外なら失敗なので、ログで原因を確かめる
+
 ### 「欲しい本」フラグの更新
 
 ```
