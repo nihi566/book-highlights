@@ -5,7 +5,7 @@ import { vaultPaths } from '../../core/obsidian.js';
 import { normalizeText } from '../../core/text.js';
 import { browserStore, formatPrice, loadMarks, searchWishlist, wishlistSummary } from '../../core/wishlist.js';
 import { loadWishlist } from '../wishlist-data.js';
-import { bookRow, highlightCard, kindleAlertBlock, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
+import { bookRow, highlightCard, kindleAlertBlock, lineIndex, sourceBadge, spineColor } from '../ui.js';
 
 const flow = html`<div class="flow" aria-label="点から立体へ">
   <div class="f-point"><b>点</b>線を引いた一文</div>
@@ -114,8 +114,8 @@ export const books = {
       const on = (query.get(key) || '') === value || (!query.get(key) && key === 'sort' && value === 'recent');
       return html`<a class="chip ${on ? 'on' : ''}" href="#/books?${params}">${label}</a>`;
     };
-    return html`<div class="page-head"><div><h1>本</h1><div class="sub">${list.length} 冊</div></div><a class="btn small" href="#/import">＋ 取り込む</a></div>
-      ${shelfSwitch('books')}
+    return html`<div class="page-head"><div><h1>読んだ本</h1><div class="sub">${list.length} 冊</div></div><a class="btn small" href="#/import">＋ 取り込む</a></div>
+      <div class="row" style="margin-bottom:12px"><a class="btn small" href="#/search">ハイライトを検索</a></div>
       <form class="search-box" data-form="book-filter" role="search"><input type="search" name="q" value="${query.get('q') || ''}" placeholder="書名・著者で絞り込む" aria-label="書名・著者で絞り込む"></form>
       <div class="chips">${chip('source', '', 'すべて')}${chip('source', 'kindle', 'Kindle')}${chip('source', 'playbooks', 'Play Books')}</div>
       <div class="chips" style="margin-top:6px">${chip('sort', 'recent', '最近')}${chip('sort', 'title', '書名')}${chip('sort', 'count', '点の数')}</div>
@@ -126,7 +126,7 @@ export const books = {
 export const book = {
   render({ state, params }) {
     const b = state.library.books[params.id];
-    if (!b || b.deleted) return html`<p class="empty">本が見つかりません。<a href="#/books">本の一覧へ</a></p>`;
+    if (!b || b.deleted) return html`<p class="empty">本が見つかりません。<a href="#/books">読んだ本の一覧へ</a></p>`;
     const hs = bookHighlights(state.library, b.id);
     const idx = lineIndex(state.analysis);
     const { vaultName, root } = state.settings;
@@ -144,7 +144,7 @@ export const book = {
       }
       items.push(highlightCard(h, { library: state.library, lines: idx.get(h.id), showBook: false }));
     }
-    return html`<a class="back" href="#/books">‹ 本</a>
+    return html`<a class="back" href="#/books">‹ 読んだ本</a>
       <div class="page-head">
         <div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:12px">
           <span class="book-spine" style="background:${spineColor(b.title)}" aria-hidden="true">${[...b.title][0]}</span>
@@ -163,7 +163,8 @@ export const book = {
 export const search = {
   render({ state, query }) {
     const q = query.get('q') || '';
-    return html`<div class="page-head"><h1>検索</h1></div>
+    return html`<a class="back" href="#/books">‹ 読んだ本</a>
+      <div class="page-head"><h1>ハイライトを検索</h1></div>
       <form class="search-box" data-form="search" role="search">
         <input type="search" name="q" value="${q}" placeholder="言葉・書名・#タグ（空白で AND）" aria-label="ハイライトを検索" autocomplete="off" ${q ? '' : 'autofocus'}>
       </form>

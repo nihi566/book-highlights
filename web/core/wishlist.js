@@ -6,9 +6,10 @@
 import { bookKey, normalizeText } from './text.js';
 
 export const WISHLIST_FORMAT = 'kindle-wishlist';
-export const TAG_LABELS = { wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み', seen: '見た' };
+// 「読みたくない」（unwanted）は廃止した。旧画面・公開データ・書き出しファイルに残っていても、タグなしとして扱う
+export const TAG_LABELS = { wanted: '読みたい', purchased: '購入済み', seen: '読んだ' };
 export const KIND_LABELS = { manga: 'マンガ', book: '本' };
-export const TAG_FILTER_LABELS = { all: 'すべて', 'hide-unwanted': '「読みたくない」を隠す', wanted: '読みたい', unwanted: '読みたくない', purchased: '購入済み', seen: '見た', untagged: 'タグなし' };
+export const TAG_FILTER_LABELS = { all: 'すべて', wanted: '読みたい', purchased: '購入済み', seen: '読んだ', untagged: 'タグなし' };
 
 export const KEYS = {
   tag: 'book-tag:',
@@ -20,10 +21,11 @@ export const KEYS = {
   kindFilter: 'book-kind-filter',
 };
 const MARK_FIELDS = ['tag', 'rating', 'kind'];
-// 書き出し・取り込みの単位。★は「見た」に付くのでタグと一緒に扱う
+// 書き出し・取り込みの単位。★は「読んだ」に付くのでタグと一緒に扱う
 const MARK_GROUPS = { tag: ['tag', 'rating'], kind: ['kind'] };
 const ASIN = /^[A-Z0-9]{10}$/;
 
+const RETIRED_TAG = 'unwanted';
 const isTag = (t) => Object.hasOwn(TAG_LABELS, t);
 const isKind = (k) => k === 'manga' || k === 'book';
 const yen = (v) => (Number.isFinite(v) && v >= 0 ? v : null);
@@ -49,10 +51,18 @@ export function parseWishlist(data) {
       saved: { tag, rating, kind: isKind(b?.kind) ? b.kind : 'book' },
       // 値動き（kindle_system が付ける前回価格・変わった日時・最安値）。今の価格が無い本は比べられないので持たない
       trend: price === null ? null : { prev: yen(b?.price_prev), changedAt: typeof b?.price_changed_at === 'string' ? b.price_changed_at : null, low: yen(b?.price_low) },
+      scrapedAt: typeof b?.scraped_at === 'string' ? b.scraped_at : null,
+      history: parseHistory(b?.price_history),
       index,
     };
   });
   return { lastScraped: typeof data.last_scraped === 'string' ? data.last_scraped : null, books };
+}
+
+/** スクレイピングの履歴（kindle_system が載せる price_history: [{ at, price, ku }]。古い順）。日時の無い行は捨てる */
+function parseHistory(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((r) => typeof r?.at === 'string').map((r) => ({ at: r.at, price: yen(r.price), ku: r.ku === true }));
 }
 
 /** localStorage を包んだ保存先。保存できないブラウザ（サイトデータのブロック等）では canStore が false */
@@ -103,7 +113,9 @@ export function loadMarks(book, store) {
     const tag = store.get(KEYS.tag + book.asin);
     const rating = store.get(KEYS.rating + book.asin);
     const kind = store.get(KEYS.kind + book.asin);
-    if (tag !== null && (tag === '' || isTag(tag))) marks.tag = tag;
+    // 廃止した「読みたくない」をこのブラウザで付けていたら、公開データのタグに戻さず「タグなし」にする
+    if (tag === RETIRED_TAG) marks.tag = '';
+    else if (tag !== null && (tag === '' || isTag(tag))) marks.tag = tag;
     if (rating !== null && /^[1-5]?$/.test(rating)) marks.rating = rating;
     if (isKind(kind)) marks.kind = kind;
   }
@@ -164,11 +176,10 @@ export function openWishlistFilters(filters, normal, { q = '', ku = false, refre
 
 const priceValue = (v) => (v === '' || v === undefined || v === null ? NaN : parseFloat(v));
 
-// 評価が高い順: ★の数、「見た」だけで★なしは★の付いた本の後、「見た」以外はさらに後
+// 評価が高い順: ★の数、「読んだ」だけで★なしは★の付いた本の後、「読んだ」以外はさらに後
 const ratingValue = (m) => (m.tag !== 'seen' ? 0 : parseInt(m.rating, 10) || 0.5);
 
 function matchesTag(tag, filter) {
-  if (filter === 'hide-unwanted') return tag !== 'unwanted';
   if (filter === 'untagged') return tag === '';
   if (isTag(filter)) return tag === filter;
   return true;
@@ -216,7 +227,7 @@ export function priceChange(book) {
  * 戻り値の priceRangeInvalid は下限 > 上限（そのときは価格帯を無視する）
  */
 export function filterWishlist(items, f = {}) {
-  // 検索タブ（searchWishlist）と同じ正規化にする（全角英数字の書名・全角の語でも件数と結果がずれない）
+  // ハイライトの検索（searchWishlist）と同じ正規化にする（全角英数字の書名・全角の語でも件数と結果がずれない）
   const words = normalizeText(f.q).split(' ').filter(Boolean);
   let min = priceValue(f.min);
   let max = priceValue(f.max);
@@ -242,6 +253,8 @@ export function filterWishlist(items, f = {}) {
     'price-asc': (a, b) => comparePrice(a, b, 1) || byIndex(a, b),
     'price-desc': (a, b) => comparePrice(a, b, -1) || byIndex(a, b),
     'price-drop': (a, b) => dropAmount(b) - dropAmount(a) || byIndex(a, b),
+    // 日時は ISO 形式の文字列なので文字列のまま比べられる。取得日時の無い本は後ろ
+    'scraped-desc': (a, b) => (b.book.scrapedAt ?? '').localeCompare(a.book.scrapedAt ?? '') || byIndex(a, b),
   };
   return { items: visible.sort(sorters[f.sort] || byIndex), priceRangeInvalid };
 }
@@ -289,7 +302,7 @@ export function findWishlistBook(books, titles) {
   return undefined;
 }
 
-/** 検索タブ用。空白で区切った語をすべて含む本（書名・ASIN）。#タグの語はハイライト用なので無視する */
+/** ハイライトの検索画面用。空白で区切った語をすべて含む本（書名・ASIN）。#タグの語はハイライト用なので無視する */
 export function searchWishlist(books, q) {
   const words = normalizeText(q).split(' ').filter((w) => w && !w.startsWith('#'));
   if (!words.length) return [];
@@ -299,12 +312,12 @@ export function searchWishlist(books, q) {
   });
 }
 
-const SKIP_IN_PICKS = new Set(['unwanted', 'purchased', 'seen']);
+const SKIP_IN_PICKS = new Set(['purchased', 'seen']);
 
 /**
  * ホーム用の要約。items: [{ book, marks }]。
  * kuCount は「Kindle Unlimited のみ」で絞り込んだ欲しい本の画面と同じ数（リンク先の件数と食い違わないように）。
- * picks は今すぐ読める候補: KU で、購入済み・読みたくない・見たを除き、読みたいを先頭に最大 3 冊。
+ * picks は今すぐ読める候補: KU で、購入済み・読んだを除き、読みたいを先頭に最大 3 冊。
  */
 export function wishlistSummary(items, limit = 3) {
   const ku = items.filter(({ book }) => book.ku);
@@ -376,8 +389,8 @@ export function parseMarksFile(data) {
   for (const it of data.items) {
     if (!ASIN.test(it?.asin)) continue;
     const entry = { asin: it.asin };
-    if (it.tag === '' || isTag(it.tag)) {
-      entry.tag = it.tag;
+    if (it.tag === '' || it.tag === RETIRED_TAG || isTag(it.tag)) {
+      entry.tag = it.tag === RETIRED_TAG ? '' : it.tag;
       entry.rating = it.tag === 'seen' && Number.isInteger(it.rating) && it.rating >= 1 && it.rating <= 5 ? String(it.rating) : '';
     }
     if (isKind(it.kind)) entry.kind = it.kind;

@@ -24,8 +24,9 @@ const ROUTES = [
   [/^\/$/, home, 'home'],
   [/^\/books$/, books, 'books'],
   [/^\/book\/(?<id>[\w-]+)$/, book, 'books'],
-  [/^\/wishlist$/, wishlist, 'books'],
-  [/^\/search$/, search, 'search'],
+  [/^\/wishlist$/, wishlist, 'price'],
+  // ハイライトの検索は「読んだ本」の中の画面（タブは持たない）
+  [/^\/search$/, search, 'books'],
   [/^\/knowledge$/, knowledge, 'knowledge'],
   [/^\/knowledge\/line\/(?<id>[\w-]+)$/, lineView, 'knowledge'],
   [/^\/knowledge\/plane\/(?<id>[\w-]+)$/, planeView, 'knowledge'],
