@@ -702,6 +702,17 @@ def get_wanted_books() -> list:
         return [dict(row) for row in result]
 
 
+def _is_fuller_title(current: Optional[str], incoming: Optional[str]) -> bool:
+    """
+    登録済みの書名が末尾「…」で切れていて（読書メーターの一覧の表示）、incoming がその続きの
+    切れていない書名なら True。切れていない書名・別の書名は上書きしない。
+    """
+    if not current or not incoming or not current.endswith("…") or incoming.endswith("…"):
+        return False
+    prefix = current[:-1].rstrip()
+    return incoming.startswith(prefix) and len(incoming) > len(prefix)
+
+
 def get_or_create_by_paid_asin(
     session: Session,
     paid_asin: str,
@@ -714,7 +725,7 @@ def get_or_create_by_paid_asin(
 
     既存行（sample_asin 経由 / bookmeter 経由いずれでも）があれば新規行を作らず
     is_wanted と from_bookmeter（相手側の from_kindle_sample は変更しない）を
-    更新して返す。無ければ新規作成する（sample_asin は None のまま）。
+    更新して返す。既存の書名が「…」で切れていれば、続きの書名（title）に直す。無ければ新規作成する（sample_asin は None のまま）。
 
     他の関数と異なり session を呼び出し側から受け取る（複数冊をまとめて 1 トランザクション
     で処理したい呼び出し元のため）。**commit は呼び出し側の責務**。この関数は
@@ -731,6 +742,8 @@ def get_or_create_by_paid_asin(
     if book:
         book.is_wanted = is_wanted
         book.from_bookmeter = True
+        if _is_fuller_title(book.title, title):
+            book.title = title
         session.add(book)
         session.flush()
         session.refresh(book)

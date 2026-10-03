@@ -73,7 +73,7 @@ def parse_books(html: str) -> List[Dict[str, str]]:
             if title_el is None:
                 logger.warning("タイトル要素が見つからないため1件スキップします")
                 continue
-            title = title_el.get_text(strip=True)
+            title = _full_title(item, title_el.get_text(strip=True))
             authors = [
                 a.get_text(strip=True)
                 for a in item.select("ul.detail__authors li a")
@@ -86,6 +86,25 @@ def parse_books(html: str) -> List[Dict[str, str]]:
             continue
 
     return books
+
+
+TRUNCATION_MARK = "…"
+
+
+def _full_title(item, link_text: str) -> str:
+    """
+    一覧の書名リンクは長い書名を末尾「…」で切って表示するので、表紙画像の alt
+    （切れていない書名）があればそちらを使う。alt が書名の続きでない（別の文言・空）
+    ときはリンクの文字列のまま返す。
+    """
+    if not link_text.endswith(TRUNCATION_MARK):
+        return link_text
+    img = item.select_one("div.thumbnail__cover img")
+    alt = (img.get("alt") or "").strip() if img is not None else ""
+    prefix = link_text[: -len(TRUNCATION_MARK)].rstrip()
+    if alt and alt.startswith(prefix) and len(alt) > len(prefix):
+        return alt
+    return link_text
 
 
 def get_next_page_url(html: str, current_url: str) -> Optional[str]:
