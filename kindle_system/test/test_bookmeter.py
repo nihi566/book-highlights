@@ -224,6 +224,26 @@ class FetchWishBooksTest(unittest.TestCase):
 
     @patch("src.bookmeter.time.sleep", return_value=None)
     @patch("src.bookmeter.requests.Session.get")
+    def test_next_url_host_check_edge_cases(self, mock_get, mock_sleep):
+        # 本物のホストでも https 以外は追わない / userinfo で偽装したホストは追わない / 大文字のホストは追う
+        cases = [
+            ("http://bookmeter.com/users/1770332/books/wish?page=2", False),
+            ("https://bookmeter.com@evil.example.com/phish", False),
+            ("https://BOOKMETER.com/users/1770332/books/wish?page=2", True),
+        ]
+        for next_url, followed in cases:
+            with self.subTest(next_url=next_url):
+                mock_get.reset_mock()
+                page = FIXTURE_PAGE_1_MALICIOUS_NEXT.replace(MALICIOUS_NEXT_URL, next_url)
+                mock_get.side_effect = [_mock_response(page), _mock_response("<ul></ul>")]
+
+                fetch_wish_books()
+
+                called_urls = [call.args[0] for call in mock_get.call_args_list]
+                self.assertEqual(next_url in called_urls, followed)
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
     def test_network_error_returns_empty_list_without_raising(self, mock_get, mock_sleep):
         mock_get.side_effect = requests.exceptions.ConnectionError("boom")
 

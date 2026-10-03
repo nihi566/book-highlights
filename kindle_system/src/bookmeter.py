@@ -177,7 +177,8 @@ def fetch_wish_books(
         next_url = get_next_page_url(response.text, url)
         if next_url is None or next_url == url:
             return books
-        if urlparse(next_url).hostname != ALLOWED_HOST:
+        parsed_next = urlparse(next_url)
+        if parsed_next.scheme != "https" or parsed_next.hostname != ALLOWED_HOST:
             logger.warning(
                 "次ページURLのホストが許可リスト外のため打ち切りました: %s",
                 next_url,
