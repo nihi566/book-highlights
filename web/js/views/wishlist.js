@@ -1,12 +1,12 @@
-// 欲しい本の画面（本タブの「欲しい本」）。データは kindle-wishlist-site が公開する wishlist.json を読むだけで、
+// 価格チェックの画面（スクレイピングした欲しい本の価格と、その履歴）。データは kindle-wishlist-site が公開する wishlist.json を読むだけで、
 // タグ・★・種別はブラウザ（localStorage）に旧画面と同じキーで保存する（core/wishlist.js）。
 import { html } from '../html.js';
 import { download } from '../services.js';
-import { shelfSwitch, spineColor, toast } from '../ui.js';
-import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, KIND_LABELS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceTotal, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
+import { spineColor, toast } from '../ui.js';
+import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceTotal, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
 import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
 
-const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', 'price-drop': '値下がり額が大きい順', rating: '評価が高い順' };
+const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', 'price-drop': '値下がり額が大きい順', 'scraped-desc': 'スクレイピングの最新順', rating: '評価が高い順' };
 const SHELVES = { all: 'すべて', wanted: '読みたい', purchased: '購入済み' };
 const shelfLabel = (shelf, n) => `${SHELVES[shelf]} ${n}`;
 const COVER = (asin) => `https://images-na.ssl-images-amazon.com/images/P/${asin}.09.MZZZZZZZ.jpg`;
@@ -19,14 +19,18 @@ let normalFilters = null; // 検索・おすすめ・ホームのリンクから
 
 function lastScrapedText(iso) {
   if (!iso) return '未取得';
+  return dateTimeText(iso);
+}
+
+// ISO 形式の日時を「YYYY-MM-DD HH:MM」にする（秒以下は出さない）
+function dateTimeText(iso) {
   const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso);
   return m ? `${m[1]} ${m[2]}` : iso;
 }
 
 export const wishlist = {
   render() {
-    return html`<div class="page-head"><div><h1>本</h1><div class="sub" id="wl-sub">欲しい本</div></div></div>
-      ${shelfSwitch('wishlist')}
+    return html`<div class="page-head"><div><h1>価格チェック</h1><div class="sub" id="wl-sub">スクレイピングした本の価格</div></div></div>
       <div id="wl-body"><p class="loading">欲しい本を読み込み中…</p></div>`;
   },
   mount(root, ctx) {
@@ -82,7 +86,7 @@ function mountList(root, body, items, store, lastScraped) {
     filters.tag = storedFilter(store, KEYS.tagFilter, Object.keys(TAG_FILTER_LABELS));
     filters.kind = storedFilter(store, KEYS.kindFilter, ['manga', 'book']);
   }
-  root.querySelector('#wl-sub').textContent = `欲しい本 ${items.length} 冊`;
+  root.querySelector('#wl-sub').textContent = `スクレイピングした本の価格 ${items.length} 冊`;
   body.innerHTML = String(html`
     <p class="small muted">価格の最終取得: ${lastScrapedText(lastScraped)}</p>
     <div class="chips" role="group" aria-label="表示する分類">${Object.entries(SHELVES).map(([k, label]) => html`<button type="button" class="chip" data-wl-shelf="${k}" aria-pressed="${String(filters.shelf === k)}">${shelfLabel(k, shelfCount[k])}</button>`)}</div>
@@ -100,7 +104,7 @@ function mountList(root, body, items, store, lastScraped) {
     <p class="empty" id="wl-empty" hidden>条件に一致する本がありません。検索語・種別・タグ・価格の条件を見直してください。</p>
     <div class="card wl-export">
       <p class="small" id="wl-marks-summary"></p>
-      <div class="row"><button type="button" class="btn small" id="wl-export">見た・評価を書き出す</button><button type="button" class="btn small" id="wl-import">書き出したファイルを読み込む</button></div>
+      <div class="row"><button type="button" class="btn small" id="wl-export">読んだ・評価を書き出す</button><button type="button" class="btn small" id="wl-import">書き出したファイルを読み込む</button></div>
       <input type="file" id="wl-import-file" accept=".json,application/json" hidden>
       <p class="small muted">書き出したファイルは、別の端末やブラウザのデータを消した後に「読み込む」で戻せます。</p>
       <p class="small muted" id="wl-export-status" role="status"></p>
@@ -124,7 +128,7 @@ function mountList(root, body, items, store, lastScraped) {
     $('wl-empty').hidden = r.items.length !== 0;
     list.innerHTML = String(html`${r.items.map(itemRow)}`);
     const s = collectMarks(items, store);
-    $('wl-marks-summary').textContent = `見た ${s.seen}件（★評価 ${s.rated}件）・まだ書き出していない変更 ${s.unexported}件${store.canStore ? '' : '（このブラウザには保存できないため、画面を閉じる前に書き出してください）'}`;
+    $('wl-marks-summary').textContent = `読んだ ${s.seen}件（★評価 ${s.rated}件）・まだ書き出していない変更 ${s.unexported}件${store.canStore ? '' : '（このブラウザには保存できないため、画面を閉じる前に書き出してください）'}`;
   };
 
   const setPressed = (attr, value) => {
@@ -161,13 +165,13 @@ function mountList(root, body, items, store, lastScraped) {
     const li = btn.closest('li[data-asin]');
     if (!li) return;
     const item = items.find(({ book }) => book.asin === li.dataset.asin);
-    const press = btn.dataset.tag ? { tag: btn.dataset.tag } : btn.dataset.rating ? { rating: btn.dataset.rating } : btn.hasAttribute('data-kind') ? { kind: true } : null;
+    const press = btn.dataset.tag ? { tag: btn.dataset.tag } : btn.dataset.rating ? { rating: btn.dataset.rating } : null;
     if (!item || !press) return;
     const { marks, group } = toggleMark(item.marks, press);
     item.marks = marks;
     saveMarks(store, item.book.asin, marks, group);
     // 描き直すとフォーカスが外れるので、押したボタンが残っていれば戻す（キーボード操作向け）
-    const selector = btn.dataset.tag ? `[data-tag="${btn.dataset.tag}"]` : btn.dataset.rating ? `[data-rating="${btn.dataset.rating}"]` : '[data-kind]';
+    const selector = btn.dataset.tag ? `[data-tag="${btn.dataset.tag}"]` : `[data-rating="${btn.dataset.rating}"]`;
     renderItems();
     list.querySelector(`li[data-asin="${item.book.asin}"] ${selector}`)?.focus();
   });
@@ -219,7 +223,7 @@ function mountList(root, body, items, store, lastScraped) {
     try {
       parsed = parseMarksFile(JSON.parse(await file.text()));
     } catch (e) {
-      status.textContent = `${file.name} を読み込めませんでした（${e instanceof SyntaxError ? 'JSON の形式ではありません' : e.message}）。「見た・評価を書き出す」で保存したファイルを選んでください。`;
+      status.textContent = `${file.name} を読み込めませんでした（${e instanceof SyntaxError ? 'JSON の形式ではありません' : e.message}）。「読んだ・評価を書き出す」で保存したファイルを選んでください。`;
       return;
     }
     const r = applyImportedMarks(items, store, parsed);
@@ -249,8 +253,19 @@ function changeBadges(book) {
   return html`${moved}${c.lowest ? html` <span class="badge down">最安値</span>` : ''}`;
 }
 
+// スクレイピングの履歴（新しい順）。履歴の無い古いデータでは最終取得日時だけ出す
+function historyBlock(book) {
+  if (!book.history.length) return book.scrapedAt ? html`<p class="small muted wl-history-none">最終取得: ${dateTimeText(book.scrapedAt)}</p>` : '';
+  const rows = [...book.history].sort((a, b) => b.at.localeCompare(a.at));
+  const value = (r) => (r.ku ? 'Kindle Unlimited 対象' : r.price === null ? '取得できず' : `¥${r.price.toLocaleString('ja-JP')}`);
+  return html`<details class="wl-history">
+    <summary>スクレイピングの履歴（${rows.length} 回・最終 ${dateTimeText(rows[0].at)}）</summary>
+    <table><thead><tr><th scope="col">取得日時</th><th scope="col">価格</th></tr></thead>
+      <tbody>${rows.map((r) => html`<tr><td>${dateTimeText(r.at)}</td><td>${value(r)}</td></tr>`)}</tbody></table>
+  </details>`;
+}
+
 function itemRow({ book, marks }) {
-  const other = marks.kind === 'manga' ? 'book' : 'manga';
   const cover = html`<span class="wl-cover" style="background:${spineColor(book.title)}" aria-hidden="true">${[...book.title][0] || ''}${book.asin ? html`<img src="${COVER(book.asin)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>`;
   const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'wanted') ? html` <span class="badge">読みたい</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}</span></span>`;
   const value = parseInt(marks.rating, 10) || 0;
@@ -258,10 +273,10 @@ function itemRow({ book, marks }) {
     ${book.asin ? html`<a class="wl-main" href="https://www.amazon.co.jp/dp/${book.asin}" target="_blank" rel="noopener noreferrer" aria-label="${book.title}（Amazon で開く）">${cover}${text}</a>` : html`<div class="wl-main">${cover}${text}</div>`}
     ${book.asin
       ? html`<div class="wl-marks">
-          <button type="button" class="chip wl-kind" data-kind="${marks.kind}" aria-label="種別: ${KIND_LABELS[marks.kind]}（押すと${KIND_LABELS[other]}に切り替え）">${KIND_LABELS[marks.kind]}</button>
           <span class="chips" role="group" aria-label="タグ">${Object.entries(TAG_LABELS).map(([k, label]) => html`<button type="button" class="chip wl-tag" data-tag="${k}" aria-pressed="${String(marks.tag === k)}">${label}</button>`)}</span>
           ${marks.tag === 'seen' ? html`<span class="wl-stars" role="group" aria-label="★評価（同じ★をもう一度押すと取り消し）">${[1, 2, 3, 4, 5].map((n) => html`<button type="button" class="icon-btn wl-star ${n <= value ? 'on' : ''}" data-rating="${n}" aria-pressed="${String(n === value)}" aria-label="★${n}">${n <= value ? '★' : '☆'}</button>`)}</span>` : ''}
         </div>`
       : ''}
+    ${historyBlock(book)}
   </li>`;
 }

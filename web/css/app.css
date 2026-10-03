@@ -220,9 +220,8 @@ details li { margin: 4px 0; }
 .book-item .count .unit { font-size: 0.75rem; font-weight: 400; color: var(--ink-3); }
 .book-item .count small { display: block; font-weight: 400; font-size: 0.7rem; color: var(--ink-3); }
 
-/* 欲しい本 */
+/* 価格チェック（欲しい本） */
 #wl-body [hidden] { display: none !important; } /* .btn などの display 指定より hidden を優先する */
-.shelf-switch { margin: -8px 0 12px; }
 .wl-search { margin-top: 8px; }
 .wl-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin: 4px 0 8px; }
 .wl-field > span:first-child { display: block; font-size: 0.8rem; color: var(--ink-2); font-weight: 600; margin-bottom: 2px; }
@@ -250,10 +249,14 @@ a.wl-main:hover .title { text-decoration: underline; }
 @media (prefers-color-scheme: dark) { .badge.down { background: #1c3a24; color: #9ad7a8; } .badge.up { background: #45231b; color: #f2b3a3; } }
 .wl-marks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0 56px; }
 .wl-marks .chip { min-height: 32px; padding: 2px 10px; font-size: 0.8rem; }
-.wl-kind { font-weight: 700; }
 .wl-stars { display: inline-flex; }
 .wl-star { width: 34px; height: 34px; }
 .wl-star.on { color: #d4a017; }
+.wl-history, .wl-history-none { margin: 6px 0 0 56px; }
+.wl-history summary { display: flex; align-items: center; min-height: 36px; font-size: 0.82rem; color: var(--ink-2); cursor: pointer; }
+.wl-history table { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.wl-history th, .wl-history td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); text-align: left; }
+.wl-history th { color: var(--ink-2); font-weight: 600; }
 .wl-export { margin-top: 16px; }
 .wishlist-hits, .home-wishlist { margin-bottom: 12px; }
 .badge.wish { background: var(--accent-soft); color: var(--accent); }

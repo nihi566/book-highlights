@@ -51,7 +51,7 @@ test('parseWishlist: 形式を確かめて正規化する', () => {
   const w = parseWishlist(data([book(), book({ asin: 'B0AAAAAAA2', ku: true, price: null, tag: 'seen', rating: 4, kind: 'manga' })]));
   assert.equal(w.lastScraped, '2026-01-02T03:04:05');
   assert.equal(w.books.length, 2);
-  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, index: 0 });
+  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, scrapedAt: '2026-01-01T00:00:00', history: [], index: 0 });
   assert.deepEqual(w.books[1].saved, { tag: 'seen', rating: '4', kind: 'manga' });
 });
 
@@ -163,11 +163,11 @@ test('filterWishlist: KU・価格帯（価格なしは除外）・逆転した�
   assert.equal(asins(r), '1234');
 });
 
-test('filterWishlist: タグ・種別の絞り込み', () => {
+test('filterWishlist: タグ・種別の絞り込み（廃止した「読みたくない」はタグなしとして扱う）', () => {
   const store = memoryStore({ 'book-tag:B0AAAAAAA1': 'unwanted', 'book-tag:B0AAAAAAA3': 'seen', 'book-rating:B0AAAAAAA3': '5' });
-  assert.equal(asins(filterWishlist(items(store), { tag: 'hide-unwanted' })), '234');
-  assert.equal(asins(filterWishlist(items(store), { tag: 'unwanted' })), '1');
-  assert.equal(asins(filterWishlist(items(store), { tag: 'untagged' })), '24');
+  assert.equal(asins(filterWishlist(items(store), { tag: 'seen' })), '3');
+  assert.equal(asins(filterWishlist(items(store), { tag: 'hide-unwanted' })), '1234', '廃止した選択肢は「すべて」と同じ');
+  assert.equal(asins(filterWishlist(items(store), { tag: 'untagged' })), '124');
   assert.equal(asins(filterWishlist(items(store), { kind: 'manga' })), '2');
   assert.equal(asins(filterWishlist(items(store), { kind: 'book' })), '134');
 });
@@ -178,6 +178,47 @@ test('filterWishlist: 並べ替え（価格なしは常に後ろ・評価は★�
   assert.equal(asins(filterWishlist(items(), { sort: 'title' })), '3124');
   const store = memoryStore({ 'book-tag:B0AAAAAAA2': 'seen', 'book-tag:B0AAAAAAA4': 'seen', 'book-rating:B0AAAAAAA4': '3' });
   assert.equal(asins(filterWishlist(items(store), { sort: 'rating' })), '4213');
+});
+
+test('filterWishlist: スクレイピングの最新順（取得日時が新しい順・日時なしは後ろ）', () => {
+  const w = parseWishlist(data([
+    book({ asin: 'B0AAAAAAA1', scraped_at: '2026-09-23T12:00:00' }),
+    book({ asin: 'B0AAAAAAA2', scraped_at: null }),
+    book({ asin: 'B0AAAAAAA3', scraped_at: '2026-10-01T08:00:00' }),
+    book({ asin: 'B0AAAAAAA4', scraped_at: '2026-09-25T09:00:00' }),
+  ]));
+  const list = w.books.map((b) => ({ book: b, marks: loadMarks(b, memoryStore()) }));
+  assert.equal(asins(filterWishlist(list, { sort: 'scraped-desc' })), '3412');
+});
+
+test('parseWishlist: スクレイピングの履歴（price_history）を読み、不正な行は捨てる', () => {
+  const history = [
+    { at: '2026-09-20T10:00:00', price: 1200, ku: false },
+    { at: '2026-09-25T10:00:00', price: null, ku: true },
+    { at: 5, price: 900 },
+    { at: '2026-09-30T10:00:00', price: -3, ku: 'x' },
+    null,
+  ];
+  const [b] = parseWishlist(data([book({ price_history: history })])).books;
+  assert.deepEqual(b.history, [
+    { at: '2026-09-20T10:00:00', price: 1200, ku: false },
+    { at: '2026-09-25T10:00:00', price: null, ku: true },
+    { at: '2026-09-30T10:00:00', price: null, ku: false },
+  ]);
+  assert.deepEqual(parseWishlist(data([book({ price_history: 'bad' })])).books[0].history, [], '古いデータ（履歴なし）は空');
+});
+
+test('loadMarks: 廃止した「読みたくない」タグは無視する', () => {
+  const [b] = parseWishlist(data([book({ tag: 'unwanted' })])).books;
+  assert.equal(b.saved.tag, '');
+  assert.equal(loadMarks(b, memoryStore({ 'book-tag:B0AAAAAAA1': 'unwanted' })).tag, '');
+  const [wanted] = parseWishlist(data([book({ tag: 'wanted' })])).books;
+  assert.equal(loadMarks(wanted, memoryStore({ 'book-tag:B0AAAAAAA1': 'unwanted' })).tag, '', 'このブラウザで外した公開データのタグを復活させない');
+});
+
+test('parseMarksFile: 廃止した「読みたくない」はタグなしとして読み込む', () => {
+  const { entries } = parseMarksFile({ format: 'kindle-marks', version: 1, items: [{ asin: 'B0CNT00001', tag: 'unwanted', rating: 3 }] });
+  assert.deepEqual(entries, [{ asin: 'B0CNT00001', tag: '', rating: '' }]);
 });
 
 test('inShelf / shelfCounts: 「購入済み」タグを付けた本は購入済みに移り、読みたいから外れる', () => {
@@ -224,7 +265,7 @@ test('collectMarks: 保存できないブラウザでは公開データとの差
   assert.equal(s.unexported, 1);
 });
 
-test('wishlistSummary: ホームに出す件数と Kindle Unlimited で読める本（購入済み・読みたくない・見たを除き、読みたいを先頭に最大 3 冊）', () => {
+test('wishlistSummary: ホームに出す件数と Kindle Unlimited で読める本（購入済み・読んだを除き、読みたいを先頭に最大 3 冊）', () => {
   const { books } = parseWishlist({ format: 'kindle-wishlist', version: 1, books: [
     { asin: 'B0AAAAAAA1', title: 'KU 1', ku: true },
     { asin: 'B0AAAAAAA2', title: '通常', price: 990 },
@@ -258,7 +299,7 @@ test('tagCounts: タグの絞り込みの選択肢ごとに、選ぶと出る件
   const { books } = parseWishlist(TAGGED);
   const items = books.map((book) => ({ book, marks: loadMarks(book, memoryStore({ 'book-tag:B0CNT00003': 'purchased' })) }));
   const counts = tagCounts(items);
-  assert.deepEqual(counts, { all: 4, 'hide-unwanted': 3, wanted: 1, unwanted: 1, purchased: 1, seen: 1, untagged: 0 });
+  assert.deepEqual(counts, { all: 4, wanted: 1, purchased: 1, seen: 1, untagged: 1 }, '廃止した「読みたくない」の本はタグなし');
   for (const [filter, n] of Object.entries(counts)) {
     assert.equal(filterWishlist(items, { tag: filter }).items.length, n, `絞り込みの結果と件数が一致する: ${filter}`);
   }
