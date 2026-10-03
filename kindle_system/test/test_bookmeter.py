@@ -217,7 +217,7 @@ class FetchWishBooksTest(unittest.TestCase):
 
         books = fetch_wish_books()
 
-        self.assertEqual(books, [{"title": "正規の本", "author": "著者A"}])
+        self.assertEqual(books, [{"title": "正規の本", "author": "著者A", "bookmeter_id": "1"}])
         self.assertEqual(mock_get.call_count, 1)
         called_urls = [call.args[0] for call in mock_get.call_args_list]
         self.assertNotIn(MALICIOUS_NEXT_URL, called_urls)
