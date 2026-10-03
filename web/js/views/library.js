@@ -2,7 +2,10 @@
 import { html } from '../html.js';
 import { bookHighlights, dailyPicks, libraryStats, listBooks, searchHighlights, SOURCES } from '../../core/model.js';
 import { vaultPaths } from '../../core/obsidian.js';
-import { bookRow, highlightCard, lineIndex, sourceBadge, spineColor } from '../ui.js';
+import { normalizeText } from '../../core/text.js';
+import { browserStore, formatPrice, loadMarks, searchWishlist, wishlistSummary } from '../../core/wishlist.js';
+import { loadWishlist } from '../wishlist-data.js';
+import { bookRow, highlightCard, kindleAlertBlock, lineIndex, shelfSwitch, sourceBadge, spineColor } from '../ui.js';
 
 const flow = html`<div class="flow" aria-label="点から立体へ">
   <div class="f-point"><b>点</b>線を引いた一文</div>
@@ -16,8 +19,10 @@ export const home = {
     const lib = state.library;
     const s = libraryStats(lib);
     const a = state.analysis;
+    // 自動取り込みの異常はスマホで最初に開くホームで気づけるようにする（中身は PC の情報を取り直したときに差し替える）
+    const alert = html`<div id="kindle-alert">${kindleAlertBlock(state)}</div>`;
     if (!s.highlights) {
-      return html`<section class="card hero">
+      return html`${alert}<section class="card hero">
           <h1>本に引いた線を、<br>知識の立体へ。</h1>
           <p class="help">Kindle と Play ブックスのハイライトを 1 か所に集め、Obsidian に写します。PC のローカル LLM が「点」をつないで「線」「面」「立体」に組み立て、次に読む本も提案します。</p>
           ${flow}
@@ -37,7 +42,7 @@ export const home = {
     const picks = dailyPicks(lib, 3, today);
     const idx = lineIndex(a);
     const recent = searchHighlights(lib, '').slice(0, 5);
-    return html`
+    return html`${alert}
       <div class="stats">
         <a class="stat point" href="#/search"><b>${s.highlights}</b><span>点</span></a>
         <a class="stat line" href="#/knowledge"><b>${a ? a.lines.length : '–'}</b><span>線</span></a>
@@ -60,13 +65,39 @@ export const home = {
             <div class="card"><p>点が ${s.highlights} 件たまりました。ローカル LLM で点をつないで、線・面・立体にしてみましょう。</p>
             <a class="btn primary" href="#/knowledge">分析する</a></div>`}
 
+      <div id="home-wishlist"></div>
+
       <div class="section"><h2>最近の点</h2><a class="small" href="#/search">すべて見る</a></div>
       ${recent.map((h) => highlightCard(h, { library: lib, lines: idx.get(h.id) }))}
 
       <div class="section"><h2>Obsidian</h2></div>
       <div class="card row spread"><span class="help grow">ハイライトと分析結果を Vault に写します。</span><a class="btn" href="#/export">書き出す</a></div>`;
   },
+  mount(root) {
+    renderHomeWishlist(root.querySelector('#home-wishlist'));
+  },
 };
+
+/** ホームの「欲しい本」。Kindle Unlimited で読める本に気づけるように。読めないときは何も出さない（ホームを邪魔しない） */
+function renderHomeWishlist(box) {
+  if (!box) return;
+  loadWishlist()
+    .then((w) => {
+      if (!box.isConnected || !w.books.length) return;
+      // タグは読むだけ（ホームでは保存値を片付けない。欲しい本の画面と同じく、保存できないブラウザでは公開データのタグ）
+      const store = browserStore();
+      const s = wishlistSummary(w.books.map((book) => ({ book, marks: loadMarks(book, store) })));
+      box.innerHTML = String(html`<section class="home-wishlist">
+          <div class="section"><h2>欲しい本</h2><a class="small" href="#/wishlist">欲しい本へ</a></div>
+          <p class="small muted">欲しい本 ${s.total} 冊${s.kuCount ? ` ・ Kindle Unlimited 対象 ${s.kuCount} 冊` : ''}</p>
+          ${s.picks.length ? html`<ul class="book-list">${s.picks.map(wishlistHitRow)}</ul>` : ''}
+          ${s.kuCount ? html`<a class="small" href="#/wishlist?ku=1">Kindle Unlimited 対象をすべて見る（${s.kuCount} 冊）</a>` : ''}
+        </section>`);
+    })
+    .catch(() => {
+      if (box.isConnected) box.innerHTML = '';
+    });
+}
 
 export const books = {
   render({ state, query }) {
@@ -84,6 +115,7 @@ export const books = {
       return html`<a class="chip ${on ? 'on' : ''}" href="#/books?${params}">${label}</a>`;
     };
     return html`<div class="page-head"><div><h1>本</h1><div class="sub">${list.length} 冊</div></div><a class="btn small" href="#/import">＋ 取り込む</a></div>
+      ${shelfSwitch('books')}
       <form class="search-box" data-form="book-filter" role="search"><input type="search" name="q" value="${query.get('q') || ''}" placeholder="書名・著者で絞り込む" aria-label="書名・著者で絞り込む"></form>
       <div class="chips">${chip('source', '', 'すべて')}${chip('source', 'kindle', 'Kindle')}${chip('source', 'playbooks', 'Play Books')}</div>
       <div class="chips" style="margin-top:6px">${chip('sort', 'recent', '最近')}${chip('sort', 'title', '書名')}${chip('sort', 'count', '点の数')}</div>
@@ -98,7 +130,9 @@ export const book = {
     const hs = bookHighlights(state.library, b.id);
     const idx = lineIndex(state.analysis);
     const { vaultName, root } = state.settings;
-    const notePath = vaultPaths(state.library, null, root).books[b.id];
+    // 最後の書き出しと同じファイルを開く（PC が書き出していればその割り当て、このブラウザからならその割り当て）
+    const owners = (state.settings.ai.mode === 'companion' && state.pcInfo?.owners) || state.vaultOwners || {};
+    const notePath = vaultPaths(state.library, null, root, owners).books[b.id];
     const obsidianUrl = vaultName && notePath ? `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(notePath)}` : '';
     const linesHere = (state.analysis?.lines || []).filter((l) => l.bookIds?.includes(b.id));
     let chapter = null;
@@ -134,6 +168,7 @@ export const search = {
         <input type="search" name="q" value="${q}" placeholder="言葉・書名・#タグ（空白で AND）" aria-label="ハイライトを検索" autocomplete="off" ${q ? '' : 'autofocus'}>
       </form>
       <div class="chips" id="search-filters"></div>
+      <div id="search-wishlist"></div>
       <div id="search-results"></div>`;
   },
   mount(root, ctx) {
@@ -171,4 +206,40 @@ function renderResults(root, ctx, q) {
   root.querySelector('#search-results').innerHTML = String(html`<p class="small muted">${results.length} 件${results.length > shown.length ? `（先頭 ${shown.length} 件を表示）` : ''}</p>
     ${shown.map((h) => highlightCard(h, { library: state.library, lines: idx.get(h.id), query: q }))}
     ${!results.length ? html`<p class="empty">見つかりませんでした</p>` : ''}`);
+  renderWishlistHits(root, q);
+}
+
+let wishlistToken = 0;
+
+/** 検索語に当たる欲しい本（先頭 5 件）。読めないときは何も出さない（ハイライトの検索を邪魔しない） */
+function renderWishlistHits(root, q) {
+  const box = root.querySelector('#search-wishlist');
+  const token = ++wishlistToken;
+  // #タグはハイライト用なので、欲しい本の画面へ渡す語から外す
+  // 全角の「＃」もタグとして外すため、searchWishlist と同じ正規化をしてから分ける
+  const words = normalizeText(q).split(' ').filter((w) => w && !w.startsWith('#')).join(' ');
+  if (!words) {
+    box.innerHTML = '';
+    return;
+  }
+  loadWishlist()
+    .then((w) => {
+      if (token !== wishlistToken || !box.isConnected) return;
+      const hits = searchWishlist(w.books, words);
+      box.innerHTML = hits.length
+        ? String(html`<section class="wishlist-hits"><div class="section"><h2>欲しい本</h2><a class="small" href="#/wishlist?q=${encodeURIComponent(words)}">欲しい本で見る（${hits.length} 件）</a></div>
+            <ul class="book-list">${hits.slice(0, 5).map(wishlistHitRow)}</ul></section>`)
+        : '';
+    })
+    .catch(() => {
+      if (token === wishlistToken && box.isConnected) box.innerHTML = '';
+    });
+}
+
+function wishlistHitRow(b) {
+  const inner = html`<span class="book-spine" style="background:${spineColor(b.title)}" aria-hidden="true">${[...b.title][0] || ''}</span>
+    <span class="grow"><span class="title">${b.title}</span><span class="meta">${formatPrice(b)}</span></span>`;
+  return b.asin
+    ? html`<li><a class="book-item" href="https://www.amazon.co.jp/dp/${b.asin}" target="_blank" rel="noopener noreferrer" aria-label="${b.title}（Amazon で開く）">${inner}</a></li>`
+    : html`<li><a class="book-item" href="#/wishlist?q=${encodeURIComponent(b.title)}">${inner}</a></li>`;
 }

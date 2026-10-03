@@ -11,8 +11,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { mergeParsed } from '../web/core/model.js';
 import { parseFiles } from '../web/core/parsers/index.js';
-import { writeVault } from './store.js';
-import { summarizePlan } from './server.js';
+import { exportAndRecord } from './store.js';
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -213,9 +212,9 @@ export function createGoogleClient({ store, fetchImpl = fetch }) {
       await store.saveGoogleSync(synced);
 
       const cfg = await store.config();
-      if (cfg.vault && (result.added || result.updated)) {
+      if (cfg.vault && cfg.autoExport !== false && (result.added || result.updated)) {
         try {
-          result.vault = summarizePlan(await writeVault(cfg.vault, await store.library(), await store.analysis(), { root: cfg.root }));
+          result.vault = await store.lock(() => exportAndRecord(store, { trigger: 'google' }));
         } catch (e) {
           result.errors.push(`Obsidian: ${e.message}`);
         }

@@ -1,19 +1,22 @@
-// 点と線 — Web アプリ本体（ルーティング・操作）
+// 本 — Web アプリ本体（ルーティング・操作）
 import { html } from './html.js';
 import { kv, requestPersistence } from './db.js';
 import { loadCache, loadState, save, saveCache, state } from './state.js';
-import { buildBookmarklet, companion, detectServedByCompanion, download, pickVault, savedVault, syncWithPc, writeVaultFs } from './services.js';
-import { openSheet, toast } from './ui.js';
+import { buildBookmarklet, companion, detectServedByCompanion, download, fsSupported, pickVault, savedVault, syncWithPc, writeVaultFs } from './services.js';
+import { kindleAlertBlock, openSheet, toast } from './ui.js';
 import { book, books, home, search } from './views/library.js';
 import { isolatedView, knowledge, lineView, planeView } from './views/knowledge.js';
-import { exportView, importView, settingsView } from './views/settings.js';
-import { deleteBook, emptyLibrary, mergeLibraries, mergeParsed, updateHighlight } from '../core/model.js';
+import { exportView, importView, kindleSyncBlock, settingsView } from './views/settings.js';
+import { wishlist } from './views/wishlist.js';
+import { FEEDBACK_LABELS, deleteBook, emptyLibrary, mergeParsed, setFeedback, updateHighlight } from '../core/model.js';
 import { parseFiles } from '../core/parsers/index.js';
+import { applyImport, makeBackup } from '../core/importing.js';
 import { isNotebookJson, parseNotebookJson } from '../core/parsers/kindle-notebook.js';
 import { renderVault } from '../core/obsidian.js';
 import { createZip } from '../core/zip.js';
 import { createLlmClient } from '../core/analysis/llm.js';
 import { analyzeLibrary, recommendBooks, recommendationNote } from '../core/analysis/pipeline.js';
+import { followJob } from '../core/jobs.js';
 import { SAMPLE_BOOKS } from '../core/sample.js';
 import { safeFileName } from '../core/text.js';
 
@@ -21,6 +24,7 @@ const ROUTES = [
   [/^\/$/, home, 'home'],
   [/^\/books$/, books, 'books'],
   [/^\/book\/(?<id>[\w-]+)$/, book, 'books'],
+  [/^\/wishlist$/, wishlist, 'books'],
   [/^\/search$/, search, 'search'],
   [/^\/knowledge$/, knowledge, 'knowledge'],
   [/^\/knowledge\/line\/(?<id>[\w-]+)$/, lineView, 'knowledge'],
@@ -34,6 +38,7 @@ const ROUTES = [
 const view = document.getElementById('view');
 let shuffle = 0;
 let currentPath = null;
+let currentHash = null;
 
 function parseHash() {
   const raw = location.hash.replace(/^#/, '') || '/';
@@ -52,7 +57,9 @@ function render({ keepScroll = false } = {}) {
     }
   }
   if (!match) match = { view: home, tab: 'home', params: {} };
-  const ctx = { state, params: match.params, query, shuffle };
+  // refresh: 同じ画面の描き直し（同期・編集のあと）。別の画面から来たとき・リンクを押したときは false
+  const ctx = { state, params: match.params, query, shuffle, refresh: location.hash === currentHash };
+  currentHash = location.hash;
   const y = window.scrollY;
   view.innerHTML = String(match.view.render(ctx));
   match.view.mount?.(view, ctx);
@@ -60,6 +67,11 @@ function render({ keepScroll = false } = {}) {
   for (const a of document.querySelectorAll('.tabbar a')) {
     if (a.dataset.tab === match.tab) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
+  }
+  // 書き出し・設定の画面では PC の出力先と最後に書き出した時刻を取り直す（10 秒に 1 回まで）
+  if (PC_INFO_PATHS.includes(path) && state.settings.ai.mode === 'companion' && Date.now() - (state.pcInfoAt || 0) > 10000) {
+    state.pcInfoAt = Date.now();
+    refreshPcInfo();
   }
   if (keepScroll || path === currentPath) window.scrollTo(0, y);
   else window.scrollTo(0, 0);
@@ -107,19 +119,21 @@ async function importFiles(files) {
   if (out) out.innerHTML = '<p class="loading">読み込み中…</p>';
   try {
     const inputs = await Promise.all(files.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) })));
-    const { books: parsed, libraries, results } = await parseFiles(inputs);
-    for (const backup of libraries) {
-      state.library = mergeLibraries(state.library, backup.library ? backup.library : backup);
-      if (backup.analysis && !state.analysis) state.analysis = backup.analysis;
-    }
-    const stats = mergeParsed(state.library, parsed);
+    const parsed = await parseFiles(inputs);
+    const { results } = parsed;
+    const r = applyImport({ library: state.library, analysis: state.analysis }, parsed);
+    const { stats } = r;
+    state.library = r.library;
     await persistLibrary();
-    if (libraries.length) await save.analysis();
+    if (r.analysisChanged) {
+      state.analysis = r.analysis;
+      await save.analysis();
+    }
     const summary = `新しい点 ${stats.added} 件${stats.updated ? `・更新 ${stats.updated} 件` : ''}${stats.unchanged ? `・既存 ${stats.unchanged} 件` : ''}`;
     toast(`取り込みました: ${summary}`);
     if (out) {
       out.innerHTML = String(html`<div class="card" style="margin-top:12px">
-        <p class="notice ${stats.added || libraries.length ? 'ok' : ''}">${summary}</p>
+        <p class="notice ${stats.added || stats.backups ? 'ok' : ''}">${summary}${r.analysisChanged ? '（バックアップの新しい分析結果も反映）' : ''}</p>
         <ul class="result-list">${results.map((r) => html`<li>${r.error ? '✗' : '✓'} <b>${r.name}</b><br><span class="small muted">${r.error || `${r.formatLabel} — 本 ${r.books} 冊 / 点 ${r.highlights} 件`}</span></li>`)}</ul>
         <div class="row" style="margin-top:8px"><a class="btn small" href="#/books">本を見る</a><a class="btn small" href="#/export">Obsidian に写す</a></div>
       </div>`);
@@ -199,6 +213,7 @@ async function runAnalysis(mode = 'analyze') {
       await save.analysis();
       setJob({ running: false, stage: 'done', message: '完了しました' });
       toast('分析が完了しました');
+      scheduleFolderExport();
     } catch (e) {
       setJob({ running: false, stage: 'error', error: e.message, message: '' });
     }
@@ -215,22 +230,45 @@ async function runAnalysis(mode = 'analyze') {
   }
 }
 
+let followingPcJob = false;
+
+/** PC の分析を最後まで追う。通信が途切れても再接続を続け、長く途切れたら「状況不明」にして確認ボタンを出す */
 async function pollPcJob() {
-  for (;;) {
-    const job = await companion.job();
-    setJob({ ...job, where: 'pc', running: job.running });
-    if (!job.running) break;
-    await new Promise((r) => setTimeout(r, 1500));
+  if (followingPcJob) return;
+  followingPcJob = true;
+  try {
+    const result = await followJob({
+      fetchJob: () => companion.job(),
+      onUpdate: (u) => {
+        if (u.job) setJob({ ...u.job, where: 'pc', running: u.job.running, lost: false, reconnecting: 0 });
+        else setJob({ where: 'pc', running: true, lost: false, reconnecting: u.reconnecting, message: `PC との通信が途切れました。再接続しています（${u.reconnecting}/${u.maxFailures - 1}）` });
+      },
+    });
+    if (result.lost) return setJob({ running: false, lost: true, where: 'pc', error: '', message: '' });
+    if (result.error) return;
+    let analysis;
+    try {
+      analysis = await companion.analysis();
+    } catch {
+      return setJob({ running: false, lost: true, where: 'pc', error: '', message: '' });
+    }
+    if (analysis) {
+      state.analysis = analysis;
+      await save.analysis();
+    }
+    setJob({ running: false, lost: false, stage: 'done', message: result.vault ? `完了しました（Obsidian: ${result.vault.written} 件を書き込み）` : '完了しました' });
+    toast('分析が完了しました');
+    refreshPcInfo();
+    scheduleFolderExport();
+  } finally {
+    followingPcJob = false;
   }
-  const j = state.job;
-  if (j.error) return;
-  const analysis = await companion.analysis();
-  if (analysis) {
-    state.analysis = analysis;
-    await save.analysis();
-  }
-  setJob({ running: false, stage: 'done', message: j.vault ? `完了しました（Obsidian: ${j.vault.written} 件を書き込み）` : '完了しました' });
-  toast('分析が完了しました');
+}
+
+/** 「PC の状況を確認」: 途切れていた分析の続きを追う（終わっていれば結果を受け取る） */
+function checkPcJob() {
+  setJob({ running: true, lost: false, where: 'pc', message: 'PC に分析の状況を問い合わせています' });
+  return pollPcJob();
 }
 
 async function cancelAnalysis() {
@@ -245,6 +283,10 @@ async function sync({ quiet = false } = {}) {
     const { analysisDir } = await syncWithPc();
     if (!quiet) toast(`PC と同期しました${analysisDir ? `（分析: ${analysisDir}）` : ''}`);
     render({ keepScroll: true });
+    // PC は同期のあと自動で Vault に書き出すので、少し待ってから結果（最後に書き出した時刻）を取り直す
+    refreshPcInfo();
+    setTimeout(refreshPcInfo, 2500);
+    scheduleFolderExport();
     // PC で分析が走っていれば進捗を追う
     const job = await companion.job().catch(() => null);
     if (job?.running && !state.job?.running) {
@@ -256,8 +298,64 @@ async function sync({ quiet = false } = {}) {
   }
 }
 
+// PC の状態（出力先・最後の書き出し・拡張の確認結果）を表示する画面
+const PC_INFO_PATHS = ['/export', '/settings', '/import', '/'];
+// 描き直さず、欄だけ差し替える画面（描き直すと取り込み結果の表示・開いた説明・今日の点の「別の点」が消える）
+const PC_INFO_BOXES = { '/import': ['#kindle-sync', kindleSyncBlock], '/': ['#kindle-alert', kindleAlertBlock] };
+
+/** PC の状態（出力先・最後に Vault に書き出した結果・拡張の確認結果）を取り直し、表示している画面に反映する */
+async function refreshPcInfo() {
+  // PC を設定していないとき（GitHub Pages で開いただけ）は localhost に問い合わせない
+  if (state.settings.ai.mode !== 'companion' || !(state.servedByCompanion || state.settings.ai.companionUrl)) return;
+  try {
+    state.pcInfo = await companion.info();
+  } catch {
+    return;
+  }
+  // フォルダ名を自分で決めていなければ PC の設定に合わせる（画面の表示と実際の出力先をそろえる）
+  if (!state.settings.rootExplicit && state.pcInfo.root && state.pcInfo.root !== state.settings.root) {
+    state.settings.root = state.pcInfo.root;
+    await save.settings();
+  }
+  const { path } = parseHash();
+  // 入力中の欄があるときは描き直さない（書きかけの設定を消さない）
+  const typing = document.activeElement?.matches?.('#view input:not([type="checkbox"]):not([type="radio"]), #view textarea, #view select');
+  const partial = PC_INFO_BOXES[path];
+  if (partial) {
+    const [selector, block] = partial;
+    const box = document.querySelector(`#view ${selector}`);
+    if (box) box.innerHTML = String(block(state));
+  } else if (PC_INFO_PATHS.includes(path) && !typing) render({ keepScroll: true });
+}
+
+let folderTimer;
+/** Vault のフォルダを選んである PC のブラウザでは、取り込み・同期・編集のあとに自動で書き出す（許可を求める画面は出さない） */
+function scheduleFolderExport() {
+  if (!fsSupported || !state.settings.autoExportFolder) return;
+  clearTimeout(folderTimer);
+  folderTimer = setTimeout(async () => {
+    try {
+      const handle = await savedVault();
+      if (!handle || (await handle.queryPermission({ mode: 'readwrite' })) !== 'granted') return;
+      const plan = await writeVaultFs(handle, vaultFiles, state.settings.root);
+      await recordFolderExport(handle, plan, 'folder');
+    } catch {
+      /* 次の機会に書き出す */
+    }
+  }, 1500);
+}
+
+async function recordFolderExport(handle, plan, trigger) {
+  state.folderExport = { at: new Date().toISOString(), trigger, name: handle.name, root: state.settings.root, written: plan.writes.length - 1, unchanged: plan.unchanged, deleted: plan.deletes.length };
+  state.vaultOwners = plan.owners || {};
+  await Promise.all([save.folderExport(), save.vaultOwners()]);
+  const { path } = parseHash();
+  if (path === '/export') render({ keepScroll: true });
+}
+
 let syncTimer;
 function autoSyncAfterChange() {
+  scheduleFolderExport();
   if (state.settings.ai.mode !== 'companion' || !state.settings.autoSync) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => sync({ quiet: true }), 1500);
@@ -279,7 +377,7 @@ async function pullIfNewer() {
     const differs = (info.updatedAt || '') !== (state.library.updatedAt || '') || (info.analysis ? stamp(info.analysis) : '') > stamp(state.analysis);
     if (!differs) return;
     // 入力中の画面を描き直すと書きかけが消えるので、そのときは同期だけして描き直しは次の画面遷移に任せる
-    const typing = view.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    const typing = document.activeElement?.matches?.('#view input:not([type="checkbox"]):not([type="radio"]), #view textarea, #view select, #view [contenteditable]');
     if (typing) await syncWithPc();
     else await sync({ quiet: true });
   } catch {
@@ -298,8 +396,8 @@ function googleLabel(g) {
 
 // ---- Obsidian へ書き出し ----
 
-function vaultFiles() {
-  return renderVault(state.library, state.analysis, { root: state.settings.root });
+function vaultFiles(owners = {}) {
+  return renderVault(state.library, state.analysis, { root: state.settings.root, owners });
 }
 
 function showExportResult(text, ok = true) {
@@ -375,6 +473,16 @@ const actions = {
   'run-analysis': () => runAnalysis('analyze'),
   'rerun-recommend': () => runAnalysis('recommend'),
   'cancel-analysis': cancelAnalysis,
+  'check-pc-job': () => checkPcJob(),
+  async 'rec-feedback'(el) {
+    const r = state.analysis?.recommendations?.[Number(el.dataset.i)];
+    if (!r) return;
+    const f = setFeedback(state.library, { title: r.title, author: r.author }, el.dataset.status);
+    await persistLibrary();
+    toast(f.status ? `「${r.title}」を「${FEEDBACK_LABELS[f.status]}」にしました。次のおすすめに反映します` : '反応を外しました');
+    render({ keepScroll: true });
+    autoSyncAfterChange();
+  },
   'map-zoom'(el) {
     const svg = document.getElementById('knowledge-map');
     const w = parseFloat(svg.getAttribute('width')) || 100;
@@ -390,7 +498,8 @@ const actions = {
   async 'export-fs'() {
     try {
       const handle = (await savedVault()) || (await pickVault());
-      const plan = await writeVaultFs(handle, vaultFiles(), state.settings.root);
+      const plan = await writeVaultFs(handle, vaultFiles, state.settings.root);
+      await recordFolderExport(handle, plan, 'manual');
       showExportResult(`「${handle.name}」に書き出しました: ${planSummary(plan)}`);
     } catch (e) {
       if (e.name !== 'AbortError') showExportResult(e.message, false);
@@ -407,8 +516,10 @@ const actions = {
   async 'export-pc'() {
     try {
       await syncWithPc();
-      const r = await companion.exportVault();
-      showExportResult(`PC の Vault に書き出しました: 書き込み ${r.written} 件・変更なし ${r.unchanged} 件${r.skipped.length ? `・同名ノートのため見送り ${r.skipped.length} 件` : ''}`);
+      // フォルダ名は、この画面で自分で決めたときだけ PC に伝える（既定値で PC の設定を上書きしない）
+      const r = await companion.exportVault(state.settings.rootExplicit ? state.settings.root : undefined);
+      await refreshPcInfo();
+      showExportResult(`PC の Vault（${r.vaultPath}）に書き出しました: 書き込み ${r.written} 件・変更なし ${r.unchanged} 件${r.skipped.length ? `・同名ノートのため見送り ${r.skipped.length} 件` : ''}`);
     } catch (e) {
       showExportResult(e.message, false);
     }
@@ -418,8 +529,12 @@ const actions = {
     state.settings.autoSync = el.checked;
     await save.settings();
   },
+  async 'toggle-autoexport-folder'(el) {
+    state.settings.autoExportFolder = el.checked;
+    await save.settings();
+  },
   async backup() {
-    const data = JSON.stringify({ ...state.library, analysis: state.analysis });
+    const data = JSON.stringify(makeBackup(state.library, state.analysis));
     download(`book-highlights-backup-${new Date().toISOString().slice(0, 10)}.json`, data, 'application/json');
   },
   async 'clear-all'() {
@@ -449,7 +564,9 @@ const forms = {
   },
   async 'export-settings'(form) {
     const d = new FormData(form);
-    state.settings.root = safeFileName(String(d.get('root') || '').trim() || 'Highlights');
+    const root = safeFileName(String(d.get('root') || '').trim() || 'Highlights');
+    if (root !== state.settings.root) state.settings.rootExplicit = true;
+    state.settings.root = root;
     state.settings.vaultName = String(d.get('vaultName') || '').trim();
     await save.settings();
     toast('保存しました');
@@ -510,6 +627,12 @@ document.addEventListener('submit', (e) => {
 });
 
 window.addEventListener('hashchange', () => render());
+
+document.addEventListener('visibilitychange', () => {
+  const job = state.job;
+  // 途切れて「状況不明」になった PC の分析だけ確かめ直す（始める途中の分析を古い結果で上書きしない）
+  if (document.visibilityState === 'visible' && job?.where === 'pc' && job.lost && !followingPcJob) checkPcJob();
+});
 
 async function start() {
   await loadState();

@@ -84,6 +84,35 @@ test('コンパニオンサーバ: 取り込み → 分析ジョブ → Vault �
   });
 });
 
+test('コンパニオンサーバ: ブラウザ拡張からの自動取り込み（auto: true）は削除した本を復活させない', async () => {
+  await withServer(async ({ base, store }) => {
+    const notebook = (texts) => ({
+      files: [
+        {
+          name: 'kindle-auto.json',
+          base64: Buffer.from(JSON.stringify({ format: 'book-highlights/kindle-notebook', version: 1, books: [{ asin: 'B000TEST', title: '自動の本', author: '著者', highlights: texts.map((text) => ({ text })) }] })).toString('base64'),
+        },
+      ],
+      auto: true,
+    });
+    const post = async (body) => (await fetch(`${base}/api/import`, { method: 'POST', body: JSON.stringify(body) })).json();
+    const r1 = await post(notebook(['点A']));
+    assert.equal(r1.stats.added, 1);
+    // 同じ内容を何度送っても増えない（拡張は変化のあった本を丸ごと送る）
+    const r2 = await post(notebook(['点A', '点B']));
+    assert.equal(r2.stats.added, 1);
+    assert.equal(r2.stats.unchanged, 1);
+
+    const lib = await store.library();
+    const book = Object.values(lib.books).find((b) => b.title === '自動の本');
+    book.deleted = true;
+    await store.saveLibrary(lib);
+    const r3 = await post(notebook(['点A', '点B', '点C']));
+    assert.equal(r3.stats.skippedDeletedBooks, 1);
+    assert.ok((await store.library()).books[book.id].deleted);
+  });
+});
+
 test('コンパニオンサーバ: CORS・Host・トークンの制限', async () => {
   await withServer(async ({ base }) => {
     const ok = await fetch(`${base}/api/info`, { headers: { Origin: 'https://example.github.io' } });
@@ -104,6 +133,53 @@ test('コンパニオンサーバ: CORS・Host・トークンの制限', async (
       assert.equal((await fetch(`${base}/api/info`)).status, 401);
       assert.equal((await fetch(`${base}/api/info`, { headers: { 'X-BH-Token': 'secret' } })).status, 200);
       assert.equal((await fetch(`${base}/`)).status, 200, '画面そのものはトークン不要');
+    },
+    { token: 'secret' },
+  );
+});
+
+test('コンパニオンサーバ: 拡張の確認結果を記録し /api/info で返す', async () => {
+  await withServer(async ({ base, store }) => {
+    const post = (body, headers = {}) => fetch(`${base}/api/kindle-status`, { method: 'POST', headers, body: JSON.stringify(body) });
+    const info = async () => (await fetch(`${base}/api/info`)).json();
+    assert.equal((await info()).kindleSync, null);
+
+    // 既存の lastExport を消さない
+    await store.saveState({ lastExport: { at: '2026-10-01T00:00:00.000Z', trigger: 'manual' } });
+    const r = await post({ ok: true, added: 5, intervalMin: 15, token: 'leak' });
+    assert.equal(r.status, 200);
+    assert.deepEqual(await r.json(), { ok: true });
+    const i1 = await info();
+    assert.deepEqual({ ok: i1.kindleSync.lastCheck.ok, added: i1.kindleSync.lastCheck.added, intervalMin: i1.kindleSync.lastCheck.intervalMin, error: i1.kindleSync.lastCheck.error, needLogin: i1.kindleSync.lastCheck.needLogin }, { ok: true, added: 5, intervalMin: 15, error: '', needLogin: false });
+    assert.equal(i1.kindleSync.lastNew.added, 5);
+    assert.equal(i1.lastExport.trigger, 'manual');
+    assert.equal(JSON.stringify(await store.state()).includes('leak'), false);
+
+    // 失敗の報告のあとも「最後に新しい点」は残る
+    await post({ ok: false, added: 0, error: '読めません' });
+    const i2 = await info();
+    assert.equal(i2.kindleSync.lastCheck.ok, false);
+    assert.equal(i2.kindleSync.lastCheck.error, '読めません');
+    assert.equal(i2.kindleSync.lastNew.added, 5);
+    assert.ok(i2.kindleSync.lastSuccessAt);
+
+    // 不正な本文は 400 で、保存内容は変わらない
+    const before = await store.state();
+    const bad = await post({ ok: 'yes' });
+    assert.equal(bad.status, 400);
+    assert.ok((await bad.json()).error);
+    assert.deepEqual(await store.state(), before);
+  });
+});
+
+test('コンパニオンサーバ: 確認結果の記録もトークンと Origin の制限を受ける', async () => {
+  await withServer(
+    async ({ base, store }) => {
+      const send = (headers) => fetch(`${base}/api/kindle-status`, { method: 'POST', headers, body: JSON.stringify({ ok: true }) });
+      assert.equal((await send({})).status, 401);
+      assert.equal((await send({ 'X-BH-Token': 'secret', Origin: 'https://evil.example.com' })).status, 403);
+      assert.equal((await send({ 'X-BH-Token': 'secret' })).status, 200);
+      assert.ok((await store.state()).kindleSync);
     },
     { token: 'secret' },
   );

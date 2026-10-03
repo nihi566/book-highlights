@@ -2,6 +2,7 @@
 import { html, mark } from './html.js';
 import { SOURCES } from '../core/model.js';
 import { hash, isoDate } from '../core/text.js';
+import { kindleSyncState } from '../core/kindle-status.js';
 
 export const COLOR_VAR = {
   yellow: 'var(--hl-yellow)',
@@ -59,6 +60,13 @@ export function highlightCard(h, { library, lines = [], query = '', showBook = t
   </article>`;
 }
 
+/** 本タブの「読んだ本 / 欲しい本」の切り替え（タブバーに増やさず本タブの中で切り替える） */
+export function shelfSwitch(active) {
+  const item = (key, href, label) =>
+    html`<a class="chip ${active === key ? 'on' : ''}" href="${href}" ${active === key ? html`aria-current="page"` : ''}>${label}</a>`;
+  return html`<nav class="chips shelf-switch" aria-label="本の種類">${item('books', '#/books', '読んだ本')}${item('wishlist', '#/wishlist', '欲しい本')}</nav>`;
+}
+
 export function bookRow(b) {
   return html`<li><a class="book-item" href="#/book/${b.id}">
     <span class="book-spine" style="background:${spineColor(b.title)}" aria-hidden="true">${[...b.title][0]}</span>
@@ -95,4 +103,64 @@ export function openSheet(content, onSubmit) {
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog) dialog.close();
   }, { once: true });
+}
+
+const EXPORT_TRIGGERS = { sync: '同期のあと', import: '取り込みのあと', analysis: '分析のあと', manual: '手動', folder: 'このブラウザから' };
+
+/** 時刻を短く（例: 9/27 18:05） */
+function timeText(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+/** 最後に Vault に書き出した結果を 1 行で（例: 9/27 18:05・同期のあと・書き込み 3 件） */
+export function lastExportText(last) {
+  if (!last?.at) return 'まだ書き出していません';
+  const when = timeText(last.at);
+  const what = last.error ? `失敗: ${last.error}` : `書き込み ${last.written ?? 0} 件・変更なし ${last.unchanged ?? 0} 件`;
+  return `${when}・${EXPORT_TRIGGERS[last.trigger] || last.trigger || ''}・${what}`;
+}
+
+
+/** 経過時間を短く（例: 50 分 / 2 時間 30 分 / 3 日） */
+function elapsedText(fromIso, nowIso) {
+  const min = Math.max(0, Math.floor((new Date(nowIso) - new Date(fromIso)) / 60000));
+  if (min < 60) return `${min} 分`;
+  if (min < 60 * 24) return min % 60 ? `${Math.floor(min / 60)} 時間 ${min % 60} 分` : `${Math.floor(min / 60)} 時間`;
+  return `${Math.floor(min / 60 / 24)} 日`;
+}
+
+/** ブラウザ拡張（Kindle 自動取り込み）の状態を、画面に出す文の並びにする（HTML ではない。出すときはエスケープされる） */
+export function kindleSyncLines(ks, now = new Date().toISOString()) {
+  const state = kindleSyncState(ks, now);
+  if (state === 'none') return ['自動取り込み: まだ拡張から連絡がありません（拡張機能を入れていない場合は、下の手順で設定できます）'];
+  const last = ks.lastCheck;
+  const checked = `最終確認 ${timeText(last.at)}`;
+  const result = { ok: `正常（${checked}）`, login: `Amazon のログインが切れています（${checked}）`, error: `失敗（${checked}）${last.error ? `: ${last.error}` : ''}` };
+  const lines = [];
+  if (state === 'stale') {
+    lines.push(`自動取り込み: 拡張から ${elapsedText(last.at, now)} 連絡がありません。PC のブラウザが閉じているか、PC に送れていない可能性があります`);
+    lines.push(`最後の結果: ${result[last.needLogin ? 'login' : last.ok ? 'ok' : 'error']}`);
+  } else if (state === 'ok') {
+    lines.push(`自動取り込み: ${result.ok}。線がノートブックに反映されるまで数分かかることがあります`);
+  } else if (state === 'login') {
+    lines.push(`自動取り込み: ${result.login}。PC のブラウザで read.amazon.co.jp/notebook にログインしてください`);
+  } else {
+    lines.push(`自動取り込み: ${result.error}`);
+  }
+  lines.push(ks.lastNew?.at ? `最後に新しい点: ${timeText(ks.lastNew.at)}・${ks.lastNew.added} 件` : '最後に新しい点: まだ届いていません');
+  return lines;
+}
+
+const ALERT_STATES = ['login', 'error', 'stale'];
+
+/** ホームに出す自動取り込みの警告（1 行）。拡張を使っていない・正常なときは空文字 */
+export function kindleSyncAlert(ks, now = new Date().toISOString()) {
+  return ALERT_STATES.includes(kindleSyncState(ks, now)) ? kindleSyncLines(ks, now)[0] : '';
+}
+
+/** ホームの警告欄の中身。PC モードで PC の情報を取れているときだけ出す。押すと取り込み画面で詳しく見られる */
+export function kindleAlertBlock(state) {
+  const text = state.settings.ai.mode === 'companion' && state.pcInfo ? kindleSyncAlert(state.pcInfo.kindleSync) : '';
+  return text ? html`<a class="notice err" href="#/import" style="display:block;margin-bottom:12px;text-decoration:none">${text}（詳しく）</a>` : '';
 }

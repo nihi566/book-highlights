@@ -220,6 +220,19 @@ test('レビュー指摘の回帰: 削除した本の再取り込み・改行入
   assert.deepEqual(bookHighlights(lib, b.id).map((h) => h.id), [h1.id]);
 });
 
+test('mergeParsed: 自動取り込み（reviveDeleted: false）では削除した本を復活させない', () => {
+  const lib = emptyLibrary();
+  const parsed = [{ title: '消した本', author: '著者', source: 'kindle', highlights: [{ text: '点A' }] }];
+  mergeParsed(lib, parsed, { now: T1 });
+  const [b] = listBooks(lib);
+  deleteBook(lib, b.id, T2);
+  const stats = mergeParsed(lib, [{ ...parsed[0], highlights: [{ text: '点A' }, { text: '点B' }] }], { now: T2, reviveDeleted: false });
+  assert.equal(stats.skippedDeletedBooks, 1);
+  assert.equal(stats.added, 0);
+  assert.ok(lib.books[b.id].deleted);
+  assert.equal(listBooks(lib).length, 0);
+});
+
 test('レビュー指摘の回帰: 同名の本のノートは並び順が変わっても入れ替わらない', () => {
   const lib = emptyLibrary();
   const long = 'あ'.repeat(90);
