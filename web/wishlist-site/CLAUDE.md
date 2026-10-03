@@ -11,6 +11,7 @@ https://nihi566.github.io/book-highlights/#/wishlist）にある。同じオリ�
 | ファイル | 管理 |
 |---|---|
 | `wishlist.json` | **生成物（直接編集しない）**。`C:/dev/kindle_system/report.py`（nihi566/kindle_system）が書き出し、自動公開（`python run.py sync`）のたびに上書きされる。形式は `kindle-wishlist` v1 |
+| `feed.xml` | **生成物（直接編集しない）**。欲しい本の値下がり・読み放題入りを知らせる Atom フィード。`report.py`（`build_feed`）が wishlist.json と一緒に書き出す |
 | `index.html` | 旧 URL から book-highlights の欲しい本の画面へ移動するだけの静的ページ。このリポジトリで直接管理する（`report.py` は触らない） |
 | `favicon.svg` | このリポジトリで直接管理する |
 
