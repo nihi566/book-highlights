@@ -182,9 +182,9 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
   const readKeys = new Set([...readTitles, ...prefs.want.map((f) => f.title), ...prefs.no.map((f) => f.title)].map(bookKey));
   // 欲しい本: 購入済み・読んだ本は書誌 DB で見つかっても出さない。残りは候補に混ぜる（書名はレーベル表記を落として照合）
   const wish = wishlistForRecommend(wishlist);
-  const skipKeys = new Set(wish.filter((w) => w.skip).map((w) => titleKey(w.title)));
+  const skipKeys = new Set(wish.filter((w) => w.skip).map((w) => titleKey(w.title)).filter(Boolean));
   const excluded = (title) => readKeys.has(bookKey(title)) || skipKeys.has(titleKey(title));
-  const wishByKey = new Map(wish.filter((w) => !w.skip).map((w) => [titleKey(w.title), w]));
+  const wishByKey = new Map(wish.filter((w) => !w.skip && titleKey(w.title)).map((w) => [titleKey(w.title), w]));
   const wishInfo = (w) => ({ asin: w.asin, price: w.price, ku: w.ku });
   const planeRef = (ref) => analysis.planes[parseInt(String(ref).replace(/[^\d]/g, ''), 10) - 1]?.id || null;
   const kindOf = (k) => (RECOMMEND_KINDS.includes(k) ? k : 'deepen');
