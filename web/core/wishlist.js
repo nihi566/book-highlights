@@ -241,6 +241,7 @@ export function filterWishlist(items, f = {}) {
     rating: (a, b) => ratingValue(b.marks) - ratingValue(a.marks) || byIndex(a, b),
     'price-asc': (a, b) => comparePrice(a, b, 1) || byIndex(a, b),
     'price-desc': (a, b) => comparePrice(a, b, -1) || byIndex(a, b),
+    'price-drop': (a, b) => dropAmount(b) - dropAmount(a) || byIndex(a, b),
   };
   return { items: visible.sort(sorters[f.sort] || byIndex), priceRangeInvalid };
 }
@@ -251,6 +252,12 @@ function comparePrice(a, b, dir) {
   const pb = b.book.price;
   if (pa === null || pb === null) return (pa === null) - (pb === null);
   return (pa - pb) * dir;
+}
+
+// 前回の価格からの値下がり額。値上がり・変化なし・値動きの記録が無い本は 0（並べ替えで後ろに回す）
+function dropAmount({ book }) {
+  const c = priceChange(book);
+  return c && c.diff < 0 ? -c.diff : 0;
 }
 
 /** 書名の照合キー。括弧で囲んだレーベル・版表記（（新潮文庫）・【合本版】など）と記号・空白を落とす */
