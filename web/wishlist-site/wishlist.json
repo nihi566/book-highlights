@@ -1,7 +1,7 @@
 {
  "format": "kindle-wishlist",
  "version": 1,
- "last_scraped": "2026-10-03T22:08:06.887645",
+ "last_scraped": "2026-10-03T23:23:22.919179",
  "books": [
   {
    "asin": "B0DG53M2MZ",
@@ -475,7 +475,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:24.832140",
+   "scraped_at": "2026-10-03T23:21:37.710598",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1673,
@@ -494,10 +494,15 @@
      "at": "2026-10-03T22:06:24.832140",
      "price": 1673,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:21:37.710598",
+     "price": 1673,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "18336335"
   },
   {
    "asin": "B0HD56MRGJ",
@@ -809,7 +814,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:05:04.178540",
+   "scraped_at": "2026-10-03T23:20:17.646244",
    "price_prev": 1078,
    "price_changed_at": "2026-10-03T21:55:53.634835",
    "price_low": 198,
@@ -833,10 +838,15 @@
      "at": "2026-10-03T22:05:04.178540",
      "price": 198,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:20:17.646244",
+     "price": 198,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "22055133"
   },
   {
    "asin": "B00HK2XIWS",
@@ -2005,7 +2015,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:51.121469",
+   "scraped_at": "2026-10-03T23:23:06.023808",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 693,
@@ -2024,10 +2034,15 @@
      "at": "2026-10-03T22:07:51.121469",
      "price": 693,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:23:06.023808",
+     "price": 693,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "17224376"
   },
   {
    "asin": "B0FKFM1YHR",
@@ -2339,7 +2354,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:03:00.304585",
+   "scraped_at": "2026-10-03T23:18:11.864011",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1067,
@@ -2373,10 +2388,15 @@
      "at": "2026-10-03T22:03:00.304585",
      "price": 1067,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:18:11.864011",
+     "price": 1067,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "23054607"
   },
   {
    "asin": "B0GLNH1ZXQ",
@@ -2553,7 +2573,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:03:08.038210",
+   "scraped_at": "2026-10-03T23:18:19.499586",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -2587,10 +2607,15 @@
      "at": "2026-10-03T22:03:08.038210",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T23:18:19.499586",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku",
-   "bookmeter_id": null
+   "bookmeter_id": "14441141"
   },
   {
    "asin": "B0912V79BK",
@@ -2989,7 +3014,7 @@
    "price_low": null,
    "price_history": [],
    "price_reason": "not_scraped",
-   "bookmeter_id": null
+   "bookmeter_id": "5496894"
   },
   {
    "asin": "B00OKC24NK",
@@ -3868,7 +3893,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:05:26.576493",
+   "scraped_at": "2026-10-03T23:20:40.153768",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 464,
@@ -3892,10 +3917,15 @@
      "at": "2026-10-03T22:05:26.576493",
      "price": 464,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:20:40.153768",
+     "price": 464,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "8302301"
   },
   {
    "asin": "B01EJJFW32",
@@ -4402,7 +4432,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:59.940822",
+   "scraped_at": "2026-10-03T23:23:14.711074",
    "price_prev": 672,
    "price_changed_at": "2026-10-03T19:48:14.365971",
    "price_low": 659,
@@ -4426,10 +4456,15 @@
      "at": "2026-10-03T22:07:59.940822",
      "price": 659,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:23:14.711074",
+     "price": 659,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "11104585"
   },
   {
    "asin": "B0DL9FXDXJ",
@@ -5227,7 +5262,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:03:30.470228",
+   "scraped_at": "2026-10-03T23:18:42.798219",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 578,
@@ -5256,10 +5291,15 @@
      "at": "2026-10-03T22:03:30.470228",
      "price": 578,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:18:42.798219",
+     "price": 578,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "534870"
   },
   {
    "asin": "B0CJXV9TDS",
@@ -7167,7 +7207,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:08:06.887645",
+   "scraped_at": "2026-10-03T23:23:22.919179",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2156,
@@ -7186,10 +7226,15 @@
      "at": "2026-10-03T22:08:06.887645",
      "price": 2156,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:23:22.919179",
+     "price": 2156,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "22187775"
   },
   {
    "asin": "B0DT9DDPTZ",
@@ -7653,7 +7698,7 @@
     }
    ],
    "price_reason": "ku",
-   "bookmeter_id": null
+   "bookmeter_id": "397895"
   },
   {
    "asin": "B075FQZTTV",
@@ -7668,7 +7713,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:04:48.715137",
+   "scraped_at": "2026-10-03T23:20:01.498270",
    "price_prev": 1584,
    "price_changed_at": "2026-10-03T22:04:48.715137",
    "price_low": 568,
@@ -7682,10 +7727,15 @@
      "at": "2026-10-03T22:04:48.715137",
      "price": 568,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:20:01.498270",
+     "price": 568,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "397895"
   },
   {
    "asin": "B08BZGTQ7B",
@@ -8678,7 +8728,7 @@
    "price_low": null,
    "price_history": [],
    "price_reason": "not_scraped",
-   "bookmeter_id": null
+   "bookmeter_id": "32844"
   },
   {
    "asin": "B0HLV8GS7Y",
@@ -8693,7 +8743,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:02:52.855225",
+   "scraped_at": "2026-10-03T23:18:03.203703",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 6316,
@@ -8707,10 +8757,15 @@
      "at": "2026-10-03T22:02:52.855225",
      "price": 6316,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:18:03.203703",
+     "price": 6316,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "32844"
   },
   {
    "asin": "B0FDFQ6V1L",
@@ -9022,7 +9077,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:07.081977",
+   "scraped_at": "2026-10-03T23:22:17.072377",
    "price_prev": 882,
    "price_changed_at": "2026-10-03T21:57:54.901797",
    "price_low": 494,
@@ -9041,10 +9096,15 @@
      "at": "2026-10-03T22:07:07.081977",
      "price": 494,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:17.072377",
+     "price": 494,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "15193130"
   },
   {
    "asin": "B009CU6WOC",
@@ -9194,7 +9254,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:04:39.279585",
+   "scraped_at": "2026-10-03T23:19:52.907119",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1372,
@@ -9218,10 +9278,15 @@
      "at": "2026-10-03T22:04:39.279585",
      "price": 1372,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:19:52.907119",
+     "price": 1372,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "22028923"
   },
   {
    "asin": "B06X6H7RPS",
@@ -9976,7 +10041,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:03:54.033228",
+   "scraped_at": "2026-10-03T23:19:07.233916",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1568,
@@ -10010,10 +10075,15 @@
      "at": "2026-10-03T22:03:54.033228",
      "price": 1568,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:19:07.233916",
+     "price": 1568,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "9020010"
   },
   {
    "asin": "B0F4Q942QC",
@@ -10158,7 +10228,7 @@
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "20890696"
   },
   {
    "asin": "B0BW8Y54LP",
@@ -10173,7 +10243,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:02:21.568549",
+   "scraped_at": "2026-10-03T23:17:35.190194",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2156,
@@ -10187,10 +10257,15 @@
      "at": "2026-10-03T22:02:21.568549",
      "price": 2156,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:17:35.190194",
+     "price": 2156,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "20890696"
   },
   {
    "asin": "B0FRS1CZTV",
@@ -10313,7 +10388,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:02:44.695024",
+   "scraped_at": "2026-10-03T23:17:57.047411",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 784,
@@ -10352,10 +10427,15 @@
      "at": "2026-10-03T22:02:44.695024",
      "price": 784,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:17:57.047411",
+     "price": 784,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "11465275"
   },
   {
    "asin": "B00OKC21P6",
@@ -10721,7 +10801,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:29.252212",
+   "scraped_at": "2026-10-03T23:22:41.476780",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1470,
@@ -10740,10 +10820,15 @@
      "at": "2026-10-03T22:07:29.252212",
      "price": 1470,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:41.476780",
+     "price": 1470,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "9260193"
   },
   {
    "asin": "B076K6BZVK",
@@ -11568,7 +11653,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:02:29.968664",
+   "scraped_at": "2026-10-03T23:17:42.657195",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1068,
@@ -11607,10 +11692,15 @@
      "at": "2026-10-03T22:02:29.968664",
      "price": 1068,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:17:42.657195",
+     "price": 1068,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "22719109"
   },
   {
    "asin": "B0CM5Z5V2N",
@@ -12171,7 +12261,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:09.803211",
+   "scraped_at": "2026-10-03T23:21:23.572480",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 961,
@@ -12190,10 +12280,15 @@
      "at": "2026-10-03T22:06:09.803211",
      "price": 961,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:21:23.572480",
+     "price": 961,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "566670"
   },
   {
    "asin": "B00PSE2YU2",
@@ -12289,7 +12384,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:35.708180",
+   "scraped_at": "2026-10-03T23:22:50.252177",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1090,
@@ -12308,10 +12403,15 @@
      "at": "2026-10-03T22:07:35.708180",
      "price": 1090,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:50.252177",
+     "price": 1090,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "21349763"
   },
   {
    "asin": "B00F3WFFBE",
@@ -12488,7 +12588,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:33.231417",
+   "scraped_at": "2026-10-03T23:21:45.625165",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1416,
@@ -12507,10 +12607,15 @@
      "at": "2026-10-03T22:06:33.231417",
      "price": 1416,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:21:45.625165",
+     "price": 1416,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "19650987"
   },
   {
    "asin": "B0166OFC60",
@@ -12660,7 +12765,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:04:32.142879",
+   "scraped_at": "2026-10-03T23:19:45.414471",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1323,
@@ -12689,10 +12794,15 @@
      "at": "2026-10-03T22:04:32.142879",
      "price": 1323,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:19:45.414471",
+     "price": 1323,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "17061986"
   },
   {
    "asin": "B0DF5SZXNQ",
@@ -12761,7 +12871,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:58.624154",
+   "scraped_at": "2026-10-03T23:22:08.959129",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2988,
@@ -12780,10 +12890,15 @@
      "at": "2026-10-03T22:06:58.624154",
      "price": 2988,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:08.959129",
+     "price": 2988,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "21895357"
   },
   {
    "asin": "B0C332BDV4",
@@ -13149,7 +13264,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:01.982333",
+   "scraped_at": "2026-10-03T23:21:16.214255",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1198,
@@ -13168,10 +13283,15 @@
      "at": "2026-10-03T22:06:01.982333",
      "price": 1198,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:21:16.214255",
+     "price": 1198,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "16203195"
   },
   {
    "asin": "B00OSZ2X94",
@@ -13381,7 +13501,7 @@
    "price_low": null,
    "price_history": [],
    "price_reason": "not_scraped",
-   "bookmeter_id": null
+   "bookmeter_id": "504734"
   },
   {
    "asin": "B01MTQN0ER",
@@ -13423,7 +13543,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:02:37.594501",
+   "scraped_at": "2026-10-03T23:17:49.464239",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1176,
@@ -13462,10 +13582,15 @@
      "at": "2026-10-03T22:02:37.594501",
      "price": 1176,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:17:49.464239",
+     "price": 1176,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "23210642"
   },
   {
    "asin": "B0FCY37F49",
@@ -13481,7 +13606,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:02:09.735172",
+   "scraped_at": "2026-10-03T23:17:26.217663",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 990,
@@ -13525,10 +13650,15 @@
      "at": "2026-10-03T22:02:09.735172",
      "price": 990,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:17:26.217663",
+     "price": 990,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "22690039"
   },
   {
    "asin": "B00LMB0FN8",
@@ -13737,7 +13867,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:42.895096",
+   "scraped_at": "2026-10-03T23:22:57.817247",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1470,
@@ -13756,10 +13886,15 @@
      "at": "2026-10-03T22:07:42.895096",
      "price": 1470,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:57.817247",
+     "price": 1470,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "23009682"
   },
   {
    "asin": "B0BT1CNF1C",
@@ -14476,7 +14611,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:49.873336",
+   "scraped_at": "2026-10-03T23:22:00.938503",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 804,
@@ -14495,10 +14630,15 @@
      "at": "2026-10-03T22:06:49.873336",
      "price": 804,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:00.938503",
+     "price": 804,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "12871745"
   },
   {
    "asin": "B009GPM8LE",
@@ -15188,7 +15328,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:40.720448",
+   "scraped_at": "2026-10-03T23:21:52.517796",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -15207,10 +15347,15 @@
      "at": "2026-10-03T22:06:40.720448",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T23:21:52.517796",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku",
-   "bookmeter_id": null
+   "bookmeter_id": "13216603"
   },
   {
    "asin": "B07YWW854K",
@@ -15387,7 +15532,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:03:23.552825",
+   "scraped_at": "2026-10-03T23:18:34.812751",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1633,
@@ -15416,10 +15561,15 @@
      "at": "2026-10-03T22:03:23.552825",
      "price": 1633,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:18:34.812751",
+     "price": 1633,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "3343196"
   },
   {
    "asin": "B0CPXY6MNW",
@@ -15462,7 +15612,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:05:47.403205",
+   "scraped_at": "2026-10-03T23:21:00.582091",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -15486,10 +15636,15 @@
      "at": "2026-10-03T22:05:47.403205",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T23:21:00.582091",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku",
-   "bookmeter_id": null
+   "bookmeter_id": "22355389"
   },
   {
    "asin": "B0F73PF32F",
@@ -15720,7 +15875,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:14.103717",
+   "scraped_at": "2026-10-03T23:22:25.315629",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1673,
@@ -15734,10 +15889,15 @@
      "at": "2026-10-03T22:07:14.103717",
      "price": 1673,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:25.315629",
+     "price": 1673,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "21525719"
   },
   {
    "asin": "B0C27KGC8V",
@@ -15872,7 +16032,7 @@
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "21149765"
   },
   {
    "asin": "B075G9QTBR",
@@ -16239,7 +16399,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:06:18.377386",
+   "scraped_at": "2026-10-03T23:21:30.367692",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1960,
@@ -16263,10 +16423,15 @@
      "at": "2026-10-03T22:06:18.377386",
      "price": 1960,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:21:30.367692",
+     "price": 1960,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "16356835"
   },
   {
    "asin": "B00U1BSI9I",
@@ -16687,7 +16852,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:02:01.513241",
+   "scraped_at": "2026-10-03T23:17:18.488961",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2069,
@@ -16731,10 +16896,15 @@
      "at": "2026-10-03T22:02:01.513241",
      "price": 2069,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:17:18.488961",
+     "price": 2069,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "9837512"
   },
   {
    "asin": "B0H28J797V",
@@ -16749,7 +16919,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:05:11.039163",
+   "scraped_at": "2026-10-03T23:20:23.919913",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2484,
@@ -16768,10 +16938,15 @@
      "at": "2026-10-03T22:05:11.039163",
      "price": 2484,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:20:23.919913",
+     "price": 2484,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "655101"
   },
   {
    "asin": "B0GBYWLPTT",
@@ -16798,7 +16973,7 @@
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "655101"
   },
   {
    "asin": "B08BL3D3L2",
@@ -17120,7 +17295,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:03:15.387036",
+   "scraped_at": "2026-10-03T23:18:27.723805",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 851,
@@ -17149,10 +17324,15 @@
      "at": "2026-10-03T22:03:15.387036",
      "price": 851,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:18:27.723805",
+     "price": 851,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "14033894"
   },
   {
    "asin": "B0F73SX45S",
@@ -17345,7 +17525,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:05:39.217157",
+   "scraped_at": "2026-10-03T23:20:52.389341",
    "price_prev": 926,
    "price_changed_at": "2026-10-03T19:46:06.758261",
    "price_low": 494,
@@ -17369,10 +17549,15 @@
      "at": "2026-10-03T22:05:39.217157",
      "price": 494,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:20:52.389341",
+     "price": 494,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "19473860"
   },
   {
    "asin": "B0GGX2HX43",
@@ -17414,7 +17599,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:04:10.696084",
+   "scraped_at": "2026-10-03T23:19:23.433622",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 3724,
@@ -17443,10 +17628,15 @@
      "at": "2026-10-03T22:04:10.696084",
      "price": 3724,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:19:23.433622",
+     "price": 3724,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "19360914"
   },
   {
    "asin": "B00ETKCWKS",
@@ -17597,7 +17787,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:04:21.149491",
+   "scraped_at": "2026-10-03T23:19:34.292640",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1525,
@@ -17636,10 +17826,15 @@
      "at": "2026-10-03T22:04:21.149491",
      "price": 1525,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:19:34.292640",
+     "price": 1525,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "506169"
   },
   {
    "asin": "B00S0DUVHQ",
@@ -18592,7 +18787,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:05:18.964544",
+   "scraped_at": "2026-10-03T23:20:31.483731",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 628,
@@ -18616,10 +18811,15 @@
      "at": "2026-10-03T22:05:18.964544",
      "price": 628,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:20:31.483731",
+     "price": 628,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "11250354"
   },
   {
    "asin": "B01M5IEAAL",
@@ -18931,7 +19131,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:04:01.805009",
+   "scraped_at": "2026-10-03T23:19:14.803897",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -18960,10 +19160,15 @@
      "at": "2026-10-03T22:04:01.805009",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T23:19:14.803897",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku",
-   "bookmeter_id": null
+   "bookmeter_id": "18154626"
   },
   {
    "asin": "B085VNN6FV",
@@ -18978,7 +19183,7 @@
    "kind": "manga",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:01:53.938894",
+   "scraped_at": "2026-10-03T23:17:12.214389",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 753,
@@ -19017,10 +19222,15 @@
      "at": "2026-10-03T22:01:53.938894",
      "price": 753,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:17:12.214389",
+     "price": 753,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "15472989"
   },
   {
    "asin": "B00799TIR6",
@@ -19521,7 +19731,7 @@
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "14688990"
   },
   {
    "asin": "B09P9WZNSL",
@@ -19536,7 +19746,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:07:23.045214",
+   "scraped_at": "2026-10-03T23:22:33.714632",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 664,
@@ -19550,10 +19760,15 @@
      "at": "2026-10-03T22:07:23.045214",
      "price": 664,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:22:33.714632",
+     "price": 664,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "14688990"
   },
   {
    "asin": "B0CNCJPZRJ",
@@ -20001,7 +20216,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:03:47.173276",
+   "scraped_at": "2026-10-03T23:19:00.431693",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1470,
@@ -20035,10 +20250,15 @@
      "at": "2026-10-03T22:03:47.173276",
      "price": 1470,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:19:00.431693",
+     "price": 1470,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "6655281"
   },
   {
    "asin": "B0DVS2ZFNF",
@@ -20485,7 +20705,7 @@
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T22:05:55.284532",
+   "scraped_at": "2026-10-03T23:21:08.706291",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1287,
@@ -20504,10 +20724,15 @@
      "at": "2026-10-03T22:05:55.284532",
      "price": 1287,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T23:21:08.706291",
+     "price": 1287,
+     "ku": false
     }
    ],
    "price_reason": null,
-   "bookmeter_id": null
+   "bookmeter_id": "8166276"
   },
   {
    "asin": "B012VPZVSW",
