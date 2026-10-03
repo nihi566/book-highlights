@@ -105,6 +105,11 @@ def summarize_price_history(points: list, limit: int = MAX_PRICE_HISTORY_PER_BOO
     return {asin: rows[-limit:] for asin, rows in result.items()}
 
 
+def _bookmeter_id(value):
+    """読書メーターの本 ID を数字だけのときに限って返す（URL に組み立てられるので、形の合わない値は載せない）。"""
+    return value if isinstance(value, str) and re.fullmatch(r"\d{1,12}", value) else None
+
+
 def _price_reason(book: dict, price, is_ku: bool):
     """
     価格が null の理由。ku（読み放題）/ not_scraped（まだ取得していない）/ UNPRICED_REASONS（最新の取得で
@@ -167,6 +172,8 @@ def build_wishlist(books: list) -> dict:
                 "price_low": trend.get("low"),
                 "price_history": book.get("price_history") or [],
                 "price_reason": _price_reason(book, price, is_ku),
+                # 読書メーターの本 ID（数字だけ。book-highlights が https://bookmeter.com/books/<ID> を開く）
+                "bookmeter_id": _bookmeter_id(book.get("bookmeter_id")),
             }
         )
     return {

@@ -77,6 +77,7 @@ class BuildWishlistTest(unittest.TestCase):
                 "price_low": None,
                 "price_history": [],
                 "price_reason": None,
+                "bookmeter_id": None,
             },
         )
 

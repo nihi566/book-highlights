@@ -88,8 +88,8 @@ class ParseBooksTest(unittest.TestCase):
         self.assertEqual(
             books,
             [
-                {"title": "紛争でしたら八田まで(1) (モーニングKC)", "author": "田 素弘"},
-                {"title": "消費社会の神話と構造 新装版", "author": "ジャン ボードリヤール"},
+                {"title": "紛争でしたら八田まで(1) (モーニングKC)", "author": "田 素弘", "bookmeter_id": "15472989"},
+                {"title": "消費社会の神話と構造 新装版", "author": "ジャン ボードリヤール", "bookmeter_id": "9837512"},
             ],
         )
 
@@ -115,7 +115,7 @@ class ParseBooksTest(unittest.TestCase):
         </ul>
         """
         books = parse_books(html)
-        self.assertEqual(books, [{"title": "著者不明の本", "author": ""}])
+        self.assertEqual(books, [{"title": "著者不明の本", "author": "", "bookmeter_id": "1"}])
 
 
 class ParseBooksFullTitleTest(unittest.TestCase):

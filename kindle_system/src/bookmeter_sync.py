@@ -27,7 +27,7 @@ from src.anti_ban import BanCoordinator, RequestPacer
 from src.bookmeter import fetch_wish_books
 from src.crawler import crawl_price_info
 from src.database import get_session
-from src.repository import fix_truncated_bookmeter_titles, get_or_create_by_paid_asin, save_price_history
+from src.repository import attach_bookmeter_ids, fix_truncated_bookmeter_titles, get_or_create_by_paid_asin, save_price_history
 from src.title_resolver import resolve_title_to_paid_asin
 
 ProgressCallback = Callable[[str], None]
@@ -78,6 +78,14 @@ async def sync_bookmeter_wishlist(progress_cb: Optional[ProgressCallback] = None
     except Exception as e:
         emit(f"  [Error] 切れていた書名の修正に失敗しました（同期は続けます）: {e}")
 
+    # 読書メーターの本 ID を、ASIN 解決の成否に関係なく書名の一致で付ける（失敗しても同期は続ける）
+    try:
+        attached = attach_bookmeter_ids(books)
+        if attached:
+            emit(f"[OK] 読書メーターの本 ID を {attached} 件付けました。")
+    except Exception as e:
+        emit(f"  [Error] 読書メーターの本 ID の保存に失敗しました（同期は続けます）: {e}")
+
     ban_coordinator = BanCoordinator()
     request_pacer = RequestPacer()
 
@@ -118,8 +126,10 @@ async def sync_bookmeter_wishlist(progress_cb: Optional[ProgressCallback] = None
 
         try:
             with get_session() as session:
+                bookmeter_id = book.get("bookmeter_id")
                 get_or_create_by_paid_asin(
-                    session, paid_asin, title=title, source="bookmeter", is_wanted=1
+                    session, paid_asin, title=title, source="bookmeter", is_wanted=1,
+                    **({"bookmeter_id": bookmeter_id} if bookmeter_id else {}),
                 )
                 session.commit()
         except Exception as e:

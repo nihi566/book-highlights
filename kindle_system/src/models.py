@@ -18,6 +18,8 @@ class BookMapping(SQLModel, table=True):
     source: str = Field(default="kindle_sample")
     from_kindle_sample: bool = Field(default=False)
     from_bookmeter: bool = Field(default=False)
+    # 読書メーターの本 ID（https://bookmeter.com/books/<ID>。数字だけ。一覧の書名リンクから取る）
+    bookmeter_id: Optional[str] = Field(default=None)
 
 
 class PriceHistory(SQLModel, table=True):
