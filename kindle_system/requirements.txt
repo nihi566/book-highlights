@@ -1,0 +1,5 @@
+sqlmodel
+playwright
+playwright-stealth
+requests
+beautifulsoup4
