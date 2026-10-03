@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ <id>https://nihi566.github.io/kindle-wishlist-site/feed.xml</id>
+ <title>欲しい本の値下がり・読み放題入り</title>
+ <link rel="self" href="https://nihi566.github.io/kindle-wishlist-site/feed.xml" />
+ <link rel="alternate" href="https://nihi566.github.io/kindle-wishlist-site/" />
+ <updated>2026-10-03T21:57:54+09:00</updated>
+ <author>
+  <name>kindle_system</name>
+ </author>
+ <entry>
+  <id>https://nihi566.github.io/kindle-wishlist-site/feed.xml#drop:B084G2XWSW:2026-10-03T21:57:54.901797</id>
+  <title>値下がり ¥882 → ¥494: 人生は苦である、でも死んではいけない (講談社現代新書 2561)</title>
+  <updated>2026-10-03T21:57:54+09:00</updated>
+  <link rel="alternate" href="https://www.amazon.co.jp/dp/B084G2XWSW" />
+ </entry>
+ <entry>
+  <id>https://nihi566.github.io/kindle-wishlist-site/feed.xml#drop:B0DF2JFJTH:2026-10-03T21:55:53.634835</id>
+  <title>値下がり ¥1,078 → ¥198: NHK「100分de名著」ブックス アリストテレス ニコマコス倫理学: 「よく生きる」ための哲学</title>
+  <updated>2026-10-03T21:55:53+09:00</updated>
+  <link rel="alternate" href="https://www.amazon.co.jp/dp/B0DF2JFJTH" />
+ </entry>
+ <entry>
+  <id>https://nihi566.github.io/kindle-wishlist-site/feed.xml#drop:B07GYMDBCM:2026-10-03T19:48:14.365971</id>
+  <title>値下がり ¥672 → ¥659: コンビニ人間 (文春文庫)</title>
+  <updated>2026-10-03T19:48:14+09:00</updated>
+  <link rel="alternate" href="https://www.amazon.co.jp/dp/B07GYMDBCM" />
+ </entry>
+ <entry>
+  <id>https://nihi566.github.io/kindle-wishlist-site/feed.xml#drop:B09V1134H7:2026-10-03T19:46:06.758261</id>
+  <title>値下がり ¥926 → ¥494: 現代思想入門 (講談社現代新書)</title>
+  <updated>2026-10-03T19:46:06+09:00</updated>
+  <link rel="alternate" href="https://www.amazon.co.jp/dp/B09V1134H7" />
+ </entry>
+ <entry>
+  <id>https://nihi566.github.io/kindle-wishlist-site/feed.xml#ku:B0DRC68N3V:2026-10-03T10:31:52.468235</id>
+  <title>読み放題（Kindle Unlimited）に入りました: 本なら売るほど １ (HARTA COMIX)</title>
+  <updated>2026-10-03T10:31:52+09:00</updated>
+  <link rel="alternate" href="https://www.amazon.co.jp/dp/B0DRC68N3V" />
+ </entry>
+</feed>
