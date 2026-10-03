@@ -51,7 +51,7 @@ test('parseWishlist: 形式を確かめて正規化する', () => {
   const w = parseWishlist(data([book(), book({ asin: 'B0AAAAAAA2', ku: true, price: null, tag: 'seen', rating: 4, kind: 'manga' })]));
   assert.equal(w.lastScraped, '2026-01-02T03:04:05');
   assert.equal(w.books.length, 2);
-  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, scrapedAt: '2026-01-01T00:00:00', history: [], index: 0 });
+  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, scrapedAt: '2026-01-01T00:00:00', history: [], priceReason: '', index: 0 });
   assert.deepEqual(w.books[1].saved, { tag: 'seen', rating: '4', kind: 'manga' });
 });
 
@@ -469,4 +469,40 @@ test('価格推移のグラフ: 価格のある履歴を時刻順に並べ、幅
   // 価格のある点が 2 つ未満なら描かない
   assert.equal(priceSparkline([{ at: '2026-10-01T00:00:00Z', price: 500 }]), null);
   assert.equal(priceSparkline([]), null);
+});
+
+test('価格が無い理由（price_reason）: 読み込んで、販売終了の可能性か取得の失敗かを価格の欄に出す', () => {
+  const w = parseWishlist({
+    format: 'kindle-wishlist',
+    version: 1,
+    books: [
+      { asin: 'B0REASON01', title: 'a', price: null, scraped_at: '2026-10-01T00:00:00', price_reason: 'not_found' },
+      { asin: 'B0REASON02', title: 'b', price: null, scraped_at: '2026-10-01T00:00:00', price_reason: 'no_price' },
+      { asin: 'B0REASON03', title: 'c', price: null, scraped_at: '2026-10-01T00:00:00', price_reason: 'blocked' },
+      { asin: 'B0REASON04', title: 'd', price: null, scraped_at: '2026-10-01T00:00:00', price_reason: 'page_error' },
+      { asin: 'B0REASON05', title: 'e', price: null, scraped_at: null, price_reason: 'not_scraped' },
+      { asin: 'B0REASON06', title: 'f', price: null, price_reason: 'unknown' },
+      { asin: 'B0REASON07', title: 'g', price: null, price_reason: '<b>x</b>' },
+      { asin: 'B0REASON08', title: 'h', price: 500, price_reason: 'not_found' },
+      { asin: 'B0REASON09', title: 'i', ku: true, price_reason: 'ku' },
+      { asin: 'B0REASON10', title: 'j', price: null },
+    ],
+  });
+  assert.deepEqual(
+    w.books.map((b) => b.priceReason),
+    ['not_found', 'no_price', 'blocked', 'page_error', 'not_scraped', '', '', '', '', ''],
+    '知らない値・価格のある本・KU では理由を持たない',
+  );
+  assert.deepEqual(w.books.map(formatPrice), [
+    '価格情報なし（販売終了の可能性）',
+    '価格情報なし（販売停止・予約前の可能性）',
+    '価格情報なし（取得に失敗。次の取得待ち）',
+    '価格情報なし（取得に失敗。次の取得待ち）',
+    '価格情報なし（まだ取得していません）',
+    '価格情報なし',
+    '価格情報なし',
+    '¥500',
+    'Kindle Unlimited 対象',
+    '価格情報なし',
+  ]);
 });

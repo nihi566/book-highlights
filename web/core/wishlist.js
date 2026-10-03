@@ -28,6 +28,14 @@ const ASIN = /^[A-Z0-9]{10}$/;
 const RETIRED_TAG = 'unwanted';
 const isTag = (t) => Object.hasOwn(TAG_LABELS, t);
 const isKind = (k) => k === 'manga' || k === 'book';
+// wishlist.json の price_reason のうち画面に出すもの（ku は「Kindle Unlimited 対象」、unknown は理由なしと同じ表示）
+const PRICE_REASON_LABELS = {
+  not_found: '販売終了の可能性',
+  no_price: '販売停止・予約前の可能性',
+  blocked: '取得に失敗。次の取得待ち',
+  page_error: '取得に失敗。次の取得待ち',
+  not_scraped: 'まだ取得していません',
+};
 const yen = (v) => (Number.isFinite(v) && v >= 0 ? v : null);
 
 /** wishlist.json を確かめて、画面で使う形にする。形式が違えば理由つきで失敗する */
@@ -53,6 +61,8 @@ export function parseWishlist(data) {
       trend: price === null ? null : { prev: yen(b?.price_prev), changedAt: typeof b?.price_changed_at === 'string' ? b.price_changed_at : null, low: yen(b?.price_low) },
       scrapedAt: typeof b?.scraped_at === 'string' ? b.scraped_at : null,
       history: parseHistory(b?.price_history),
+      // 価格が無い理由（kindle_system の report.py が付ける。買えない本か、取り直しが要る本か）。KU・価格のある本は持たない
+      priceReason: price === null && b?.ku !== true && Object.hasOwn(PRICE_REASON_LABELS, b?.price_reason) ? b.price_reason : '',
       index,
     };
   });
@@ -411,7 +421,7 @@ export function amazonKindleUrl({ title, asin } = {}) {
 
 export function formatPrice(book) {
   if (book.ku) return 'Kindle Unlimited 対象';
-  if (book.price === null) return '価格情報なし';
+  if (book.price === null) return PRICE_REASON_LABELS[book.priceReason] ? `価格情報なし（${PRICE_REASON_LABELS[book.priceReason]}）` : '価格情報なし';
   return `¥${book.price.toLocaleString('ja-JP')}`;
 }
 
