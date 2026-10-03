@@ -1,7 +1,7 @@
 {
  "format": "kindle-wishlist",
  "version": 1,
- "last_scraped": "2026-10-03T21:59:02.352412",
+ "last_scraped": "2026-10-03T22:08:06.887645",
  "books": [
   {
    "asin": "B0DG53M2MZ",
@@ -10,6 +10,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -33,6 +36,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -56,6 +62,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -79,6 +88,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -102,6 +114,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -125,6 +140,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -148,6 +166,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -171,6 +192,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -194,6 +218,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -217,6 +244,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -240,6 +270,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -263,6 +296,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -286,6 +322,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -309,6 +348,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -332,6 +374,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -355,6 +400,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -378,6 +426,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -401,10 +452,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:17.865064",
+   "scraped_at": "2026-10-03T22:06:24.832140",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1673,
@@ -418,6 +472,11 @@
      "at": "2026-10-03T21:57:17.865064",
      "price": 1673,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:06:24.832140",
+     "price": 1673,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -429,6 +488,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -452,6 +514,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -475,6 +540,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -498,6 +566,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -521,6 +592,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -544,6 +618,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -567,6 +644,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -590,6 +670,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -613,6 +696,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -636,6 +722,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -659,6 +748,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -682,10 +774,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:55:53.634835",
+   "scraped_at": "2026-10-03T22:05:04.178540",
    "price_prev": 1078,
    "price_changed_at": "2026-10-03T21:55:53.634835",
    "price_low": 198,
@@ -704,6 +799,11 @@
      "at": "2026-10-03T21:55:53.634835",
      "price": 198,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:05:04.178540",
+     "price": 198,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -715,6 +815,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
@@ -738,6 +841,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -761,6 +867,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -784,6 +893,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -807,6 +919,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -830,6 +945,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -853,6 +971,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -876,6 +997,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -899,6 +1023,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -922,6 +1049,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -945,6 +1075,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -968,6 +1101,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -991,6 +1127,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1014,6 +1153,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1037,6 +1179,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1060,6 +1205,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1083,6 +1231,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1106,6 +1257,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1129,6 +1283,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1152,6 +1309,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1175,6 +1335,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1198,6 +1361,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1221,6 +1387,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1244,6 +1413,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1267,6 +1439,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1290,6 +1465,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1313,6 +1491,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1336,6 +1517,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1359,6 +1543,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1392,6 +1579,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1415,6 +1605,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1438,6 +1631,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1461,6 +1657,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1484,6 +1683,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1507,6 +1709,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1530,6 +1735,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1558,6 +1766,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1581,6 +1792,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1604,6 +1818,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1627,6 +1844,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1650,6 +1870,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1673,6 +1896,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1701,10 +1927,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:58:44.402898",
+   "scraped_at": "2026-10-03T22:07:51.121469",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 693,
@@ -1718,6 +1947,11 @@
      "at": "2026-10-03T21:58:44.402898",
      "price": 693,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:51.121469",
+     "price": 693,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -1729,6 +1963,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1752,6 +1989,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1775,6 +2015,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1798,6 +2041,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1821,6 +2067,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1844,6 +2093,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1867,6 +2119,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1890,6 +2145,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1913,6 +2171,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1936,6 +2197,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1959,6 +2223,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -1982,10 +2249,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:46.940846",
+   "scraped_at": "2026-10-03T22:03:00.304585",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1067,
@@ -2014,6 +2284,11 @@
      "at": "2026-10-03T21:53:46.940846",
      "price": 1067,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:03:00.304585",
+     "price": 1067,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -2025,6 +2300,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2048,6 +2326,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2071,6 +2352,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2094,6 +2378,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2117,6 +2404,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2140,6 +2430,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2163,10 +2456,13 @@
    "ku": true,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:54.293790",
+   "scraped_at": "2026-10-03T22:03:08.038210",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -2195,6 +2491,11 @@
      "at": "2026-10-03T21:53:54.293790",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T22:03:08.038210",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku"
@@ -2206,6 +2507,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2229,6 +2533,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2252,6 +2559,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2275,6 +2585,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2298,6 +2611,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2321,6 +2637,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2344,6 +2663,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2367,6 +2689,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2390,6 +2715,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2413,6 +2741,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2436,6 +2767,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2459,6 +2793,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2482,6 +2819,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2505,6 +2845,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
@@ -2528,6 +2871,9 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2545,6 +2891,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2568,6 +2917,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2591,6 +2943,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2614,6 +2969,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2637,6 +2995,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2660,6 +3021,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2683,6 +3047,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2706,6 +3073,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2729,6 +3099,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2752,6 +3125,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2775,6 +3151,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2798,6 +3177,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2821,6 +3203,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2844,6 +3229,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2867,6 +3255,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2890,6 +3281,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2913,6 +3307,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2936,6 +3333,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2959,6 +3359,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -2982,6 +3385,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3005,6 +3411,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3028,6 +3437,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3051,6 +3463,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3074,6 +3489,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3097,6 +3515,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3120,6 +3541,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3143,6 +3567,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3166,6 +3593,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3189,6 +3619,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3212,6 +3645,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3235,6 +3671,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3258,6 +3697,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3281,10 +3723,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:56:17.113822",
+   "scraped_at": "2026-10-03T22:05:26.576493",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 464,
@@ -3303,6 +3748,11 @@
      "at": "2026-10-03T21:56:17.113822",
      "price": 464,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:05:26.576493",
+     "price": 464,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -3314,6 +3764,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3337,6 +3790,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3360,6 +3816,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3388,6 +3847,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3411,6 +3873,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3434,6 +3899,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3457,6 +3925,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3480,6 +3951,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3503,6 +3977,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3526,6 +4003,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3549,6 +4029,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3572,6 +4055,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3595,6 +4081,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3618,6 +4107,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3641,6 +4133,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3664,6 +4159,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3687,6 +4185,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3710,6 +4211,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3733,10 +4237,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:58:52.717723",
+   "scraped_at": "2026-10-03T22:07:59.940822",
    "price_prev": 672,
    "price_changed_at": "2026-10-03T19:48:14.365971",
    "price_low": 659,
@@ -3755,6 +4263,11 @@
      "at": "2026-10-03T21:58:52.717723",
      "price": 659,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:59.940822",
+     "price": 659,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -3766,6 +4279,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3789,6 +4305,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3812,6 +4331,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3835,6 +4357,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3858,6 +4383,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3881,6 +4409,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3904,6 +4435,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3927,6 +4461,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3950,6 +4487,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3973,6 +4513,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -3996,6 +4539,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4019,6 +4565,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4042,6 +4591,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4065,6 +4617,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4088,6 +4643,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4111,6 +4669,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4134,6 +4695,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4157,6 +4721,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4180,6 +4747,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4203,6 +4773,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4226,6 +4799,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4249,6 +4825,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4272,6 +4851,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4295,6 +4877,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4318,6 +4903,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4341,6 +4929,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4364,6 +4955,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4387,6 +4981,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4410,6 +5007,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4433,10 +5033,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:54:18.555681",
+   "scraped_at": "2026-10-03T22:03:30.470228",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 578,
@@ -4460,6 +5063,11 @@
      "at": "2026-10-03T21:54:18.555681",
      "price": 578,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:03:30.470228",
+     "price": 578,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -4471,6 +5079,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4494,6 +5105,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4517,6 +5131,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4540,6 +5157,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4563,6 +5183,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4586,6 +5209,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4609,6 +5235,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4632,6 +5261,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4655,6 +5287,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4678,6 +5313,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4701,6 +5339,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4724,6 +5365,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4747,6 +5391,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4770,6 +5417,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4793,6 +5443,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4816,6 +5469,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4839,6 +5495,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4872,6 +5531,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4895,6 +5557,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4918,6 +5583,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4941,6 +5609,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4964,6 +5635,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -4987,6 +5661,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5010,6 +5687,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5033,6 +5713,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5056,6 +5739,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5079,6 +5765,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
@@ -5102,6 +5791,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5125,6 +5817,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5148,6 +5843,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5171,6 +5869,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5194,6 +5895,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5217,6 +5921,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5240,6 +5947,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5263,6 +5973,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5286,6 +5999,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5309,6 +6025,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5332,6 +6051,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5355,6 +6077,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5383,6 +6108,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5416,6 +6144,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5444,6 +6175,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5467,6 +6201,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5490,6 +6227,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5513,6 +6253,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5536,6 +6279,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5559,6 +6305,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5582,6 +6331,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5605,6 +6357,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5628,6 +6383,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5651,6 +6409,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5674,6 +6435,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5697,6 +6461,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5720,6 +6487,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5743,6 +6513,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5766,6 +6539,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5789,6 +6565,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5812,6 +6591,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5835,6 +6617,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5858,6 +6643,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
@@ -5881,6 +6669,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5904,6 +6695,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5927,6 +6721,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5950,6 +6747,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5973,6 +6773,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -5996,6 +6799,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6019,6 +6825,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6042,6 +6851,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6065,6 +6877,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6088,10 +6903,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:59:02.352412",
+   "scraped_at": "2026-10-03T22:08:06.887645",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2156,
@@ -6105,6 +6923,11 @@
      "at": "2026-10-03T21:59:02.352412",
      "price": 2156,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:08:06.887645",
+     "price": 2156,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -6116,6 +6939,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6139,6 +6965,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6162,6 +6991,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6185,6 +7017,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6208,6 +7043,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6231,6 +7069,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6254,6 +7095,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6277,6 +7121,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6300,6 +7147,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6323,6 +7173,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6346,6 +7199,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6369,6 +7225,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6392,6 +7251,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6415,6 +7277,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6438,6 +7303,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6461,6 +7329,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6484,6 +7355,9 @@
    "ku": true,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6508,21 +7382,29 @@
   {
    "asin": "B075FQZTTV",
    "title": "ロリコン",
-   "price": 1584,
+   "price": 568,
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:55:38.697215",
-   "price_prev": null,
-   "price_changed_at": null,
-   "price_low": 1584,
+   "scraped_at": "2026-10-03T22:04:48.715137",
+   "price_prev": 1584,
+   "price_changed_at": "2026-10-03T22:04:48.715137",
+   "price_low": 568,
    "price_history": [
     {
      "at": "2026-10-03T21:55:38.697215",
      "price": 1584,
+     "ku": false
+    },
+    {
+     "at": "2026-10-03T22:04:48.715137",
+     "price": 568,
      "ku": false
     }
    ],
@@ -6535,6 +7417,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6558,6 +7443,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6581,6 +7469,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6604,6 +7495,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6627,6 +7521,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6650,6 +7547,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6673,6 +7573,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6696,6 +7599,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6719,6 +7625,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6742,6 +7651,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6765,6 +7677,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6788,6 +7703,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6811,6 +7729,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6834,6 +7755,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6857,6 +7781,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6880,6 +7807,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6903,6 +7833,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6926,6 +7859,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6949,6 +7885,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6972,6 +7911,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -6995,6 +7937,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7018,6 +7963,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7041,6 +7989,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7064,6 +8015,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7087,6 +8041,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7110,6 +8067,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7133,6 +8093,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7156,6 +8119,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7179,6 +8145,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7202,6 +8171,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7225,6 +8197,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7248,6 +8223,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7271,6 +8249,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7294,6 +8275,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7317,6 +8301,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7340,6 +8327,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7363,6 +8353,9 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7380,16 +8373,24 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:40.064876",
+   "scraped_at": "2026-10-03T22:02:52.855225",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 6316,
    "price_history": [
     {
      "at": "2026-10-03T21:53:40.064876",
+     "price": 6316,
+     "ku": false
+    },
+    {
+     "at": "2026-10-03T22:02:52.855225",
      "price": 6316,
      "ku": false
     }
@@ -7403,6 +8404,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7426,6 +8430,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7449,6 +8456,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7472,6 +8482,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7495,6 +8508,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7518,6 +8534,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7541,6 +8560,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7564,6 +8586,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7587,6 +8612,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7610,6 +8638,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7633,6 +8664,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7656,10 +8690,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:54.901797",
+   "scraped_at": "2026-10-03T22:07:07.081977",
    "price_prev": 882,
    "price_changed_at": "2026-10-03T21:57:54.901797",
    "price_low": 494,
@@ -7673,6 +8710,11 @@
      "at": "2026-10-03T21:57:54.901797",
      "price": 494,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:07.081977",
+     "price": 494,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -7684,6 +8726,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7707,6 +8752,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7730,6 +8778,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7753,6 +8804,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7776,6 +8830,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7799,10 +8856,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:55:28.071305",
+   "scraped_at": "2026-10-03T22:04:39.279585",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1372,
@@ -7821,6 +8881,11 @@
      "at": "2026-10-03T21:55:28.071305",
      "price": 1372,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:04:39.279585",
+     "price": 1372,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -7832,6 +8897,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7855,6 +8923,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7878,6 +8949,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7911,6 +8985,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7934,6 +9011,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7957,6 +9037,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -7980,6 +9063,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8003,6 +9089,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8026,6 +9115,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8049,6 +9141,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8072,6 +9167,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8095,6 +9193,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8118,6 +9219,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8141,6 +9245,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
@@ -8164,6 +9271,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8187,6 +9297,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8210,6 +9323,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8233,6 +9349,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8256,6 +9375,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8279,6 +9401,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8302,6 +9427,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8325,6 +9453,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8348,6 +9479,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8371,6 +9505,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8394,6 +9531,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8417,6 +9557,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8440,6 +9583,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
@@ -8463,10 +9609,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:54:45.665378",
+   "scraped_at": "2026-10-03T22:03:54.033228",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1568,
@@ -8495,6 +9645,11 @@
      "at": "2026-10-03T21:54:45.665378",
      "price": 1568,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:03:54.033228",
+     "price": 1568,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -8506,6 +9661,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8529,6 +9687,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8552,6 +9713,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8575,6 +9739,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8593,11 +9760,14 @@
   },
   {
    "asin": "B09MVPBGZM",
-   "title": "創始者たち──イーロン・マスク、ピーター・テ…",
+   "title": "創始者たち──イーロン・マスク、ピーター・ティールと世界一のリスクテイカーたちの薄氷の伝説",
    "price": 2950,
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8631,16 +9801,24 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:11.037191",
+   "scraped_at": "2026-10-03T22:02:21.568549",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2156,
    "price_history": [
     {
      "at": "2026-10-03T21:53:11.037191",
+     "price": 2156,
+     "ku": false
+    },
+    {
+     "at": "2026-10-03T22:02:21.568549",
      "price": 2156,
      "ku": false
     }
@@ -8654,6 +9832,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8677,6 +9858,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8700,6 +9884,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8723,6 +9910,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8746,10 +9936,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:33.988189",
+   "scraped_at": "2026-10-03T22:02:44.695024",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 784,
@@ -8783,6 +9976,11 @@
      "at": "2026-10-03T21:53:33.988189",
      "price": 784,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:02:44.695024",
+     "price": 784,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -8794,6 +9992,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8817,6 +10018,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8840,6 +10044,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8863,6 +10070,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8886,6 +10096,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8909,6 +10122,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8932,6 +10148,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8955,6 +10174,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -8978,6 +10200,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9001,6 +10226,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9024,6 +10252,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9047,6 +10278,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9070,6 +10304,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9093,10 +10330,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:58:19.154178",
+   "scraped_at": "2026-10-03T22:07:29.252212",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1470,
@@ -9110,6 +10350,11 @@
      "at": "2026-10-03T21:58:19.154178",
      "price": 1470,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:29.252212",
+     "price": 1470,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -9121,6 +10366,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9144,6 +10392,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9167,6 +10418,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9190,6 +10444,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9213,6 +10470,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9236,6 +10496,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9259,6 +10522,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9282,6 +10548,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9305,6 +10574,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9328,6 +10600,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9351,6 +10626,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9374,6 +10652,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9397,6 +10678,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9420,6 +10704,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9443,6 +10730,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9466,6 +10756,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9489,6 +10782,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9512,6 +10808,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9535,6 +10834,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9558,6 +10860,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9581,6 +10886,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9604,6 +10912,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9627,6 +10938,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9650,6 +10964,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9673,6 +10990,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9696,6 +11016,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9719,6 +11042,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9742,6 +11068,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9765,6 +11094,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9788,6 +11120,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9811,10 +11146,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:18.399112",
+   "scraped_at": "2026-10-03T22:02:29.968664",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1068,
@@ -9848,6 +11186,11 @@
      "at": "2026-10-03T21:53:18.399112",
      "price": 1068,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:02:29.968664",
+     "price": 1068,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -9859,6 +11202,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9882,6 +11228,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9905,6 +11254,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9928,6 +11280,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9951,6 +11306,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9974,6 +11332,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -9997,6 +11358,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10020,6 +11384,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10043,6 +11410,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10066,6 +11436,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10089,6 +11462,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10112,6 +11488,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10135,6 +11514,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10158,6 +11540,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10181,6 +11566,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10204,6 +11592,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10227,6 +11618,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10250,6 +11644,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10273,6 +11670,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10301,6 +11701,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10324,10 +11727,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:00.942748",
+   "scraped_at": "2026-10-03T22:06:09.803211",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 961,
@@ -10341,6 +11748,11 @@
      "at": "2026-10-03T21:57:00.942748",
      "price": 961,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:06:09.803211",
+     "price": 961,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -10352,6 +11764,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10375,6 +11790,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10398,6 +11816,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10421,10 +11842,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:58:27.905001",
+   "scraped_at": "2026-10-03T22:07:35.708180",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1090,
@@ -10438,6 +11862,11 @@
      "at": "2026-10-03T21:58:27.905001",
      "price": 1090,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:35.708180",
+     "price": 1090,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -10449,6 +11878,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10472,6 +11904,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10495,6 +11930,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
@@ -10518,6 +11956,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10541,6 +11982,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10564,6 +12008,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10587,10 +12034,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:26.472529",
+   "scraped_at": "2026-10-03T22:06:33.231417",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1416,
@@ -10604,6 +12054,11 @@
      "at": "2026-10-03T21:57:26.472529",
      "price": 1416,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:06:33.231417",
+     "price": 1416,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -10615,6 +12070,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10638,6 +12096,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10661,6 +12122,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10684,6 +12148,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10707,6 +12174,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10730,10 +12200,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:55:21.095237",
+   "scraped_at": "2026-10-03T22:04:32.142879",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1323,
@@ -10757,6 +12230,11 @@
      "at": "2026-10-03T21:55:21.095237",
      "price": 1323,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:04:32.142879",
+     "price": 1323,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -10768,6 +12246,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10791,6 +12272,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10814,10 +12298,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:48.385373",
+   "scraped_at": "2026-10-03T22:06:58.624154",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2988,
@@ -10831,6 +12318,11 @@
      "at": "2026-10-03T21:57:48.385373",
      "price": 2988,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:06:58.624154",
+     "price": 2988,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -10842,6 +12334,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10865,6 +12360,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10888,6 +12386,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10911,6 +12412,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10934,6 +12438,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10957,6 +12464,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -10980,6 +12490,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11003,6 +12516,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11026,6 +12542,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11049,6 +12568,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11072,6 +12594,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11095,6 +12620,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11118,6 +12646,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11141,10 +12672,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:56:52.082308",
+   "scraped_at": "2026-10-03T22:06:01.982333",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1198,
@@ -11158,6 +12692,11 @@
      "at": "2026-10-03T21:56:52.082308",
      "price": 1198,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:06:01.982333",
+     "price": 1198,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -11169,6 +12708,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11192,6 +12734,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11215,6 +12760,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11238,6 +12786,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11261,6 +12812,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11284,6 +12838,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11307,6 +12864,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11330,6 +12890,9 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11347,6 +12910,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11370,10 +12936,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:26.969682",
+   "scraped_at": "2026-10-03T22:02:37.594501",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1176,
@@ -11407,6 +12976,11 @@
      "at": "2026-10-03T21:53:26.969682",
      "price": 1176,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:02:37.594501",
+     "price": 1176,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -11418,10 +12992,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:53:01.138011",
+   "scraped_at": "2026-10-03T22:02:09.735172",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 990,
@@ -11460,6 +13038,11 @@
      "at": "2026-10-03T21:53:01.138011",
      "price": 990,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:02:09.735172",
+     "price": 990,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -11471,6 +13054,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11494,6 +13080,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11517,6 +13106,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11540,6 +13132,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11563,6 +13158,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11586,6 +13184,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11609,6 +13210,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11637,10 +13241,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:58:35.911138",
+   "scraped_at": "2026-10-03T22:07:42.895096",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1470,
@@ -11654,6 +13261,11 @@
      "at": "2026-10-03T21:58:35.911138",
      "price": 1470,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:42.895096",
+     "price": 1470,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -11665,6 +13277,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11688,6 +13303,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11711,6 +13329,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11734,6 +13355,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11757,6 +13381,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11780,6 +13407,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11803,6 +13433,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11826,6 +13459,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11849,6 +13485,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11872,6 +13511,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11895,6 +13537,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11918,6 +13563,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11941,6 +13589,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11964,6 +13615,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -11987,6 +13641,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12010,6 +13667,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12033,6 +13693,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12056,6 +13719,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12079,6 +13745,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12102,6 +13771,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12125,6 +13797,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12148,6 +13823,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12171,6 +13849,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12194,6 +13875,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12217,6 +13901,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12240,6 +13927,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12263,10 +13953,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:41.038150",
+   "scraped_at": "2026-10-03T22:06:49.873336",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 804,
@@ -12280,6 +13973,11 @@
      "at": "2026-10-03T21:57:41.038150",
      "price": 804,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:06:49.873336",
+     "price": 804,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -12291,6 +13989,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12314,6 +14015,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12337,6 +14041,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12360,6 +14067,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12383,6 +14093,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12406,6 +14119,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12429,6 +14145,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12452,6 +14171,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12475,6 +14197,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12498,6 +14223,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12521,6 +14249,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12544,6 +14275,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12567,6 +14301,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12590,6 +14327,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12613,6 +14353,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12636,6 +14379,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12659,6 +14405,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12682,6 +14431,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12705,6 +14457,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12728,6 +14483,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12751,6 +14509,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12774,6 +14535,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12797,6 +14561,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12820,6 +14587,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12843,6 +14613,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12866,10 +14639,13 @@
    "ku": true,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:34.092649",
+   "scraped_at": "2026-10-03T22:06:40.720448",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -12883,6 +14659,11 @@
      "at": "2026-10-03T21:57:34.092649",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T22:06:40.720448",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku"
@@ -12894,6 +14675,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12917,6 +14701,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12940,6 +14727,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12963,6 +14753,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -12986,6 +14779,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13009,6 +14805,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13032,10 +14831,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:54:10.748611",
+   "scraped_at": "2026-10-03T22:03:23.552825",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1633,
@@ -13059,6 +14861,11 @@
      "at": "2026-10-03T21:54:10.748611",
      "price": 1633,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:03:23.552825",
+     "price": 1633,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -13070,6 +14877,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13093,10 +14903,14 @@
    "ku": true,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:56:35.730552",
+   "scraped_at": "2026-10-03T22:05:47.403205",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -13115,6 +14929,11 @@
      "at": "2026-10-03T21:56:35.730552",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T22:05:47.403205",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku"
@@ -13126,6 +14945,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13149,6 +14971,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13172,6 +14997,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13195,6 +15023,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13218,6 +15049,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13241,6 +15075,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13264,6 +15101,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13287,6 +15127,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13310,16 +15153,24 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:58:03.342196",
+   "scraped_at": "2026-10-03T22:07:14.103717",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1673,
    "price_history": [
     {
      "at": "2026-10-03T21:58:03.342196",
+     "price": 1673,
+     "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:14.103717",
      "price": 1673,
      "ku": false
     }
@@ -13333,6 +15184,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13356,6 +15210,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13379,6 +15236,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13402,6 +15262,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13420,11 +15283,14 @@
   },
   {
    "asin": "B0BG277QNW",
-   "title": "歌詞のサウンドテクスチャー：うたをめぐる音声…",
+   "title": "歌詞のサウンドテクスチャー：うたをめぐる音声詞学論考",
    "price": 58806,
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13448,6 +15314,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13471,6 +15340,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13494,6 +15366,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13517,6 +15392,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13540,6 +15418,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13563,6 +15444,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13586,6 +15470,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13609,6 +15496,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13632,6 +15522,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13655,6 +15548,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13678,6 +15574,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13701,6 +15600,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13724,6 +15626,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13747,10 +15652,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:57:09.269043",
+   "scraped_at": "2026-10-03T22:06:18.377386",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1960,
@@ -13769,6 +15678,11 @@
      "at": "2026-10-03T21:57:09.269043",
      "price": 1960,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:06:18.377386",
+     "price": 1960,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -13780,6 +15694,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13803,6 +15720,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13826,6 +15746,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13849,6 +15772,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13872,6 +15798,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13895,6 +15824,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13918,6 +15850,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13941,6 +15876,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13964,6 +15902,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -13987,6 +15928,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14010,6 +15954,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14033,6 +15980,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14056,6 +16006,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14079,6 +16032,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14102,6 +16058,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14125,10 +16084,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:52:53.874541",
+   "scraped_at": "2026-10-03T22:02:01.513241",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2069,
@@ -14167,6 +16130,11 @@
      "at": "2026-10-03T21:52:53.874541",
      "price": 2069,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:02:01.513241",
+     "price": 2069,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -14178,10 +16146,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:56:00.100246",
+   "scraped_at": "2026-10-03T22:05:11.039163",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 2484,
@@ -14195,17 +16166,25 @@
      "at": "2026-10-03T21:56:00.100246",
      "price": 2484,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:05:11.039163",
+     "price": 2484,
+     "ku": false
     }
    ],
    "price_reason": null
   },
   {
    "asin": "B0GBYWLPTT",
-   "title": "消費者行動の知識 （日経文庫） (日経文庫 …",
+   "title": "消費者行動の知識 （日経文庫） (日経文庫 E 52)",
    "price": 5229,
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14229,6 +16208,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14252,6 +16234,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14275,6 +16260,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14298,6 +16286,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14321,6 +16312,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14344,6 +16338,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14367,6 +16364,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14400,6 +16400,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14423,6 +16426,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14446,6 +16452,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14469,6 +16478,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14492,10 +16504,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:54:02.799638",
+   "scraped_at": "2026-10-03T22:03:15.387036",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 851,
@@ -14519,6 +16534,11 @@
      "at": "2026-10-03T21:54:02.799638",
      "price": 851,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:03:15.387036",
+     "price": 851,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -14530,6 +16550,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14553,6 +16576,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14591,6 +16617,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14614,6 +16643,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14637,6 +16669,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14660,6 +16695,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14683,10 +16721,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:56:28.215838",
+   "scraped_at": "2026-10-03T22:05:39.217157",
    "price_prev": 926,
    "price_changed_at": "2026-10-03T19:46:06.758261",
    "price_low": 494,
@@ -14705,6 +16747,11 @@
      "at": "2026-10-03T21:56:28.215838",
      "price": 494,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:05:39.217157",
+     "price": 494,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -14716,6 +16763,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14739,10 +16789,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:55:00.877822",
+   "scraped_at": "2026-10-03T22:04:10.696084",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 3724,
@@ -14766,6 +16819,11 @@
      "at": "2026-10-03T21:55:00.877822",
      "price": 3724,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:04:10.696084",
+     "price": 3724,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -14777,6 +16835,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14800,6 +16861,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14823,6 +16887,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14846,6 +16913,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14869,6 +16939,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14892,10 +16965,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:55:11.051848",
+   "scraped_at": "2026-10-03T22:04:21.149491",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1525,
@@ -14929,6 +17006,11 @@
      "at": "2026-10-03T21:55:11.051848",
      "price": 1525,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:04:21.149491",
+     "price": 1525,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -14940,6 +17022,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14963,6 +17048,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -14986,6 +17074,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15009,6 +17100,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15032,6 +17126,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15055,6 +17152,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15078,6 +17178,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15111,6 +17214,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15134,6 +17240,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15157,6 +17266,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15180,6 +17292,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15203,6 +17318,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15226,6 +17344,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15249,6 +17370,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15272,6 +17396,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15295,6 +17422,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15318,6 +17448,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15341,6 +17474,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15364,6 +17500,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15387,6 +17526,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15410,6 +17552,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15433,6 +17578,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15456,6 +17604,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15484,6 +17635,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15507,6 +17661,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15530,6 +17687,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15553,6 +17713,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15576,6 +17739,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15599,6 +17765,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15622,6 +17791,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15645,6 +17817,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15668,6 +17843,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15691,6 +17869,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15719,6 +17900,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15742,10 +17926,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:56:09.161753",
+   "scraped_at": "2026-10-03T22:05:18.964544",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 628,
@@ -15764,6 +17951,11 @@
      "at": "2026-10-03T21:56:09.161753",
      "price": 628,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:05:18.964544",
+     "price": 628,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -15775,6 +17967,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15798,6 +17993,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15821,6 +18019,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15844,6 +18045,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15867,6 +18071,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15890,6 +18097,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15913,6 +18123,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15936,6 +18149,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15959,6 +18175,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -15982,6 +18201,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16005,6 +18227,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16028,10 +18253,13 @@
    "ku": true,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:54:53.058304",
+   "scraped_at": "2026-10-03T22:04:01.805009",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": null,
@@ -16055,6 +18283,11 @@
      "at": "2026-10-03T21:54:53.058304",
      "price": null,
      "ku": true
+    },
+    {
+     "at": "2026-10-03T22:04:01.805009",
+     "price": null,
+     "ku": true
     }
    ],
    "price_reason": "ku"
@@ -16066,10 +18299,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "manga",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:52:45.684695",
+   "scraped_at": "2026-10-03T22:01:53.938894",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 753,
@@ -16103,6 +18339,11 @@
      "at": "2026-10-03T21:52:45.684695",
      "price": 753,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:01:53.938894",
+     "price": 753,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -16114,6 +18355,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16137,6 +18381,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16160,6 +18407,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16183,6 +18433,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16211,6 +18464,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16244,6 +18500,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16267,6 +18526,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16290,6 +18552,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16313,6 +18578,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16336,6 +18604,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16359,6 +18630,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16382,6 +18656,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16405,6 +18682,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16428,6 +18708,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16451,6 +18734,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16474,6 +18760,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16497,6 +18786,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16520,6 +18812,9 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16543,16 +18838,24 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:58:11.775160",
+   "scraped_at": "2026-10-03T22:07:23.045214",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 664,
    "price_history": [
     {
      "at": "2026-10-03T21:58:11.775160",
+     "price": 664,
+     "ku": false
+    },
+    {
+     "at": "2026-10-03T22:07:23.045214",
      "price": 664,
      "ku": false
     }
@@ -16566,6 +18869,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16589,6 +18895,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16612,6 +18921,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16635,6 +18947,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16658,6 +18973,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16681,6 +18999,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16704,6 +19025,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16727,6 +19051,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16750,6 +19077,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16773,6 +19103,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16796,6 +19129,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16819,6 +19155,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16842,6 +19181,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16865,6 +19207,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16888,6 +19233,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16911,6 +19259,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -16934,10 +19285,14 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "kindle",
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:54:37.508140",
+   "scraped_at": "2026-10-03T22:03:47.173276",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1470,
@@ -16966,6 +19321,11 @@
      "at": "2026-10-03T21:54:37.508140",
      "price": 1470,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:03:47.173276",
+     "price": 1470,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -16977,6 +19337,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17000,6 +19363,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17023,6 +19389,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17046,6 +19415,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17069,6 +19441,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17092,6 +19467,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17115,6 +19493,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17138,6 +19519,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17161,6 +19545,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17184,6 +19571,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17207,6 +19597,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17230,6 +19623,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17253,6 +19649,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17276,6 +19675,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17299,6 +19701,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17322,6 +19727,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17345,10 +19753,13 @@
    "ku": false,
    "wanted": true,
    "purchased": false,
+   "sources": [
+    "bookmeter"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
-   "scraped_at": "2026-10-03T21:56:44.118549",
+   "scraped_at": "2026-10-03T22:05:55.284532",
    "price_prev": null,
    "price_changed_at": null,
    "price_low": 1287,
@@ -17362,6 +19773,11 @@
      "at": "2026-10-03T21:56:44.118549",
      "price": 1287,
      "ku": false
+    },
+    {
+     "at": "2026-10-03T22:05:55.284532",
+     "price": 1287,
+     "ku": false
     }
    ],
    "price_reason": null
@@ -17373,6 +19789,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17396,6 +19815,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17419,6 +19841,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17442,6 +19867,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17465,6 +19893,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17488,6 +19919,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17511,6 +19945,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17534,6 +19971,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17557,6 +19997,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17580,6 +20023,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17603,6 +20049,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17626,6 +20075,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17649,6 +20101,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17672,6 +20127,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17695,6 +20153,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17718,6 +20179,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17741,6 +20205,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17764,6 +20231,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17787,6 +20257,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17810,6 +20283,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17833,6 +20309,9 @@
    "ku": true,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17876,6 +20355,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17909,6 +20391,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17932,6 +20417,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17955,6 +20443,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -17978,6 +20469,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18001,6 +20495,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18024,6 +20521,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18047,6 +20547,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18070,6 +20573,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18093,6 +20599,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18116,6 +20625,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18139,6 +20651,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18162,6 +20677,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18185,6 +20703,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18208,6 +20729,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18231,6 +20755,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18254,6 +20781,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18277,6 +20807,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18300,6 +20833,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18323,6 +20859,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18346,6 +20885,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18369,6 +20911,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18392,6 +20937,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
@@ -18420,6 +20968,9 @@
    "ku": false,
    "wanted": false,
    "purchased": false,
+   "sources": [
+    "kindle"
+   ],
    "kind": "book",
    "tag": "",
    "rating": null,
