@@ -651,7 +651,7 @@ def get_books(filter: str = "all") -> list:
     注意: src/server.py の get_books()（/api/books）とは名前が同じだが契約が違う。
     差し替える場合は以下の調整が必要（server.py の書き換えは本 Phase のスコープ外）:
       - INNER JOIN → LEFT JOIN（価格未取得の本が新たに一覧に含まれる）
-      - source / from_kindle_sample / from_bookmeter 列を返さない
+      - source 列を返さない
       - 並び順が actual_price ASC ではなく title ASC
 
     where_clause は filter の値を検証したうえで固定リテラルの集合
@@ -682,7 +682,9 @@ def get_books(filter: str = "all") -> list:
             l.timestamp,
             l.is_unlimited,
             COALESCE(m.is_purchased, 0) as is_purchased,
-            COALESCE(m.is_wanted, 0) as is_wanted
+            COALESCE(m.is_wanted, 0) as is_wanted,
+            COALESCE(m.from_kindle_sample, 0) as from_kindle_sample,
+            COALESCE(m.from_bookmeter, 0) as from_bookmeter
         FROM book_mappings m
         LEFT JOIN latest_prices l ON m.paid_asin = l.paid_asin
         {where_clause}

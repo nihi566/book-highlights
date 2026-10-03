@@ -1355,7 +1355,7 @@ class GetBooksFilterTest(unittest.TestCase):
         self.engine.dispose()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
-    def _insert_mapping(self, session, paid_asin, title, is_wanted=0, is_purchased=0):
+    def _insert_mapping(self, session, paid_asin, title, is_wanted=0, is_purchased=0, from_kindle_sample=False, from_bookmeter=False):
         from src.models import BookMapping
         session.add(
             BookMapping(
@@ -1365,6 +1365,8 @@ class GetBooksFilterTest(unittest.TestCase):
                 is_purchased=is_purchased,
                 is_wanted=is_wanted,
                 source="bookmeter",
+                from_kindle_sample=from_kindle_sample,
+                from_bookmeter=from_bookmeter,
             )
         )
 
@@ -1463,6 +1465,20 @@ class GetBooksFilterTest(unittest.TestCase):
 
         self.assertIn("B0BOTH001", {b["asin"] for b in repository.get_books(filter="wanted")})
         self.assertIn("B0BOTH001", {b["asin"] for b in repository.get_books(filter="purchased")})
+
+    def test_source_flags_are_returned(self):
+        """欲しい本の画面で Kindle / 読書メーターの分類に使う、どこから来た本かの印が運ばれること。"""
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            self._insert_mapping(session, "B0KINDLE01", "Kindle の本", from_kindle_sample=True)
+            self._insert_mapping(session, "B0BMETER01", "読書メーターの本", is_wanted=1, from_bookmeter=True)
+            self._insert_mapping(session, "B0BOTHSRC1", "両方の本", is_wanted=1, from_kindle_sample=True, from_bookmeter=True)
+            session.commit()
+
+        books = {b["asin"]: b for b in repository.get_books(filter="all")}
+        self.assertEqual((books["B0KINDLE01"]["from_kindle_sample"], books["B0KINDLE01"]["from_bookmeter"]), (1, 0))
+        self.assertEqual((books["B0BMETER01"]["from_kindle_sample"], books["B0BMETER01"]["from_bookmeter"]), (0, 1))
+        self.assertEqual((books["B0BOTHSRC1"]["from_kindle_sample"], books["B0BOTHSRC1"]["from_bookmeter"]), (1, 1))
 
 
 class BookMarksTest(unittest.TestCase):
