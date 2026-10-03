@@ -35,7 +35,8 @@ const MAX_BODY = 50 * 1024 * 1024;
 // catalogFetch: おすすめの本を探す書誌 DB への fetch（テストで差し替える）
 export { summarizePlan };
 
-export function createCompanionServer({ store, log = console.log, catalogFetch, autoExportDelay = 800 }) {
+// drive: Play ブックスのメモ（Google ドライブ）の見張り役（startDriveWatcher の戻り値。無ければ null）
+export function createCompanionServer({ store, log = console.log, catalogFetch, autoExportDelay = 800, drive = null }) {
   // 同期・取り込み・分析結果の保存のあと、少し待ってから Vault を自動で書き出す（続けて来たら 1 回にまとめる）
   let autoTimer = null;
   let autoTrigger = '';
@@ -122,6 +123,8 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
         return send(res, 200, {
           app: 'book-highlights',
           stats: libraryStats(lib),
+          // Web アプリはこれが自分の持つものより新しいときだけ同期する
+          updatedAt: lib.updatedAt,
           llm: { chatModel: cfg.llm.chatModel, embedModel: cfg.llm.embedModel, configured: Boolean(cfg.llm.chatModel) },
           vault: Boolean(cfg.vault),
           root: cfg.root,
@@ -130,8 +133,9 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
           lastExport: st.lastExport || null,
           kindleSync: st.kindleSync || null,
           owners: cfg.vault ? await readVaultOwners(cfg.vault, cfg.root) : {},
-          analysis: analysis ? { createdAt: analysis.createdAt, ...analysis.stats } : null,
+          analysis: analysis ? { createdAt: analysis.createdAt, recommendedAt: analysis.recommendedAt, ...analysis.stats } : null,
           job: publicJob(),
+          google: drive ? publicDrive(drive.status) : null,
         });
       }
       case 'GET /api/library':
@@ -204,6 +208,10 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
       default:
         return send(res, 404, { error: `不明な API: ${route}` });
     }
+  }
+
+  function publicDrive({ active, lastCheck, lastImport, error }) {
+    return { active, lastCheck, lastImport, error };
   }
 
   function publicJob() {

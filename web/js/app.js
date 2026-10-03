@@ -361,21 +361,37 @@ function autoSyncAfterChange() {
   syncTimer = setTimeout(() => sync({ quiet: true }), 1500);
 }
 
-function canAutoSync() {
-  return state.settings.ai.mode === 'companion' && state.settings.autoSync && (state.servedByCompanion || state.settings.ai.companionUrl);
+// PC が Play ブックスの線を取り込んだら、開いている画面にも届ける。
+// 1 分ごと（と画面に戻ったとき）に PC の更新日時だけを聞き、この端末より新しいときだけ同期する
+const PULL_INTERVAL_MS = 60_000;
+const canAutoSync = () => state.settings.ai.mode === 'companion' && state.settings.autoSync && (state.servedByCompanion || state.settings.ai.companionUrl);
+let pulling = false;
+
+async function pullIfNewer() {
+  if (pulling || document.visibilityState !== 'visible' || !canAutoSync()) return;
+  pulling = true;
+  try {
+    const info = await companion.info();
+    // 同期すると両者の更新日時がそろうので、「違う」だけで判定する（端末の時計のずれに左右されない）
+    const stamp = (a) => [a?.createdAt || '', a?.recommendedAt || ''].sort().pop();
+    const differs = (info.updatedAt || '') !== (state.library.updatedAt || '') || (info.analysis ? stamp(info.analysis) : '') > stamp(state.analysis);
+    if (!differs) return;
+    // 入力中の画面を描き直すと書きかけが消えるので、そのときは同期だけして描き直しは次の画面遷移に任せる
+    const typing = document.activeElement?.matches?.('#view input:not([type="checkbox"]):not([type="radio"]), #view textarea, #view select, #view [contenteditable]');
+    if (typing) await syncWithPc();
+    else await sync({ quiet: true });
+  } catch {
+    // PC が止まっているときは黙って次の機会を待つ
+  } finally {
+    pulling = false;
+  }
 }
 
-// ブラウザ拡張などが PC に取り込んだ点を拾うため、画面に戻ったときと表示中は 5 分ごとに同期する
-// （メモなどを入力している途中は画面を描き直さないよう見送る）
-const PERIODIC_SYNC_MS = 5 * 60 * 1000;
-function startPeriodicSync() {
-  const tick = () => {
-    if (document.visibilityState !== 'visible' || !canAutoSync()) return;
-    if (document.activeElement?.matches('input, textarea, select, [contenteditable]')) return;
-    sync({ quiet: true });
-  };
-  document.addEventListener('visibilitychange', tick);
-  setInterval(tick, PERIODIC_SYNC_MS);
+function googleLabel(g) {
+  if (!g) return '未対応（PC の bh を更新してください）';
+  if (!g.active) return g.error || '未設定';
+  const time = (iso) => (iso ? new Date(iso).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '—');
+  return `有効（最終確認 ${time(g.lastCheck)}・最終取り込み ${time(g.lastImport)}）${g.error ? ` ／ ${g.error}` : ''}`;
 }
 
 // ---- Obsidian へ書き出し ----
@@ -581,7 +597,7 @@ const forms = {
         out.innerHTML = String(html`<p class="notice ok">接続できました。モデル: ${models.join('、') || '（なし）'}</p>`);
       } else {
         const info = await companion.info();
-        out.innerHTML = String(html`<p class="notice ${info.llm.configured ? 'ok' : ''}">PC に接続できました。点 ${info.stats.highlights} 件・チャットモデル: ${info.llm.chatModel || '未設定（PC で bh config model …）'}・埋め込み: ${info.llm.embedModel || '文字 n-gram'}・Vault: ${info.vault ? '設定済み' : '未設定'}</p>`);
+        out.innerHTML = String(html`<p class="notice ${info.llm.configured ? 'ok' : ''}">PC に接続できました。点 ${info.stats.highlights} 件・チャットモデル: ${info.llm.chatModel || '未設定（PC で bh config model …）'}・埋め込み: ${info.llm.embedModel || '文字 n-gram'}・Vault: ${info.vault ? '設定済み' : '未設定'}・Play ブックスの自動取り込み: ${googleLabel(info.google)}</p>`);
       }
     } catch (e) {
       out.innerHTML = String(html`<p class="notice err">${e.message}</p>`);
@@ -626,7 +642,8 @@ async function start() {
   requestPersistence();
   if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
   if (canAutoSync()) sync({ quiet: true });
-  startPeriodicSync();
+  setInterval(pullIfNewer, PULL_INTERVAL_MS);
+  document.addEventListener('visibilitychange', pullIfNewer);
 }
 
 start().catch((e) => {

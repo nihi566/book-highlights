@@ -70,6 +70,7 @@ export const importView = {
             <li>スマホ: ドキュメントを開き「共有とエクスポート → 形式を指定して保存 → Word（.docx）」で保存し、ここで選びます。</li>
           </ol>
           <p class="help">.docx / .html / .md のどれでも読めます。ドキュメントが自動で更新されるので、時々ダウンロードし直すと差分だけ増えます。</p>
+          <p class="help"><b>自動で取り込むには:</b> PC で <code>bh google login</code> して <code>bh serve</code> を動かしておくと、PC がドライブを 1 分ごとに確認し、新しく引いた線を取り込みます（Google がドキュメントを更新するまで数分かかることがあります）。この画面にも PC との同期で届きます。手順は docs/setup.md の「Play ブックスの自動取り込み」。</p>
         </details>
       </div>
 
@@ -147,7 +148,7 @@ export const settingsView = {
       <div class="section"><h2>PC と同期</h2></div>
       <div class="card stack">
         <p class="help">スマホで取り込んだ点や編集を PC に送り、PC の分析結果を受け取ります（コンパニオンサーバ経由）。</p>
-        <label class="check"><input type="checkbox" data-action="toggle-autosync" ${state.settings.autoSync ? 'checked' : ''}> 起動時に自動で同期する</label>
+        <label class="check"><input type="checkbox" data-action="toggle-autosync" ${state.settings.autoSync ? 'checked' : ''}> 自動で同期する（起動時と、開いている間 PC に新しい線が入ったとき）</label>
         <div class="row"><button class="btn" data-action="sync">今すぐ同期</button><span class="small muted">${state.lastSync ? `最終: ${isoDate(state.lastSync)} ${new Date(state.lastSync).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` : '未同期'}</span></div>
         ${state.pcInfo ? html`<p class="small muted">PC の Vault に最後に書き出した時刻: ${lastExportText(state.pcInfo.lastExport)}</p>` : ''}
       </div>
