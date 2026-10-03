@@ -3,7 +3,7 @@
 import { html } from '../html.js';
 import { download } from '../services.js';
 import { spineColor, toast } from '../ui.js';
-import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceSparkline, priceTotal, readingCounts, readingLookup, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
+import { applyImportedMarks, bookmeterUrl, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceSparkline, priceTotal, readingCounts, readingLookup, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
 import { listBooks } from '../../core/model.js';
 import { isoDate } from '../../core/text.js';
 import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
@@ -306,6 +306,12 @@ function readingBadge(item) {
   return html` <span class="badge">線 ${r.count} 本${r.lastHighlightedAt ? `・最終 ${isoDate(r.lastHighlightedAt)}` : ''}</span>`;
 }
 
+// 読書メーターから来た本は、読書メーターの本のページ（他の人の感想・登録数）を開ける
+function bookmeterLink(book) {
+  const url = bookmeterUrl(book);
+  return url ? html`<p class="small wl-bookmeter"><a href="${url}" target="_blank" rel="noopener noreferrer" aria-label="${book.title}（読書メーターで見る）">読書メーターで見る</a></p>` : '';
+}
+
 function itemRow({ book, marks, reading }) {
   const cover = html`<span class="wl-cover" style="background:${spineColor(book.title)}" aria-hidden="true">${[...book.title][0] || ''}${book.asin ? html`<img src="${COVER(book.asin)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>`;
   const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}${readingBadge({ book, marks, reading })}</span>${sparkline(book)}</span>`;
@@ -318,6 +324,7 @@ function itemRow({ book, marks, reading }) {
           ${marks.tag === 'seen' ? html`<span class="wl-stars" role="group" aria-label="★評価（同じ★をもう一度押すと取り消し）">${[1, 2, 3, 4, 5].map((n) => html`<button type="button" class="icon-btn wl-star ${n <= value ? 'on' : ''}" data-rating="${n}" aria-pressed="${String(n === value)}" aria-label="★${n}">${n <= value ? '★' : '☆'}</button>`)}</span>` : ''}
         </div>`
       : ''}
+    ${bookmeterLink(book)}
     ${historyBlock(book)}
   </li>`;
 }

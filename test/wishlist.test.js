@@ -51,7 +51,7 @@ test('parseWishlist: 形式を確かめて正規化する', () => {
   const w = parseWishlist(data([book(), book({ asin: 'B0AAAAAAA2', ku: true, price: null, tag: 'seen', rating: 4, kind: 'manga' })]));
   assert.equal(w.lastScraped, '2026-01-02T03:04:05');
   assert.equal(w.books.length, 2);
-  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, sources: ['bookmeter'], saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, scrapedAt: '2026-01-01T00:00:00', history: [], priceReason: '', index: 0 });
+  assert.deepEqual(w.books[0], { asin: 'B0AAAAAAA1', title: '欲しい本', price: 900, ku: false, wanted: true, purchased: false, sources: ['bookmeter'], saved: { tag: '', rating: '', kind: 'book' }, trend: { prev: null, changedAt: null, low: null }, scrapedAt: '2026-01-01T00:00:00', history: [], priceReason: '', bookmeterId: '', index: 0 });
   assert.deepEqual(w.books[1].saved, { tag: 'seen', rating: '4', kind: 'manga' });
 });
 
@@ -517,4 +517,22 @@ test('価格が無い理由（price_reason）: 読み込んで、販売終了の
     'Kindle Unlimited 対象',
     '価格情報なし',
   ]);
+});
+
+test('読書メーターの本 ID（bookmeter_id）: 数字だけを読み、読書メーターの本のページの URL にする', async () => {
+  const { bookmeterUrl } = await import('../web/core/wishlist.js');
+  const w = parseWishlist({
+    format: 'kindle-wishlist',
+    version: 1,
+    books: [
+      { asin: 'B0BMID0001', title: 'a', price: 500, sources: ['bookmeter'], bookmeter_id: '22690039' },
+      { asin: 'B0BMID0002', title: 'b', price: 500, sources: ['bookmeter'], bookmeter_id: '../evil' },
+      { asin: 'B0BMID0003', title: 'c', price: 500, sources: ['bookmeter'], bookmeter_id: 12345 },
+      { asin: 'B0BMID0004', title: 'd', price: 500, sources: ['kindle'] },
+      { asin: 'B0BMID0005', title: 'e', price: 500, sources: ['bookmeter'], bookmeter_id: '1'.repeat(13) },
+    ],
+  });
+  assert.deepEqual(w.books.map((b) => b.bookmeterId), ['22690039', '', '', '', '']);
+  assert.deepEqual(w.books.map(bookmeterUrl), ['https://bookmeter.com/books/22690039', '', '', '', '']);
+  assert.equal(bookmeterUrl({ bookmeterId: 'javascript:alert(1)' }), '', '画面側でも形を確かめてから URL にする');
 });

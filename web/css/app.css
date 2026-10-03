@@ -252,7 +252,8 @@ a.wl-main:hover .title { text-decoration: underline; }
 .wl-stars { display: inline-flex; }
 .wl-star { width: 34px; height: 34px; }
 .wl-star.on { color: #d4a017; }
-.wl-history, .wl-history-none { margin: 6px 0 0 56px; }
+.wl-history, .wl-history-none, .wl-bookmeter { margin: 6px 0 0 56px; }
+.wl-bookmeter a { display: inline-flex; align-items: center; min-height: 32px; }
 .wl-history summary { display: flex; align-items: center; min-height: 36px; font-size: 0.82rem; color: var(--ink-2); cursor: pointer; }
 .wl-history table { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .wl-history th, .wl-history td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); text-align: left; }
