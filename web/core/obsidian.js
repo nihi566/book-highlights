@@ -281,6 +281,11 @@ export function renderRecommendations(analysis, paths, library = null) {
     const url = /^https:\/\/[^\s()<>]+$/.test(v?.link || '') ? v.link : '';
     if (v) body.push(`- 確認済み（${v.source || '書誌データベース'}）: ${url ? `[${v.title.replace(/[[\]]/g, '')}](${url})` : v.title}${v.authors ? ' / ' + v.authors : ''}${v.publishedDate ? `（${v.publishedDate}）` : ''}${v.isbn ? ` ISBN ${v.isbn}` : ''}`);
     else if (r.verified === false) body.push('- ⚠ 書誌データベースで見つかりませんでした（実在を確認してください）');
+    if (r.wishlist) {
+      const w = r.wishlist;
+      const asin = /^[A-Z0-9]{10}$/.test(w.asin || '') ? w.asin : '';
+      body.push(`- 欲しい本に登録済み: ${w.ku ? 'Kindle Unlimited 対象' : Number.isInteger(w.price) ? `¥${w.price.toLocaleString('ja-JP')}` : '価格情報なし'}${asin ? `（[Amazon](https://www.amazon.co.jp/dp/${asin})）` : ''}`);
+    }
     body.push('');
   }
   const want = library ? feedbackByStatus(library).want : [];

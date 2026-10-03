@@ -19,6 +19,8 @@ import { analyzeLibrary, recommendBooks, recommendationNote } from '../core/anal
 import { followJob, pcJobOutcome } from '../core/jobs.js';
 import { SAMPLE_BOOKS } from '../core/sample.js';
 import { safeFileName } from '../core/text.js';
+import { browserStore, loadMarks, toRecommendWishlist } from '../core/wishlist.js';
+import { loadWishlist } from './wishlist-data.js';
 
 const ROUTES = [
   [/^\/$/, home, 'home'],
@@ -183,6 +185,20 @@ function setJob(patch) {
 
 let abort = null;
 
+/**
+ * おすすめに混ぜる欲しい本（購入済み・読んだの印つき）。タグはこのブラウザにしか無いので、分析のたびにここで作って渡す。
+ * 読み込めなければ欲しい本なしでおすすめを選ぶ（分析そのものは止めない）
+ */
+async function recommendWishlist() {
+  try {
+    const w = await loadWishlist();
+    const store = browserStore();
+    return toRecommendWishlist(w.books.map((book) => ({ book, marks: loadMarks(book, store) })));
+  } catch {
+    return [];
+  }
+}
+
 /** ブラウザから直接 LLM を呼ぶときの設定。トークンはコンパニオンの /llm 中継を使うときだけ送る */
 function directLlmOptions(ai) {
   return { ...ai, token: /\/llm\/?$/.test(ai.baseUrl) ? ai.token : '' };
@@ -198,14 +214,15 @@ async function runAnalysis(mode = 'analyze') {
     try {
       const llm = createLlmClient(directLlmOptions(ai));
       const onProgress = (p) => setJob(p);
+      const wishlist = await recommendWishlist();
       if (mode === 'recommend') {
-        state.analysis.recommendations = await recommendBooks({ library: state.library, analysis: state.analysis, llm, signal: abort.signal, onProgress });
+        state.analysis.recommendations = await recommendBooks({ library: state.library, analysis: state.analysis, llm, signal: abort.signal, onProgress, wishlist });
         state.analysis.recommendedAt = new Date().toISOString();
         state.analysis.recommendationNote = recommendationNote(state.analysis.recommendations);
       } else {
         const cache = await loadCache();
         try {
-          const { analysis } = await analyzeLibrary({ library: state.library, llm, cache, signal: abort.signal, onProgress });
+          const { analysis } = await analyzeLibrary({ library: state.library, llm, cache, signal: abort.signal, onProgress, options: { wishlist } });
           state.analysis = analysis;
         } finally {
           await saveCache(cache);
@@ -224,7 +241,7 @@ async function runAnalysis(mode = 'analyze') {
   setJob({ running: true, where: 'pc', stage: 'embed', message: 'PC と同期しています', done: 0, total: 0, error: '' });
   try {
     await syncWithPc();
-    const started = await companion.startAnalyze(mode);
+    const started = await companion.startAnalyze(mode, undefined, await recommendWishlist());
     pcJobStartedAt = started?.startedAt || null;
     await pollPcJob();
   } catch (e) {

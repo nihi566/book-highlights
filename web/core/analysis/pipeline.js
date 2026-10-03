@@ -13,6 +13,10 @@ import { bookKey, hash } from '../text.js';
 import { PROMPT_VERSION, RECOMMEND_KINDS, RELATION_TYPES, linePrompt, pickPrompt, planePrompt, recommendPrompt, searchPrompt, solidPrompt } from './prompts.js';
 import { centroid, dot, groupLines, groupPoints, l2normalize, tfidfEmbed } from './vectors.js';
 import { searchBooks, verifyBooks } from './recommend.js';
+import { titleKey, wishlistForRecommend } from '../wishlist.js';
+
+// おすすめの候補に混ぜる欲しい本の冊数（多すぎると小さなモデルが選びきれない）
+const WISHLIST_CANDIDATES = 8;
 
 export const ANALYSIS_VERSION = 1;
 
@@ -27,10 +31,10 @@ export function emptyCache() {
  * @param {object} [p.cache]    emptyCache() 形式。呼び出し側で保存すると次回が速い
  * @param {function} [p.onProgress] ({ stage, done, total, message }) => void
  * @param {AbortSignal} [p.signal]
- * @param {object} [p.options]  { granularity: 点いくつで線 1 本か (既定 5), maxLines, recommend: bool, verify: bool, fetchImpl }
+ * @param {object} [p.options]  { granularity: 点いくつで線 1 本か (既定 5), maxLines, recommend: bool, verify: bool, fetchImpl, wishlist: toRecommendWishlist() の結果 }
  */
 export async function analyzeLibrary({ library, llm, cache = emptyCache(), onProgress = () => {}, signal, options = {} }) {
-  const { granularity = 5, maxLines = 40, recommend = true, verify = true, recommendCount = 6, fetchImpl } = options;
+  const { granularity = 5, maxLines = 40, recommend = true, verify = true, recommendCount = 6, fetchImpl, wishlist } = options;
   const points = liveHighlights(library).sort((a, b) => a.id.localeCompare(b.id));
   if (points.length < 4) throw new Error(`点（ハイライト）が ${points.length} 件しかありません。4 件以上取り込んでから分析してください。`);
   const check = () => {
@@ -154,7 +158,7 @@ export async function analyzeLibrary({ library, llm, cache = emptyCache(), onPro
   if (recommend) {
     // おすすめで失敗しても、ここまでの分析（線・面・立体）は捨てない
     try {
-      analysis.recommendations = await recommendBooks({ library, analysis, llm, signal, onProgress, verify, count: recommendCount, fetchImpl });
+      analysis.recommendations = await recommendBooks({ library, analysis, llm, signal, onProgress, verify, count: recommendCount, fetchImpl, wishlist });
       analysis.recommendationNote = recommendationNote(analysis.recommendations);
     } catch (e) {
       if (signal?.aborted) throw e;
@@ -171,11 +175,17 @@ export async function analyzeLibrary({ library, llm, cache = emptyCache(), onPro
  * 1. 書誌 DB を使う版: LLM が検索語を決め → Google Books で実在する候補を集め → LLM が選んで理由を書く
  * 2. 書誌 DB で検索できないとき: LLM が書名を挙げ → Google Books / 国立国会図書館サーチで実在を確認
  */
-export async function recommendBooks({ library, analysis, llm, signal, onProgress = () => {}, verify = true, count = 6, fetchImpl }) {
+export async function recommendBooks({ library, analysis, llm, signal, onProgress = () => {}, verify = true, count = 6, fetchImpl, wishlist = [] }) {
   // おすすめへの反応: 読んだ本は既読として扱い、反応済みの本はもう挙げない。読みたい／興味なしは好みとして伝える
   const prefs = feedbackByStatus(library);
   const readTitles = [...Object.values(library.books).filter((b) => !b.deleted).map((b) => b.title), ...prefs.read.map((f) => f.title)];
   const readKeys = new Set([...readTitles, ...prefs.want.map((f) => f.title), ...prefs.no.map((f) => f.title)].map(bookKey));
+  // 欲しい本: 購入済み・読んだ本は書誌 DB で見つかっても出さない。残りは候補に混ぜる（書名はレーベル表記を落として照合）
+  const wish = wishlistForRecommend(wishlist);
+  const skipKeys = new Set(wish.filter((w) => w.skip).map((w) => titleKey(w.title)).filter(Boolean));
+  const excluded = (title) => readKeys.has(bookKey(title)) || skipKeys.has(titleKey(title));
+  const wishByKey = new Map(wish.filter((w) => !w.skip && titleKey(w.title)).map((w) => [titleKey(w.title), w]));
+  const wishInfo = (w) => ({ asin: w.asin, price: w.price, ku: w.ku });
   const planeRef = (ref) => analysis.planes[parseInt(String(ref).replace(/[^\d]/g, ''), 10) - 1]?.id || null;
   const kindOf = (k) => (RECOMMEND_KINDS.includes(k) ? k : 'deepen');
 
@@ -185,23 +195,28 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
     const searches = (Array.isArray(s?.searches) ? s.searches : []).map((x) => ({ query: clean(x.query, 40), plane: x.plane, kind: kindOf(x.kind) })).filter((x) => x.query).slice(0, 6);
     const candidates = [];
     const seen = new Set(readKeys);
-    let reached = false;
+    // 欲しい本のうち、知識の全体像に近い本を先に候補にする
+    for (const w of closestWishlist([...wishByKey.values()].filter((w) => !excluded(w.title)), analysis, WISHLIST_CANDIDATES)) {
+      seen.add(bookKey(w.title));
+      seen.add(titleKey(w.title));
+      candidates.push({ title: w.title, authors: '', description: `欲しい本に登録済み（${w.ku ? 'Kindle Unlimited 対象' : w.price === null ? '価格情報なし' : `¥${w.price}`}）`, wishlist: wishInfo(w) });
+    }
     for (const [i, q] of searches.entries()) {
       onProgress({ stage: 'recommend', done: 1, total: 3, message: `書誌データベースで探しています（${i + 1}/${searches.length}: ${q.query}）` });
       try {
         const found = await searchBooks(q.query, { fetchImpl, signal });
-        reached = true;
         for (const b of found.slice(0, 5)) {
           const key = bookKey(b.title);
-          if (!key || seen.has(key)) continue;
+          if (!key || seen.has(key) || seen.has(titleKey(b.title)) || skipKeys.has(titleKey(b.title))) continue;
           seen.add(key);
-          candidates.push({ ...b, search: q });
+          const w = wishByKey.get(titleKey(b.title));
+          candidates.push({ ...b, search: q, ...(w ? { wishlist: wishInfo(w) } : {}) });
         }
       } catch (e) {
         if (signal?.aborted) throw e;
       }
     }
-    if (reached && candidates.length) {
+    if (candidates.length) {
       onProgress({ stage: 'recommend', done: 2, total: 3, message: `見つかった ${candidates.length} 冊から選んでいます` });
       const r = await llm.chatJson({ ...pickPrompt({ solid: analysis.solid, planes: analysis.planes, candidates, count, prefs }), signal, temperature: 0.3 });
       const picked = new Set();
@@ -210,8 +225,9 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
         const c = candidates[Number(p.candidate) - 1];
         if (!c || picked.has(c)) continue;
         picked.add(c);
-        const { search, description, ...verified } = c;
-        recs.push({ title: c.title, author: c.authors, planeId: planeRef(p.plane) || planeRef(search.plane), kind: kindOf(p.kind || search.kind), reason: clean(p.reason, 400), query: search.query, verified });
+        // 欲しい本だけから来た候補は書誌 DB で確かめていない（search が無い）
+        const { search, description, wishlist: wished, ...verified } = c;
+        recs.push({ title: c.title, author: c.authors, planeId: planeRef(p.plane) || planeRef(search?.plane), kind: kindOf(p.kind || search?.kind), reason: clean(p.reason, 400), ...(search ? { query: search.query, verified } : {}), ...(wished ? { wishlist: wished } : {}) });
       }
       onProgress({ stage: 'recommend', done: 3, total: 3, message: `おすすめの本を ${recs.length} 冊選びました` });
       if (recs.length) return recs.slice(0, count);
@@ -232,8 +248,9 @@ export async function recommendBooks({ library, analysis, llm, signal, onProgres
       const key = bookKey(rec.title);
       if (!rec.title || seen.has(key)) continue;
       seen.add(key);
-      if (readKeys.has(key)) rejected.push(rec.title);
-      else recs.push(rec);
+      const w = wishByKey.get(titleKey(rec.title));
+      if (excluded(rec.title)) rejected.push(rec.title);
+      else recs.push(w ? { ...rec, wishlist: wishInfo(w) } : rec);
     }
   }
   recs = recs.slice(0, count);
@@ -306,4 +323,16 @@ function fromBase64(b64) {
   const out = new Uint8Array(s.length);
   for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
   return out;
+}
+
+/** 欲しい本のうち、知識の全体像（核・面）に書名が近い順に limit 冊（文字 n-gram の TF-IDF。LLM は使わない） */
+function closestWishlist(books, analysis, limit) {
+  if (books.length <= limit) return books;
+  const profile = [analysis.solid?.core, ...analysis.planes.map((p) => `${p.name} ${p.summary}`)].filter(Boolean).join(' ');
+  const [target, ...vectors] = tfidfEmbed([profile, ...books.map((b) => b.title)]);
+  return books
+    .map((b, i) => ({ b, score: dot(target, vectors[i]), i }))
+    .sort((x, y) => y.score - x.score || x.i - y.i)
+    .slice(0, limit)
+    .map((x) => x.b);
 }
