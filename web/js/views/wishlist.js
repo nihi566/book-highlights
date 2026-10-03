@@ -9,7 +9,7 @@ import { isoDate } from '../../core/text.js';
 import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
 
 const SORTS = { default: '標準（書名）', 'price-asc': '価格が安い順', 'price-desc': '価格が高い順', 'price-drop': '値下がり額が大きい順', 'scraped-desc': 'スクレイピングの最新順', rating: '評価が高い順' };
-const SHELVES = { all: 'すべて', wanted: '読みたい', purchased: '購入済み' };
+const SHELVES = { all: 'すべて', kindle: 'Kindle', bookmeter: '読書メーター', purchased: '購入済み' };
 const shelfLabel = (shelf, n) => `${SHELVES[shelf]} ${n}`;
 // 購入済みの内訳（本棚の線の有無で分ける）
 const READINGS = { all: 'すべて', unread: 'まだ線が無い', reading: '読書中' };
@@ -123,7 +123,7 @@ function mountList(root, body, items, store, lastScraped) {
 
   const renderItems = () => {
     const r = filterWishlist(items, filters);
-    // タグの選択肢に、いまの分類（すべて/読みたい/購入済み）で選ぶと残る件数を出す
+    // タグの選択肢に、いまの分類（すべて/Kindle/読書メーター/購入済み）で選ぶと残る件数を出す
     const inCurrentShelf = items.filter((item) => inShelf(item, filters.shelf));
     const counts = tagCounts(inCurrentShelf);
     for (const option of $('wl-tag').options) option.textContent = `${TAG_FILTER_LABELS[option.value]}（${counts[option.value]}）`;
@@ -308,7 +308,7 @@ function readingBadge(item) {
 
 function itemRow({ book, marks, reading }) {
   const cover = html`<span class="wl-cover" style="background:${spineColor(book.title)}" aria-hidden="true">${[...book.title][0] || ''}${book.asin ? html`<img src="${COVER(book.asin)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>`;
-  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'wanted') ? html` <span class="badge">読みたい</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}${readingBadge({ book, marks, reading })}</span>${sparkline(book)}</span>`;
+  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}${readingBadge({ book, marks, reading })}</span>${sparkline(book)}</span>`;
   const value = parseInt(marks.rating, 10) || 0;
   return html`<li class="wl-item" data-asin="${book.asin}">
     ${book.asin ? html`<a class="wl-main" href="https://www.amazon.co.jp/dp/${book.asin}" target="_blank" rel="noopener noreferrer" aria-label="${book.title}（Amazon で開く）">${cover}${text}</a>` : html`<div class="wl-main">${cover}${text}</div>`}
