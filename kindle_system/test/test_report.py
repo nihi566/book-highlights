@@ -240,6 +240,14 @@ class MainIntegrationTest(unittest.TestCase):
         self.assertEqual([b["asin"] for b in data["books"]], ["B0INTEG1"])
         self.assertFalse(os.path.exists(os.path.join(self.tmpdir, "wishlist.json.tmp")))
 
+    def test_main_writes_feed_xml_next_to_wishlist_json(self):
+        """値下がり・読み放題入りのフィードも一緒に書き出す（自分自身へのリンクは PUBLIC_SITE_URL）。"""
+        self._run_main_with_marks({})
+        with open(os.path.join(self.tmpdir, "feed.xml"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn('href="https://example.invalid/feed.xml"', text)
+        self.assertFalse(os.path.exists(os.path.join(self.tmpdir, "feed.xml.tmp")))
+
     def test_main_wishlist_publishes_only_kind_override_by_default(self):
         os.environ.pop("PUBLISH_MARKS", None)
         self._run_main_with_marks({})
