@@ -123,6 +123,12 @@ def _price_reason(book: dict, price, is_ku: bool):
     return "unknown"
 
 
+def _sources(book: dict) -> list:
+    """どこから来た本か。kindle（Kindle のサンプル）/ bookmeter（読書メーターの読みたい本）の順に、当てはまるものを並べる。"""
+    flags = (("kindle", "from_kindle_sample"), ("bookmeter", "from_bookmeter"))
+    return [name for name, column in flags if book.get(column)]
+
+
 def build_wishlist(books: list) -> dict:
     """
     欲しい本のデータ（book-highlights アプリが同じオリジンから fetch する wishlist.json）を組み立てる。
@@ -133,6 +139,7 @@ def build_wishlist(books: list) -> dict:
     値動き（book["price_trend"] = summarize_price_changes の 1 件）は、今の価格がある本にだけ載せる。
     スクレイピングの履歴（book["price_history"] = summarize_price_history の 1 件）は全冊に載せる（無ければ空）。
     価格が null の本には理由（price_reason。_price_reason）を載せる。
+    どこから来た本か（sources。_sources）を載せる（画面が Kindle / 読書メーターで分類する）。
     """
     timestamps = [str(book["timestamp"]) for book in books if book.get("timestamp")]
     items = []
@@ -150,6 +157,7 @@ def build_wishlist(books: list) -> dict:
                 "ku": is_ku,
                 "wanted": bool(book.get("is_wanted")),
                 "purchased": bool(book.get("is_purchased")),
+                "sources": _sources(book),
                 "kind": kind,
                 "tag": tag,
                 "rating": rating,

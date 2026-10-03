@@ -34,6 +34,8 @@ class BuildWishlistTest(unittest.TestCase):
             "is_unlimited": 0,
             "is_wanted": 1,
             "is_purchased": 0,
+            "from_kindle_sample": 0,
+            "from_bookmeter": 1,
         }
         book.update(overrides)
         return book
@@ -65,6 +67,7 @@ class BuildWishlistTest(unittest.TestCase):
                 "ku": False,
                 "wanted": True,
                 "purchased": False,
+                "sources": ["bookmeter"],
                 "kind": report.classify_kind("欲しい本"),
                 "tag": "",
                 "rating": None,
@@ -76,6 +79,14 @@ class BuildWishlistTest(unittest.TestCase):
                 "price_reason": None,
             },
         )
+
+    def test_sources_list_where_the_book_came_from(self):
+        """Kindle（サンプル）と読書メーター（読みたい本）のどちらから来た本か。両方なら両方、決まった順で載せる。"""
+        sources = lambda **flags: report.build_wishlist([self._book(**flags)])["books"][0]["sources"]
+        self.assertEqual(sources(from_kindle_sample=1, from_bookmeter=0), ["kindle"])
+        self.assertEqual(sources(from_kindle_sample=0, from_bookmeter=1), ["bookmeter"])
+        self.assertEqual(sources(from_kindle_sample=1, from_bookmeter=1), ["kindle", "bookmeter"])
+        self.assertEqual(sources(from_kindle_sample=0, from_bookmeter=0), [])
 
     def test_price_history_is_published_as_is(self):
         history = [{"at": "2026-01-01T00:00:00", "price": 1000, "ku": False}]
