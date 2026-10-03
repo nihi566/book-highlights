@@ -442,6 +442,28 @@ class GetOrCreateByPaidAsinTest(unittest.TestCase):
             paid_asins = {r.paid_asin for r in rows}
             self.assertEqual(paid_asins, {"B0AAA", "B0BBB"})
 
+    def test_truncated_title_is_replaced_with_full_title(self):
+        """読書メーターの一覧で「…」に切れた書名で登録済みの行は、切れていない書名が来たら直す。"""
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(session, "B0TRUNC01", title="消費者行動の知識 （日経文庫） (日経文庫 …")
+            book = repository.get_or_create_by_paid_asin(session, "B0TRUNC01", title="消費者行動の知識 （日経文庫） (日経文庫 1415)")
+            session.commit()
+            self.assertEqual(book.title, "消費者行動の知識 （日経文庫） (日経文庫 1415)")
+
+    def test_full_title_is_not_overwritten(self):
+        """切れていない書名・別の書名・切れた書名では上書きしない（Kindle 由来の書名などを守る）。"""
+        from sqlmodel import Session
+        with Session(self.engine) as session:
+            repository.get_or_create_by_paid_asin(session, "B0FULL001", title="完全な書名")
+            book = repository.get_or_create_by_paid_asin(session, "B0FULL001", title="完全な書名 (別の表記)")
+            self.assertEqual(book.title, "完全な書名")
+            repository.get_or_create_by_paid_asin(session, "B0TRUNC02", title="ある本 (…")
+            book = repository.get_or_create_by_paid_asin(session, "B0TRUNC02", title="別の本")
+            self.assertEqual(book.title, "ある本 (…")
+            book = repository.get_or_create_by_paid_asin(session, "B0TRUNC02", title=None)
+            self.assertEqual(book.title, "ある本 (…")
+
     def test_empty_paid_asin_raises_value_error(self):
         from sqlmodel import Session
         with Session(self.engine) as session:

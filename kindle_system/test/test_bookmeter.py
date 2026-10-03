@@ -118,6 +118,41 @@ class ParseBooksTest(unittest.TestCase):
         self.assertEqual(books, [{"title": "著者不明の本", "author": ""}])
 
 
+class ParseBooksFullTitleTest(unittest.TestCase):
+    """一覧の書名リンクは長い書名を「…」で切るので、表紙画像の alt（切れていない書名）を使う。"""
+
+    @staticmethod
+    def _item(title_text, img=""):
+        return f"""
+        <ul class="book-list__group">
+          <li class="group__book">
+            <div class="book__thumbnail"><div class="thumbnail__cover"><a href="/books/1">{img}</a></div></div>
+            <div class="book__detail">
+              <div class="detail__title"><a href="/books/1">{title_text}</a></div>
+              <ul class="detail__authors"><li><a href="/search?author=a">著者</a></li></ul>
+            </div>
+          </li>
+        </ul>
+        """
+
+    def test_uses_cover_alt_when_link_text_is_truncated(self):
+        html = self._item(
+            "消費者行動の知識 （日経文庫） (日経文庫 …",
+            '<img alt="消費者行動の知識 （日経文庫） (日経文庫 1415)" class="cover__image" src="x.jpg">',
+        )
+        self.assertEqual(parse_books(html)[0]["title"], "消費者行動の知識 （日経文庫） (日経文庫 1415)")
+
+    def test_keeps_link_text_without_cover_alt(self):
+        self.assertEqual(parse_books(self._item("短い書名 (…"))[0]["title"], "短い書名 (…")
+        html = self._item("短い書名 (…", '<img alt="" class="cover__image" src="x.jpg">')
+        self.assertEqual(parse_books(html)[0]["title"], "短い書名 (…")
+
+    def test_ignores_cover_alt_of_a_different_title(self):
+        # alt が書名の続きでなければ（別の文言なら）使わない
+        html = self._item("ある本 (…", '<img alt="表紙画像" class="cover__image" src="x.jpg">')
+        self.assertEqual(parse_books(html)[0]["title"], "ある本 (…")
+
+
 class GetNextPageUrlTest(unittest.TestCase):
     def test_returns_next_url_when_present(self):
         url = get_next_page_url(FIXTURE_PAGE_1, WISH_URL)
