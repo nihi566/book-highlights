@@ -16,6 +16,7 @@ import { applyImport } from '../web/core/importing.js';
 import { mergeKindleSync, normalizeKindleReport } from '../web/core/kindle-status.js';
 import { createLlmClient, normalizeBaseUrl } from '../web/core/analysis/llm.js';
 import { analyzeLibrary, recommendBooks, recommendationNote } from '../web/core/analysis/pipeline.js';
+import { wishlistForRecommend } from '../web/core/wishlist.js';
 import { parseFiles } from '../web/core/parsers/index.js';
 
 const WEB_ROOT = path.join(REPO_ROOT, 'web');
@@ -192,7 +193,8 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
       case 'POST /api/analyze': {
         const body = await readBody(req).catch(() => ({}));
         await resolveRoot(body.root, cfg);
-        if (!job.running) runJob(body.mode === 'recommend' ? 'recommend' : 'analyze');
+        // 欲しい本（タグつき）は Web アプリが送る。PC には保存せず、このジョブのおすすめにだけ使う
+        if (!job.running) runJob(body.mode === 'recommend' ? 'recommend' : 'analyze', wishlistForRecommend(body.wishlist));
         return send(res, 202, publicJob());
       }
       case 'DELETE /api/analyze':
@@ -219,7 +221,7 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
     return rest;
   }
 
-  async function runJob(mode) {
+  async function runJob(mode, wishlist = []) {
     Object.assign(job, { running: true, stage: 'start', message: '開始しています', done: 0, total: 0, error: '', startedAt: new Date().toISOString(), finishedAt: null, vault: null, controller: new AbortController() });
     try {
       const cfg = await store.config();
@@ -230,7 +232,7 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
       if (mode === 'recommend') {
         const analysis = await store.analysis();
         if (!analysis) throw new Error('先に分析を実行してください');
-        analysis.recommendations = await recommendBooks({ library, analysis, llm, onProgress, signal: job.controller.signal, fetchImpl: catalogFetch });
+        analysis.recommendations = await recommendBooks({ library, analysis, llm, onProgress, signal: job.controller.signal, fetchImpl: catalogFetch, wishlist });
         analysis.recommendedAt = new Date().toISOString();
         analysis.recommendationNote = recommendationNote(analysis.recommendations);
         await store.saveAnalysis(analysis);
@@ -238,7 +240,7 @@ export function createCompanionServer({ store, log = console.log, catalogFetch, 
         const cache = await store.cache();
         let analysis;
         try {
-          ({ analysis } = await analyzeLibrary({ library, llm, cache, onProgress, signal: job.controller.signal, options: { fetchImpl: catalogFetch } }));
+          ({ analysis } = await analyzeLibrary({ library, llm, cache, onProgress, signal: job.controller.signal, options: { fetchImpl: catalogFetch, wishlist } }));
         } finally {
           await store.saveCache(cache);
         }

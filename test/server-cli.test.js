@@ -265,3 +265,35 @@ test('autoexport off: bh analyze のあとも Vault に書き出さない（CLI�
     await fake.close();
   }
 });
+
+test('おすすめの選び直し: Web アプリが送った欲しい本（タグつき）を候補に使い、購入済みは出さない', async () => {
+  await withServer(async ({ base }) => {
+    await fetch(`${base}/api/import`, {
+      method: 'POST',
+      body: JSON.stringify({ files: [{ name: 'My Clippings.txt', base64: await b64(fixture('My Clippings.txt')) }, { name: 'playbooks-ja.html', base64: await b64(fixture('playbooks-ja.html')) }] }),
+    });
+    const waitJob = async () => {
+      let job;
+      for (let i = 0; i < 100; i++) {
+        job = await (await fetch(`${base}/api/analyze`)).json();
+        if (!job.running) break;
+        await new Promise((res) => setTimeout(res, 50));
+      }
+      return job;
+    };
+    await fetch(`${base}/api/analyze`, { method: 'POST', body: '{}' });
+    assert.equal((await waitJob()).stage, 'done');
+    const wishlist = [
+      { title: '欲しい本その一', asin: 'B0WISH0001', price: 990 },
+      { title: '欲しい本その二', asin: 'B0WISH0002', ku: true },
+      { title: '買った本', asin: 'B0WISH0003', price: 500, skip: true },
+    ];
+    const start = await fetch(`${base}/api/analyze`, { method: 'POST', body: JSON.stringify({ mode: 'recommend', wishlist }) });
+    assert.equal(start.status, 202);
+    assert.equal((await waitJob()).stage, 'done');
+    const analysis = await (await fetch(`${base}/api/analysis`)).json();
+    const fromWish = analysis.recommendations.filter((r) => r.wishlist);
+    assert.ok(fromWish.length > 0, '欲しい本から選ぶ（書誌 DB の候補が 0 件でも）');
+    assert.ok(!analysis.recommendations.some((r) => r.title === '買った本'));
+  });
+});

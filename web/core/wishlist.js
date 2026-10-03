@@ -379,6 +379,29 @@ export function wishlistSummary(items, limit = 3) {
   return { total: items.length, kuCount: ku.length, picks };
 }
 
+// おすすめに渡す欲しい本の上限（PC へ送る本文の大きさを抑える。公開データは 300 冊ほど）
+const RECOMMEND_WISHLIST_MAX = 1000;
+
+/**
+ * おすすめの選定に渡す欲しい本 [{ title, asin, price, ku, skip }]。skip は候補から除く本（購入済み・読んだ）。
+ * タグはブラウザ（localStorage）にしか無いので、分析を始めるときに Web アプリがこの形にして渡す（PC へは POST /api/analyze の本文で送る）
+ */
+export function toRecommendWishlist(items) {
+  return wishlistForRecommend(items.map(({ book, marks }) => ({ title: book.title, asin: book.asin, price: book.price, ku: book.ku, skip: inShelf({ book, marks }, 'purchased') || marks.tag === 'seen' })));
+}
+
+/** おすすめに渡す欲しい本の形を確かめる（PC に送られてきた値は信用しない）。形の合わない項目は捨てる */
+export function wishlistForRecommend(list) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, RECOMMEND_WISHLIST_MAX).flatMap((b) => {
+    const title = typeof b?.title === 'string' ? b.title.trim().slice(0, 200) : '';
+    if (!title) return [];
+    const ku = b.ku === true;
+    const price = !ku && Number.isInteger(b.price) && b.price >= 0 ? b.price : null;
+    return [{ title, asin: ASIN.test(b.asin) ? b.asin : '', price, ku, skip: b.skip === true }];
+  });
+}
+
 /** Amazon（Kindle 版）を開く URL。ASIN があれば商品ページ、無ければ Kindle ストアを書名で検索する */
 export function amazonKindleUrl({ title, asin } = {}) {
   if (ASIN.test(asin)) return `https://www.amazon.co.jp/dp/${asin}`;

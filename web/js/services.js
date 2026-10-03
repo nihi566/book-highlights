@@ -44,7 +44,7 @@ export const companion = {
   analysis: () => call('/api/analysis').catch((e) => (e.status === 404 ? null : Promise.reject(e))),
   putAnalysis: (analysis) => call('/api/analysis', { method: 'PUT', body: analysis }),
   // root: Vault 内のフォルダ名（PC 側の書き出し先をこの画面の設定に合わせる）
-  startAnalyze: (mode = 'analyze', root) => call('/api/analyze', { method: 'POST', body: { mode, root } }),
+  startAnalyze: (mode = 'analyze', root, wishlist = []) => call('/api/analyze', { method: 'POST', body: { mode, root, wishlist } }),
   job: () => call('/api/analyze'),
   cancel: () => call('/api/analyze', { method: 'DELETE' }),
   exportVault: (root) => call('/api/obsidian/export', { method: 'POST', body: { root } }),
