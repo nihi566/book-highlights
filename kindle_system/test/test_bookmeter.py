@@ -71,6 +71,22 @@ FIXTURE_PAGE_LAST = """
 WISH_URL = "https://bookmeter.com/users/1770332/books/wish"
 PAGE_2_URL = "https://bookmeter.com/users/1770332/books/wish?page=2"
 
+# ─── fixture: 次ページリンクが悪性ホストを指す場合（HTML改ざん/オープンリダイレクト想定） ───
+MALICIOUS_NEXT_URL = "https://evil.example.com/phish"
+FIXTURE_PAGE_1_MALICIOUS_NEXT = f"""
+<ul class="book-list__group">
+  <li class="group__book">
+    <div class="book__detail">
+      <div class="detail__title"><a href="/books/1">正規の本</a></div>
+      <ul class="detail__authors"><li><a href="/search?author=a">著者A</a></li></ul>
+    </div>
+  </li>
+</ul>
+<ul class="bm-pagination">
+  <li><a rel="next" class="bm-pagination__link" href="{MALICIOUS_NEXT_URL}">次</a></li>
+</ul>
+"""
+
 
 def _mock_response(text, status_ok=True):
     resp = MagicMock()
@@ -190,6 +206,41 @@ class FetchWishBooksTest(unittest.TestCase):
         self.assertEqual(called_urls, [WISH_URL, PAGE_2_URL])
         # リクエスト間の待機を入れているが、テストでは time.sleep をモック化しているため実待機しない
         self.assertTrue(mock_sleep.called)
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_untrusted_next_host_stops_pagination_without_following(self, mock_get, mock_sleep):
+        # 読書メーターのHTML改ざん/オープンリダイレクト等により次ページリンクが
+        # bookmeter.com以外のホストを指すようになった場合、そのURLへは絶対に
+        # アクセスせず、それまでの取得済み分を返して打ち切ることを確認する（SSRF対策）
+        mock_get.return_value = _mock_response(FIXTURE_PAGE_1_MALICIOUS_NEXT)
+
+        books = fetch_wish_books()
+
+        self.assertEqual(books, [{"title": "正規の本", "author": "著者A", "bookmeter_id": "1"}])
+        self.assertEqual(mock_get.call_count, 1)
+        called_urls = [call.args[0] for call in mock_get.call_args_list]
+        self.assertNotIn(MALICIOUS_NEXT_URL, called_urls)
+
+    @patch("src.bookmeter.time.sleep", return_value=None)
+    @patch("src.bookmeter.requests.Session.get")
+    def test_next_url_host_check_edge_cases(self, mock_get, mock_sleep):
+        # 本物のホストでも https 以外は追わない / userinfo で偽装したホストは追わない / 大文字のホストは追う
+        cases = [
+            ("http://bookmeter.com/users/1770332/books/wish?page=2", False),
+            ("https://bookmeter.com@evil.example.com/phish", False),
+            ("https://BOOKMETER.com/users/1770332/books/wish?page=2", True),
+        ]
+        for next_url, followed in cases:
+            with self.subTest(next_url=next_url):
+                mock_get.reset_mock()
+                page = FIXTURE_PAGE_1_MALICIOUS_NEXT.replace(MALICIOUS_NEXT_URL, next_url)
+                mock_get.side_effect = [_mock_response(page), _mock_response("<ul></ul>")]
+
+                fetch_wish_books()
+
+                called_urls = [call.args[0] for call in mock_get.call_args_list]
+                self.assertEqual(next_url in called_urls, followed)
 
     @patch("src.bookmeter.time.sleep", return_value=None)
     @patch("src.bookmeter.requests.Session.get")

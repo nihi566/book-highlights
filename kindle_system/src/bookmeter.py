@@ -20,7 +20,7 @@ import re
 import sys
 import time
 from typing import Dict, List, Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -33,6 +33,9 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8")
 logger = logging.getLogger(__name__)
 
 WISH_LIST_URL = "https://bookmeter.com/users/1770332/books/wish"
+# 次ページ遷移先として許可するホスト（SSRF対策）。HTML改ざんやオープンリダイレクトにより
+# rel="next" のhrefが別ホストを指した場合、そのURLへはアクセスしない
+ALLOWED_HOST = "bookmeter.com"
 
 # Chrome 安定版相当の User-Agent（resolver.py と同一の値に揃える）
 USER_AGENT = (
@@ -173,6 +176,13 @@ def fetch_wish_books(
 
         next_url = get_next_page_url(response.text, url)
         if next_url is None or next_url == url:
+            return books
+        parsed_next = urlparse(next_url)
+        if parsed_next.scheme != "https" or parsed_next.hostname != ALLOWED_HOST:
+            logger.warning(
+                "次ページURLのホストが許可リスト外のため打ち切りました: %s",
+                next_url,
+            )
             return books
         url = next_url
 
