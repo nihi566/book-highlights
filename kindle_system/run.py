@@ -38,7 +38,7 @@ import main as main_module
 from src import recommender
 from src.book_kind import KIND_BOOK, KIND_MANGA
 from src.bookmeter_sync import sync_bookmeter_wishlist
-from src.repository import get_book_marks, get_books, import_marks, set_wanted, set_purchased
+from src.repository import get_book_marks, get_books, import_marks, init_db, set_wanted, set_purchased
 
 # 欲しい本の画面（book-highlights の web/core/wishlist.js の marksFile）の「見た・評価を書き出す」が作るファイル
 MARKS_FILE_FORMAT = "kindle-marks"
@@ -456,6 +456,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+    # どのサブコマンドも DB（BookMapping 等）を読み書きするので、先にテーブル作成と book_mappings の
+    # 列追加（バックアップ付き）を済ませる。main.py の Kindle クロールだけが init_db() を呼んでいたため、
+    # sync --target bookmeter 等では新しい列（bookmeter_id）が足されないまま ORM が読みに行き、登録が全件失敗した
+    init_db()
     args.func(args)
 
 
