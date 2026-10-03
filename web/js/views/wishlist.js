@@ -3,7 +3,7 @@
 import { html } from '../html.js';
 import { download } from '../services.js';
 import { spineColor, toast } from '../ui.js';
-import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceTotal, readingCounts, readingLookup, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
+import { applyImportedMarks, browserStore, cleanupSyncedMarks, collectMarks, filterWishlist, formatPrice, inShelf, KEYS, loadMarks, marksFile, memoryStore, openWishlistFilters, parseMarksFile, priceChange, priceSparkline, priceTotal, readingCounts, readingLookup, saveMarks, shelfCounts, TAG_FILTER_LABELS, TAG_LABELS, tagCounts, toggleMark } from '../../core/wishlist.js';
 import { listBooks } from '../../core/model.js';
 import { isoDate } from '../../core/text.js';
 import { cachedWishlist, loadWishlist } from '../wishlist-data.js';
@@ -270,6 +270,22 @@ function changeBadges(book) {
   return html`${moved}${c.lowest ? html` <span class="badge down">最安値</span>` : ''}`;
 }
 
+// スクレイピングの履歴から作る価格推移の小さなグラフ（価格のある取得が 2 回以上の本だけ）。最初より安ければ緑、高ければ赤
+function sparkline(book) {
+  const W = 120;
+  const H = 28;
+  const s = priceSparkline(book.history, { width: W, height: H, pad: 3 });
+  if (!s) return '';
+  const yen = (n) => `¥${n.toLocaleString('ja-JP')}`;
+  const trend = s.last < s.first ? 'down' : s.last > s.first ? 'up' : '';
+  const points = s.points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const [lx, ly] = s.points[s.points.length - 1];
+  return html`<svg class="wl-spark ${trend}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="価格の推移（${s.count} 回）: 最高 ${yen(s.max)}・最安 ${yen(s.min)}・最後 ${yen(s.last)}">
+    <polyline points="${points}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2.5" fill="currentColor"></circle>
+  </svg>`;
+}
+
 // スクレイピングの履歴（新しい順）。履歴の無い古いデータでは最終取得日時だけ出す
 function historyBlock(book) {
   if (!book.history.length) return book.scrapedAt ? html`<p class="small muted wl-history-none">最終取得: ${dateTimeText(book.scrapedAt)}</p>` : '';
@@ -292,7 +308,7 @@ function readingBadge(item) {
 
 function itemRow({ book, marks, reading }) {
   const cover = html`<span class="wl-cover" style="background:${spineColor(book.title)}" aria-hidden="true">${[...book.title][0] || ''}${book.asin ? html`<img src="${COVER(book.asin)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>`;
-  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'wanted') ? html` <span class="badge">読みたい</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}${readingBadge({ book, marks, reading })}</span></span>`;
+  const text = html`<span class="grow"><span class="title">${book.title}</span><span class="meta">${formatPrice(book)}${changeBadges(book)}${book.ku ? html` <span class="badge ku">KU</span>` : ''}${inShelf({ book, marks }, 'wanted') ? html` <span class="badge">読みたい</span>` : ''}${inShelf({ book, marks }, 'purchased') ? html` <span class="badge">購入済み</span>` : ''}${readingBadge({ book, marks, reading })}</span>${sparkline(book)}</span>`;
   const value = parseInt(marks.rating, 10) || 0;
   return html`<li class="wl-item" data-asin="${book.asin}">
     ${book.asin ? html`<a class="wl-main" href="https://www.amazon.co.jp/dp/${book.asin}" target="_blank" rel="noopener noreferrer" aria-label="${book.title}（Amazon で開く）">${cover}${text}</a>` : html`<div class="wl-main">${cover}${text}</div>`}

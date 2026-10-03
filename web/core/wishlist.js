@@ -251,6 +251,26 @@ export function priceChange(book) {
 }
 
 /**
+ * 価格推移の小さなグラフの座標。価格のある履歴（KU・取得できずは除く）を古い順に並べ、横は時刻の間隔、
+ * 縦は価格（高いほど上）で width × height（周りに pad の余白）に収める。価格のある点が 2 つ未満なら null
+ */
+export function priceSparkline(history, { width = 120, height = 28, pad = 3 } = {}) {
+  const rows = (history || [])
+    .filter((r) => typeof r?.price === 'number' && Number.isFinite(Date.parse(r.at)))
+    .map((r) => ({ t: Date.parse(r.at), price: r.price }))
+    .sort((a, b) => a.t - b.t);
+  if (rows.length < 2) return null;
+  const prices = rows.map((r) => r.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const t0 = rows[0].t;
+  const span = rows[rows.length - 1].t - t0;
+  const x = (r, i) => pad + (span ? (r.t - t0) / span : i / (rows.length - 1)) * (width - pad * 2);
+  const y = (p) => (max === min ? height / 2 : height - pad - ((p - min) / (max - min)) * (height - pad * 2));
+  return { points: rows.map((r, i) => [x(r, i), y(r.price)]), min, max, first: prices[0], last: prices[prices.length - 1], count: rows.length };
+}
+
+/**
  * items: [{ book, marks, reading? }]。f: { shelf: all|wanted|purchased, reading: all|unread|reading（購入済みのときだけ使う）, q, ku, min, max, tag, kind, sort }
  * 戻り値の priceRangeInvalid は下限 > 上限（そのときは価格帯を無視する）
  */

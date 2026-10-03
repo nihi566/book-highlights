@@ -451,3 +451,22 @@ test('Amazon の URL: おすすめの書名で Kindle ストアを検索する U
   assert.equal(amazonKindleUrl({ title: '本', asin: '../evil?x=1' }), 'https://www.amazon.co.jp/s?k=%E6%9C%AC&i=digital-text');
   assert.equal(amazonKindleUrl({ title: '' }), '');
 });
+
+test('価格推移のグラフ: 価格のある履歴を時刻順に並べ、幅・高さに収まる座標にする', async () => {
+  const { priceSparkline } = await import('../web/core/wishlist.js');
+  const h = [
+    { at: '2026-10-03T00:00:00Z', price: 880, ku: false },
+    { at: '2026-09-29T00:00:00Z', price: 1430, ku: false },
+    { at: '2026-10-01T00:00:00Z', price: null, ku: true },
+    { at: '2026-10-01T00:00:00Z', price: 1210, ku: false },
+  ];
+  const s = priceSparkline(h, { width: 100, height: 20, pad: 2 });
+  assert.deepEqual({ min: s.min, max: s.max, first: s.first, last: s.last, count: s.count }, { min: 880, max: 1430, first: 1430, last: 880, count: 3 });
+  assert.deepEqual(s.points, [[2, 2], [50, 20 - 2 - ((1210 - 880) / (1430 - 880)) * 16], [98, 18]], '古い順・時刻の間隔どおり・高いほど上');
+  // 価格が変わらなければ真ん中の高さの横線
+  const flat = priceSparkline([{ at: '2026-10-01T00:00:00Z', price: 500 }, { at: '2026-10-02T00:00:00Z', price: 500 }], { width: 100, height: 20, pad: 2 });
+  assert.deepEqual(flat.points, [[2, 10], [98, 10]]);
+  // 価格のある点が 2 つ未満なら描かない
+  assert.equal(priceSparkline([{ at: '2026-10-01T00:00:00Z', price: 500 }]), null);
+  assert.equal(priceSparkline([]), null);
+});
