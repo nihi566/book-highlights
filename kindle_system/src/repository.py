@@ -744,6 +744,34 @@ def _is_fuller_title(current: Optional[str], incoming: Optional[str]) -> bool:
     return incoming.startswith(prefix) and len(incoming) > len(prefix)
 
 
+def fix_truncated_bookmeter_titles(full_titles: list) -> int:
+    """
+    読書メーター由来（source="bookmeter"）で書名が「…」で切れたまま登録された行を、
+    読書メーターの一覧から取った完全な書名で書き直し、直した件数を返す。
+
+    get_or_create_by_paid_asin は同期でその行の ASIN に解決されたときしか書名を直せないため
+    （ASIN 解決の失敗・別の ASIN への解決・価格取得の失敗では古い書名が残る）、同期で一覧を
+    取った直後にこれを呼ぶ。「…」の前までが先頭に一致する完全な書名が 1 つに定まるときだけ直し、
+    2 つ以上あるとき（同じシリーズの別の巻など）は取り違えないよう変えない。
+    """
+    candidates = [t for t in dict.fromkeys(full_titles) if t and not t.endswith("…")]
+    if not candidates:
+        return 0
+    fixed = 0
+    with get_session() as session:
+        rows = session.exec(
+            select(BookMapping).where(BookMapping.source == "bookmeter", BookMapping.title.like("%…"))
+        ).all()
+        for row in rows:
+            matches = [t for t in candidates if _is_fuller_title(row.title, t)]
+            if len(matches) == 1:
+                row.title = matches[0]
+                session.add(row)
+                fixed += 1
+        session.commit()
+    return fixed
+
+
 def get_or_create_by_paid_asin(
     session: Session,
     paid_asin: str,

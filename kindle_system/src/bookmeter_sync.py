@@ -27,7 +27,7 @@ from src.anti_ban import BanCoordinator, RequestPacer
 from src.bookmeter import fetch_wish_books
 from src.crawler import crawl_price_info
 from src.database import get_session
-from src.repository import get_or_create_by_paid_asin, save_price_history
+from src.repository import fix_truncated_bookmeter_titles, get_or_create_by_paid_asin, save_price_history
 from src.title_resolver import resolve_title_to_paid_asin
 
 ProgressCallback = Callable[[str], None]
@@ -68,6 +68,15 @@ async def sync_bookmeter_wishlist(progress_cb: Optional[ProgressCallback] = None
         return {"total": 0, "registered": 0, "skipped": 0, "failed_titles": []}
 
     emit(f"[OK] 読書メーターから「読みたい本」を {len(books)} 件取得しました。")
+
+    # 「…」で切れたまま登録された書名を、ASIN 解決の成否に関係なく一覧の完全な書名で直す
+    # （失敗しても同期は続ける。次の同期で再び試みる）
+    try:
+        fixed = fix_truncated_bookmeter_titles([book.get("title", "") for book in books])
+        if fixed:
+            emit(f"[OK] 切れていた書名を {fixed} 件直しました。")
+    except Exception as e:
+        emit(f"  [Error] 切れていた書名の修正に失敗しました（同期は続けます）: {e}")
 
     ban_coordinator = BanCoordinator()
     request_pacer = RequestPacer()

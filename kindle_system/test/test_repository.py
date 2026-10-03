@@ -1619,5 +1619,75 @@ class BookMarksTest(unittest.TestCase):
         self.assertEqual(set(repository.get_book_marks()), {"B0GOOD0001"})
 
 
+
+class FixTruncatedBookmeterTitlesTest(unittest.TestCase):
+    """fix_truncated_bookmeter_titles: 読書メーター由来で「…」に切れた書名を、一覧の完全な書名で直す。
+
+    ASIN 解決の成否・解決先に関係なく直すため、同期で一覧を取った直後に呼ばれる。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="bookmeter_title_fix_test_")
+        from sqlmodel import create_engine, SQLModel
+        self.engine = create_engine(f"sqlite:///{os.path.join(self.tmpdir, 't.db')}", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(self.engine)
+        import src.database as database_module
+        self._original_engine = database_module.engine
+        database_module.engine = self.engine
+
+    def tearDown(self):
+        import src.database as database_module
+        database_module.engine = self._original_engine
+        self.engine.dispose()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _add(self, paid_asin, title, source="bookmeter"):
+        from sqlmodel import Session
+        from src.models import BookMapping
+        with Session(self.engine) as session:
+            session.add(BookMapping(paid_asin=paid_asin, title=title, source=source, is_wanted=1, created_at="2026-01-01T00:00:00"))
+            session.commit()
+
+    def _titles(self):
+        from sqlmodel import Session, select
+        from src.models import BookMapping
+        with Session(self.engine) as session:
+            return {b.paid_asin: b.title for b in session.exec(select(BookMapping)).all()}
+
+    def test_truncated_title_is_fixed_when_exactly_one_full_title_matches(self):
+        self._add("B09MVPBGZM", "創始者たち──イーロン・マスク、ピーター・テ…")
+        fixed = repository.fix_truncated_bookmeter_titles(
+            ["創始者たち──イーロン・マスク、ピーター・ティール、そしてシリコンバレー", "関係ない本"]
+        )
+        self.assertEqual(fixed, 1)
+        self.assertEqual(self._titles()["B09MVPBGZM"], "創始者たち──イーロン・マスク、ピーター・ティール、そしてシリコンバレー")
+
+    def test_ambiguous_match_is_left_as_is(self):
+        self._add("B0GBYWLPTT", "消費者行動の知識 （日経文庫） (日経文庫 …")
+        fixed = repository.fix_truncated_bookmeter_titles(
+            ["消費者行動の知識 （日経文庫） (日経文庫 1415)", "消費者行動の知識 （日経文庫） (日経文庫 1500)"]
+        )
+        self.assertEqual(fixed, 0)
+        self.assertEqual(self._titles()["B0GBYWLPTT"], "消費者行動の知識 （日経文庫） (日経文庫 …")
+
+    def test_same_full_title_listed_twice_counts_as_one(self):
+        self._add("B0BG277QNW", "歌詞のサウンドテクスチャー：うたをめぐる音声…")
+        full = "歌詞のサウンドテクスチャー：うたをめぐる音声学"
+        self.assertEqual(repository.fix_truncated_bookmeter_titles([full, full]), 1)
+        self.assertEqual(self._titles()["B0BG277QNW"], full)
+
+    def test_only_truncated_bookmeter_rows_are_touched(self):
+        self._add("B0KINDLE01", "キンドルの本…", source="kindle_sample")
+        self._add("B0FULL0001", "完全な書名")
+        fixed = repository.fix_truncated_bookmeter_titles(["キンドルの本 完全版", "完全な書名 第2版", "切れた書名…"])
+        self.assertEqual(fixed, 0)
+        self.assertEqual(self._titles(), {"B0KINDLE01": "キンドルの本…", "B0FULL0001": "完全な書名"})
+
+    def test_no_titles_or_no_rows_is_noop(self):
+        self.assertEqual(repository.fix_truncated_bookmeter_titles([]), 0)
+        self._add("B0TRUNC999", "ある本 (…")
+        self.assertEqual(repository.fix_truncated_bookmeter_titles([]), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
