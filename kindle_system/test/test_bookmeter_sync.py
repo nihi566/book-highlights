@@ -189,5 +189,54 @@ class SyncBookmeterWishlistCrawlFailureTest(unittest.TestCase):
         mock_save_price.assert_not_called()
 
 
+
+class SyncFixesTruncatedTitlesTest(unittest.TestCase):
+    """一覧を取った直後（ASIN 解決の前）に、切れた書名を一覧の完全な書名で直す。"""
+
+    @patch("src.bookmeter_sync.save_price_history")
+    @patch("src.bookmeter_sync.crawl_price_info", new_callable=AsyncMock)
+    @patch("src.bookmeter_sync.get_or_create_by_paid_asin")
+    @patch("src.bookmeter_sync.get_session")
+    @patch("src.bookmeter_sync.resolve_title_to_paid_asin", new_callable=AsyncMock)
+    @patch("src.bookmeter_sync.fix_truncated_bookmeter_titles")
+    @patch("src.bookmeter_sync.fetch_wish_books")
+    def test_titles_are_fixed_before_resolving_even_if_resolution_fails(
+        self, mock_fetch, mock_fix, mock_resolve, mock_get_session, mock_dedup, mock_crawl, mock_save_price
+    ):
+        mock_fetch.return_value = [{"title": "本A 完全版", "author": "a"}, {"title": "本B", "author": "b"}]
+        order = []
+        mock_fix.side_effect = lambda titles: order.append(("fix", list(titles))) or 1
+        mock_resolve.side_effect = lambda *a, **k: order.append(("resolve", a[0])) or None
+
+        lines = []
+        result = asyncio.run(sync_bookmeter_wishlist(progress_cb=lines.append))
+
+        self.assertEqual(order[0], ("fix", ["本A 完全版", "本B"]))
+        self.assertEqual([o[0] for o in order[1:]], ["resolve", "resolve"])
+        self.assertEqual(result["skipped"], 2)
+        self.assertTrue(any("書名" in line and "1" in line for line in lines))
+
+    @patch("src.bookmeter_sync.save_price_history")
+    @patch("src.bookmeter_sync.crawl_price_info", new_callable=AsyncMock)
+    @patch("src.bookmeter_sync.get_or_create_by_paid_asin")
+    @patch("src.bookmeter_sync.get_session")
+    @patch("src.bookmeter_sync.resolve_title_to_paid_asin", new_callable=AsyncMock)
+    @patch("src.bookmeter_sync.fix_truncated_bookmeter_titles")
+    @patch("src.bookmeter_sync.fetch_wish_books")
+    def test_fix_failure_does_not_stop_the_sync(
+        self, mock_fetch, mock_fix, mock_resolve, mock_get_session, mock_dedup, mock_crawl, mock_save_price
+    ):
+        mock_fetch.return_value = [{"title": "本A", "author": "a"}]
+        mock_fix.side_effect = RuntimeError("database is locked")
+        mock_resolve.return_value = None
+
+        lines = []
+        result = asyncio.run(sync_bookmeter_wishlist(progress_cb=lines.append))
+
+        mock_resolve.assert_awaited_once()
+        self.assertEqual(result["total"], 1)
+        self.assertTrue(any("database is locked" in line for line in lines))
+
+
 if __name__ == "__main__":
     unittest.main()
