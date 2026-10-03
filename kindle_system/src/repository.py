@@ -66,8 +66,13 @@ def backup_database(db_path: str = DB_PATH) -> Optional[str]:
 
 def _apply_source_flag_backfill(cur: sqlite3.Cursor, columns: set) -> None:
     """from_kindle_sample/from_bookmeter 列を(無ければ)追加し、既存の source
-    値から best-effort で backfill する。呼び出し側が開いたトランザクション内で
-    実行される前提で、commit/rollback はしない。"""
+    値から best-effort で backfill する。bookmeter_id 列も(無ければ)足す（値は入れない）。
+    呼び出し側が開いたトランザクション内で実行される前提で、commit/rollback はしない。"""
+    if "bookmeter_id" not in columns:
+        cur.execute("ALTER TABLE book_mappings ADD COLUMN bookmeter_id VARCHAR")
+    if "from_kindle_sample" in columns and "from_bookmeter" in columns:
+        # フラグ列が揃っている DB（bookmeter_id を足すだけ）では、フラグを付け直さない
+        return
     if "from_kindle_sample" not in columns:
         cur.execute(
             "ALTER TABLE book_mappings ADD COLUMN from_kindle_sample "
@@ -130,6 +135,11 @@ def _backfill_source_flags_in_place(db_path: str) -> str:
         conn.close()
 
 
+def _has_added_columns(columns: set) -> bool:
+    """id/source の後に列追加で足した列（from_kindle_sample / from_bookmeter / bookmeter_id）が揃っているか。"""
+    return {"from_kindle_sample", "from_bookmeter", "bookmeter_id"} <= set(columns)
+
+
 def _is_lock_contention(error: sqlite3.OperationalError) -> bool:
     """一時的なロック競合（database is locked / database is busy）かどうかを
     エラーメッセージから判定する。書き込み権限が無い場合の "attempt to write a
@@ -190,7 +200,7 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
         cur.execute("PRAGMA table_info(book_mappings)")
         columns = {row[1] for row in cur.fetchall()}
         has_id_source = "id" in columns and "source" in columns
-        has_source_flags = "from_kindle_sample" in columns and "from_bookmeter" in columns
+        has_source_flags = _has_added_columns(columns)
         if has_id_source and has_source_flags:
             return
     finally:
@@ -235,7 +245,7 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
             cur.execute("PRAGMA table_info(book_mappings)")
             columns = {row[1] for row in cur.fetchall()}
             has_id_source = "id" in columns and "source" in columns
-            has_source_flags = "from_kindle_sample" in columns and "from_bookmeter" in columns
+            has_source_flags = _has_added_columns(columns)
             if has_id_source and has_source_flags:
                 return
 
@@ -269,7 +279,8 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
                             is_wanted INTEGER NOT NULL DEFAULT 0,
                             source VARCHAR NOT NULL DEFAULT 'kindle_sample',
                             from_kindle_sample INTEGER NOT NULL DEFAULT 0,
-                            from_bookmeter INTEGER NOT NULL DEFAULT 0
+                            from_bookmeter INTEGER NOT NULL DEFAULT 0,
+                            bookmeter_id VARCHAR
                         )
                     """)
                     cur.execute("""
@@ -333,7 +344,7 @@ def migrate_book_mappings_schema(db_path: str = DB_PATH) -> None:
                 "id" in recheck_columns
                 and "source" in recheck_columns
                 and "from_kindle_sample" in recheck_columns
-                and "from_bookmeter" in recheck_columns
+                and _has_added_columns(recheck_columns)
             ):
                 # 他プロセスが先に置換済み。この staging は不要になった。
                 return
@@ -661,6 +672,10 @@ def get_books(filter: str = "all") -> list:
     if filter not in _GET_BOOKS_WHERE_CLAUSES:
         raise ValueError(f"filter は 'wanted' / 'purchased' / 'all' のいずれかである必要があります: {filter!r}")
     where_clause = _GET_BOOKS_WHERE_CLAUSES[filter]
+    # 列の追加（migrate_book_mappings_schema）がロック競合で次回に見送られた DB でも、レポートを止めない
+    with get_session() as session:
+        columns = {row[1] for row in session.exec(text("PRAGMA table_info(book_mappings)")).all()}
+    bookmeter_id_column = "m.bookmeter_id" if "bookmeter_id" in columns else "NULL"
 
     query = text(f"""
         WITH latest_prices AS (
@@ -684,7 +699,8 @@ def get_books(filter: str = "all") -> list:
             COALESCE(m.is_purchased, 0) as is_purchased,
             COALESCE(m.is_wanted, 0) as is_wanted,
             COALESCE(m.from_kindle_sample, 0) as from_kindle_sample,
-            COALESCE(m.from_bookmeter, 0) as from_bookmeter
+            COALESCE(m.from_bookmeter, 0) as from_bookmeter,
+            {bookmeter_id_column} as bookmeter_id
         FROM book_mappings m
         LEFT JOIN latest_prices l ON m.paid_asin = l.paid_asin
         {where_clause}
@@ -744,6 +760,43 @@ def _is_fuller_title(current: Optional[str], incoming: Optional[str]) -> bool:
     return incoming.startswith(prefix) and len(incoming) > len(prefix)
 
 
+_BOOKMETER_ID_PATTERN = re.compile(r"^\d{1,12}$")
+
+
+def _valid_bookmeter_id(value) -> bool:
+    """読書メーターの本 ID（数字だけ）の形か。URL に組み立てるので、それ以外は保存しない。"""
+    return isinstance(value, str) and bool(_BOOKMETER_ID_PATTERN.fullmatch(value))
+
+
+def attach_bookmeter_ids(books: list) -> int:
+    """
+    読書メーター由来（source="bookmeter"）で本 ID がまだ無い行に、一覧の本 ID を付け、付けた件数を返す。
+    get_or_create_by_paid_asin は ASIN 解決できた本しか通らないので、同期で一覧を取った直後に呼ぶ。
+    書名が完全に一致し、その書名の ID が一覧で 1 つに定まるときだけ付ける。
+    """
+    ids_by_title = {}
+    for book in books:
+        title, bookmeter_id = book.get("title") or "", book.get("bookmeter_id")
+        if title and _valid_bookmeter_id(bookmeter_id):
+            ids_by_title.setdefault(title, set()).add(bookmeter_id)
+    unique = {title: next(iter(ids)) for title, ids in ids_by_title.items() if len(ids) == 1}
+    if not unique:
+        return 0
+    attached = 0
+    with get_session() as session:
+        rows = session.exec(
+            select(BookMapping).where(BookMapping.source == "bookmeter", BookMapping.bookmeter_id.is_(None))
+        ).all()
+        for row in rows:
+            bookmeter_id = unique.get(row.title or "")
+            if bookmeter_id:
+                row.bookmeter_id = bookmeter_id
+                session.add(row)
+                attached += 1
+        session.commit()
+    return attached
+
+
 def fix_truncated_bookmeter_titles(full_titles: list) -> int:
     """
     読書メーター由来（source="bookmeter"）で書名が「…」で切れたまま登録された行を、
@@ -778,6 +831,7 @@ def get_or_create_by_paid_asin(
     title: Optional[str] = None,
     source: str = "bookmeter",
     is_wanted: int = 1,
+    bookmeter_id: Optional[str] = None,
 ) -> BookMapping:
     """
     paid_asin 一致による dedup ヘルパー。
@@ -803,6 +857,8 @@ def get_or_create_by_paid_asin(
         book.from_bookmeter = True
         if _is_fuller_title(book.title, title):
             book.title = title
+        if _valid_bookmeter_id(bookmeter_id):
+            book.bookmeter_id = bookmeter_id
         session.add(book)
         session.flush()
         session.refresh(book)
@@ -817,6 +873,7 @@ def get_or_create_by_paid_asin(
         is_wanted=is_wanted,
         source=source,
         from_bookmeter=True,
+        bookmeter_id=bookmeter_id if _valid_bookmeter_id(bookmeter_id) else None,
     )
     session.add(new_book)
     session.flush()

@@ -16,6 +16,7 @@ bookmeter.py
 import argparse
 import io
 import logging
+import re
 import sys
 import time
 from typing import Dict, List, Optional
@@ -74,13 +75,14 @@ def parse_books(html: str) -> List[Dict[str, str]]:
                 logger.warning("タイトル要素が見つからないため1件スキップします")
                 continue
             title = _full_title(item, title_el.get_text(strip=True))
+            bookmeter_id = _bookmeter_id(title_el.get("href") or "")
             authors = [
                 a.get_text(strip=True)
                 for a in item.select("ul.detail__authors li a")
             ]
             if not authors:
                 logger.warning("著者要素が見つかりませんでした（title=%s）", title)
-            books.append({"title": title, "author": "、".join(authors)})
+            books.append({"title": title, "author": "、".join(authors), "bookmeter_id": bookmeter_id})
         except Exception:
             logger.warning("書籍1件の解析に失敗したためスキップします", exc_info=True)
             continue
@@ -89,6 +91,14 @@ def parse_books(html: str) -> List[Dict[str, str]]:
 
 
 TRUNCATION_MARK = "…"
+# 書名リンクの href（/books/<数字>。絶対 URL なら bookmeter.com のものだけ）
+_BOOK_HREF = re.compile(r"^(?:https://bookmeter\.com)?/books/(\d{1,12})$")
+
+
+def _bookmeter_id(href: str) -> str:
+    """書名リンクの href から読書メーターの本 ID（数字だけ）を取る。形が違えば空文字。"""
+    m = _BOOK_HREF.fullmatch(href.strip())
+    return m.group(1) if m else ""
 
 
 def _full_title(item, link_text: str) -> str:
