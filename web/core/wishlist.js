@@ -24,6 +24,9 @@ const MARK_FIELDS = ['tag', 'rating', 'kind'];
 // 書き出し・取り込みの単位。★は「読んだ」に付くのでタグと一緒に扱う
 const MARK_GROUPS = { tag: ['tag', 'rating'], kind: ['kind'] };
 const ASIN = /^[A-Z0-9]{10}$/;
+const BOOKMETER_ID = /^\d{1,12}$/;
+// 数値のまま来た値は RegExp.test が文字列にしてしまうので、文字列だけを通す
+const isBookmeterId = (v) => typeof v === 'string' && BOOKMETER_ID.test(v);
 
 const RETIRED_TAG = 'unwanted';
 const isTag = (t) => Object.hasOwn(TAG_LABELS, t);
@@ -68,6 +71,8 @@ export function parseWishlist(data) {
       history: parseHistory(b?.price_history),
       // 価格が無い理由（kindle_system の report.py が付ける。買えない本か、取り直しが要る本か）。KU・価格のある本は持たない
       priceReason: price === null && b?.ku !== true && Object.hasOwn(PRICE_REASON_LABELS, b?.price_reason) ? b.price_reason : '',
+      // 読書メーターの本 ID（kindle_system が一覧から取る。数字だけ）
+      bookmeterId: isBookmeterId(b?.bookmeter_id) ? b.bookmeter_id : '',
       index,
     };
   });
@@ -418,6 +423,11 @@ export function wishlistForRecommend(list) {
 }
 
 /** Amazon（Kindle 版）を開く URL。ASIN があれば商品ページ、無ければ Kindle ストアを書名で検索する */
+/** 読書メーターの本のページの URL（本 ID が数字だけのときだけ。それ以外は空文字） */
+export function bookmeterUrl({ bookmeterId } = {}) {
+  return isBookmeterId(bookmeterId) ? `https://bookmeter.com/books/${bookmeterId}` : '';
+}
+
 export function amazonKindleUrl({ title, asin } = {}) {
   if (ASIN.test(asin)) return `https://www.amazon.co.jp/dp/${asin}`;
   const q = String(title || '').trim();
