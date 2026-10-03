@@ -256,6 +256,10 @@ a.wl-main:hover .title { text-decoration: underline; }
 .wl-history summary { display: flex; align-items: center; min-height: 36px; font-size: 0.82rem; color: var(--ink-2); cursor: pointer; }
 .wl-history table { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .wl-history th, .wl-history td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); text-align: left; }
+.wl-spark { display: block; margin-top: 4px; color: var(--ink-3); overflow: visible; }
+.wl-spark.down { color: #1d6b32; }
+.wl-spark.up { color: #9a3412; }
+@media (prefers-color-scheme: dark) { .wl-spark.down { color: #9ad7a8; } .wl-spark.up { color: #f2b3a3; } }
 .wl-history th { color: var(--ink-2); font-weight: 600; }
 .wl-export { margin-top: 16px; }
 .wishlist-hits, .home-wishlist { margin-bottom: 12px; }
