@@ -46,7 +46,7 @@ MARKS_FILE_GLOB = "kindle-marks-*.json"
 
 # report.main() が PUBLIC_SITE_DIR に書き出し、publish() が公開するファイル。
 # 公開リポジトリの index.html は book-highlights の欲しい本の画面へ移動する静的ページなので触らない。
-PUBLISHED_FILES = ["wishlist.json"]
+PUBLISHED_FILES = ["wishlist.json", "feed.xml"]
 
 
 def publish() -> None:

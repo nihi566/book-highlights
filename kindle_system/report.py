@@ -29,6 +29,9 @@ import os
 import sys
 import io
 import json
+import re
+import xml.etree.ElementTree as ET
+from datetime import datetime
 
 # Windows CP932 環境での文字化け防止（main.py と同じ対処）
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
@@ -45,6 +48,10 @@ from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_all_price_points, get_b
 # book-highlights アプリが読む欲しい本のデータ（wishlist.json）の形式名と版
 WISHLIST_FILE_FORMAT = "kindle-wishlist"
 WISHLIST_FILE_VERSION = 1
+# 値下がり・読み放題入りを知らせる Atom フィード（feed.xml）に載せる件数の上限（新しい方から）
+MAX_FEED_ENTRIES = 50
+ATOM_NS = "http://www.w3.org/2005/Atom"
+_ASIN_PATTERN = re.compile(r"^[A-Z0-9]{10}$")
 # 1 冊あたりに載せるスクレイピングの履歴の上限（新しい方から）。毎日取得しても wishlist.json が際限なく大きくならないように
 MAX_PRICE_HISTORY_PER_BOOK = 50
 
@@ -163,6 +170,79 @@ def build_wishlist(books: list) -> dict:
 
 
 
+def _atom_time(value: str) -> str:
+    """DB の時刻（タイムゾーンなし = この PC の現地時刻）を Atom が求めるタイムゾーン付きの形にする。"""
+    try:
+        return datetime.fromisoformat(value).astimezone().isoformat(timespec="seconds")
+    except (TypeError, ValueError):
+        return "1970-01-01T00:00:00+00:00"
+
+
+def _joined_ku_at(history: list):
+    """
+    スクレイピングの履歴（古い順）から、最後に有料 → 読み放題に変わった取得の時刻を返す（無ければ None）。
+    取得に失敗した回（価格なし・KU でない）は飛ばす。今も読み放題でなければ None。
+    """
+    rows = [r for r in history if r.get("ku") or r.get("price") is not None]
+    if not rows or not rows[-1].get("ku"):
+        return None
+    for prev, row in zip(reversed(rows[:-1]), reversed(rows)):
+        if not prev.get("ku"):
+            return row["at"]
+    return None
+
+
+def _feed_events(wishlist: dict) -> list:
+    """フィードに載せる出来事 [{"id", "title", "at", "asin"}]（購入済みの本は除く）。"""
+    events = []
+    for book in wishlist["books"]:
+        if book.get("purchased"):
+            continue
+        title, asin = book.get("title") or UNKNOWN_TITLE, book.get("asin") or ""
+        price, prev, changed_at = book.get("price"), book.get("price_prev"), book.get("price_changed_at")
+        if price is not None and prev is not None and changed_at and price < prev:
+            events.append({"id": f"drop:{asin}:{changed_at}", "title": f"値下がり ¥{prev:,} → ¥{price:,}: {title}", "at": changed_at, "asin": asin})
+        joined = _joined_ku_at(book.get("price_history") or []) if book.get("ku") else None
+        if joined:
+            events.append({"id": f"ku:{asin}:{joined}", "title": f"読み放題（Kindle Unlimited）に入りました: {title}", "at": joined, "asin": asin})
+    events.sort(key=lambda e: (e["at"], e["id"]), reverse=True)
+    return events[:MAX_FEED_ENTRIES]
+
+
+def build_feed(wishlist: dict, site_url: str) -> str:
+    """
+    欲しい本の値下がり・読み放題入りを知らせる Atom フィード（feed.xml）の文字列。画面を開かなくても
+    フィードリーダーで気づけるようにする。生成時刻は載せない（wishlist.json と同じく、データが同じなら同じ内容）。
+    リンクは ASIN の形を確かめてから Amazon の商品ページにし、ASIN が無ければ公開サイトにする。
+    """
+    site = site_url if site_url.endswith("/") else site_url + "/"
+    events = _feed_events(wishlist)
+    ET.register_namespace("", ATOM_NS)
+    feed = ET.Element(f"{{{ATOM_NS}}}feed")
+
+    def sub(parent, tag, text=None, **attrs):
+        el = ET.SubElement(parent, f"{{{ATOM_NS}}}{tag}", attrs)
+        if text is not None:
+            el.text = text
+        return el
+
+    sub(feed, "id", site + "feed.xml")
+    sub(feed, "title", "欲しい本の値下がり・読み放題入り")
+    sub(feed, "link", rel="self", href=site + "feed.xml")
+    sub(feed, "link", rel="alternate", href=site)
+    sub(feed, "updated", _atom_time(events[0]["at"] if events else wishlist.get("last_scraped") or ""))
+    sub(sub(feed, "author"), "name", "kindle_system")
+    for event in events:
+        entry = sub(feed, "entry")
+        sub(entry, "id", f"{site}feed.xml#{event['id']}")
+        sub(entry, "title", event["title"])
+        sub(entry, "updated", _atom_time(event["at"]))
+        href = f"https://www.amazon.co.jp/dp/{event['asin']}" if _ASIN_PATTERN.match(event["asin"]) else site
+        sub(entry, "link", rel="alternate", href=href)
+    ET.indent(feed, space=" ")
+    return '<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(feed, encoding="unicode") + "\n"
+
+
 def _load_env_file(env_path: str) -> None:
     """
     .env ファイルがあれば読み込み、未設定の環境変数にのみ反映する
@@ -247,7 +327,7 @@ def main(allow_shrink: bool = False) -> None:
     _load_env_file(os.path.join(BASE_DIR, ".env"))
 
     public_site_dir = _require_env("PUBLIC_SITE_DIR")
-    _require_env("PUBLIC_SITE_URL")  # report.py 自体は開かないが、起動時に設定漏れとして検出する
+    public_site_url = _require_env("PUBLIC_SITE_URL")  # フィードの自分自身へのリンクに使う
 
     require_public_site_repo(public_site_dir)
 
@@ -279,7 +359,10 @@ def main(allow_shrink: bool = False) -> None:
         )
         sys.exit(1)
     # 日本語をエスケープしないのは、公開リポジトリの差分を人が読めるようにするため
-    _write_replacing(wishlist_path, json.dumps(build_wishlist(books), ensure_ascii=False, indent=1) + "\n")
+    wishlist = build_wishlist(books)
+    _write_replacing(wishlist_path, json.dumps(wishlist, ensure_ascii=False, indent=1) + "\n")
+    # 値下がり・読み放題入りを画面を開かずに知らせるフィード（run.py の PUBLISHED_FILES で一緒に公開する）
+    _write_replacing(os.path.join(public_site_dir, "feed.xml"), build_feed(wishlist, public_site_url))
 
     print(f"生成しました: {wishlist_path}（{len(books)} 冊）")
 
