@@ -353,6 +353,21 @@ async def extract_campaign(page, debug: bool = False) -> str:
 
 # ─── メイン抽出関数 ────────────────────────────────────────────────────────────
 
+def classify_unpriced(sell_price: Optional[int], http_status: Optional[int]) -> Optional[str]:
+    """
+    商品ページを開いた後に価格が無かった理由（src/models.py の UNPRICED_REASONS）。価格があれば None。
+    404 は商品ページが無い（販売終了・削除の可能性）、5xx などは取り直しが要る失敗、
+    それ以外はページは開けたが価格の表示が無い（販売停止・予約前など）とみなす。
+    """
+    if sell_price is not None:
+        return None
+    if http_status == 404:
+        return "not_found"
+    if http_status is not None and http_status >= 400:
+        return "page_error"
+    return "no_price"
+
+
 async def crawl_price_info(
     asin: str,
     headless: bool = True,
@@ -381,6 +396,7 @@ async def crawl_price_info(
             "point_value":   int,          # 還元ポイント（0 = 無し）
             "campaign_text": str,          # キャンペーン文（"" = 無し）
             "url":           str,
+            "unpriced_reason": str | None, # 価格が取れなかった理由（UNPRICED_REASONS。取れたら None）
         }
     """
     from playwright.async_api import async_playwright
@@ -407,6 +423,7 @@ async def crawl_price_info(
         "campaign_text": "",
         "url":           url,
         "is_unlimited":  0,
+        "unpriced_reason": None,
     }
 
     async with async_playwright() as pw:
@@ -433,7 +450,8 @@ async def crawl_price_info(
             if request_pacer is not None:
                 await request_pacer.wait_for_turn(worker_id=worker_id)
             print(f"\n{prefix}アクセス中: {url}")
-            await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            response = await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            http_status = response.status if response is not None else None
             await random_delay(1.5, 3.0)
 
             if debug:
@@ -449,6 +467,7 @@ async def crawl_price_info(
                 signal = await check_ban_signals(page, worker_id=worker_id, debug=debug)
                 if signal != "ok":
                     await ban_coordinator.report_ban(signal, worker_id=worker_id)
+                    result["unpriced_reason"] = "blocked"
                     return result
 
             # ── 表紙画像の URL（scraping-hub の表示用。取れなければ出さない） ──
@@ -534,8 +553,12 @@ async def crawl_price_info(
             except Exception as e:
                 print(f"  {prefix}-> Unlimited判定エラー: {e}")
 
+            result["unpriced_reason"] = classify_unpriced(result["sell_price"], http_status)
+
         except Exception as e:
             print(f"  {prefix}ページアクセスエラー: {e}")
+            if result["sell_price"] is None:
+                result["unpriced_reason"] = "page_error"
         finally:
             await browser.close()
 

@@ -55,3 +55,24 @@ class BookMark(SQLModel, table=True):
     rating: Optional[int] = Field(default=None)
     kind: Optional[str] = Field(default=None)
     updated_at: str = Field()
+
+
+# 価格が取れなかった理由（src/crawler.py の classify_unpriced と BAN 検知・例外）
+#   not_found:  商品ページが無い（404。販売終了・削除の可能性）
+#   no_price:   ページは開けたが価格の表示が無い（販売停止・予約前など。買えない可能性）
+#   blocked:    Amazon がアクセスを制限した（BAN・CAPTCHA。取り直しが要る）
+#   page_error: ページを開けなかった（通信エラー・5xx。取り直しが要る）
+UNPRICED_REASONS = ("not_found", "no_price", "blocked", "page_error")
+
+
+class UnpricedReason(SQLModel, table=True):
+    """
+    本ごとの、最後に価格が取れなかったときの理由。price_history と同じ時刻（at）で残し、
+    最新の取得の理由かどうかを report.py が時刻で見分ける。
+    既存テーブルに列を足さないためマイグレーションは不要（BookMark と同じく create_all が新規作成する）。
+    """
+    __tablename__ = "unpriced_reasons"
+
+    paid_asin: str = Field(primary_key=True)
+    reason: str = Field()
+    at: str = Field()

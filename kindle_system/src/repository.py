@@ -24,7 +24,7 @@ from sqlmodel import Session, select, text
 from src import database as database_module
 from src.book_kind import KINDS, classify_kind
 from src.database import DB_PATH, get_session, init_db_orm
-from src.models import BookMapping, BookMark, PriceHistory
+from src.models import UNPRICED_REASONS, BookMapping, BookMark, PriceHistory, UnpricedReason
 
 logger = logging.getLogger(__name__)
 
@@ -500,6 +500,35 @@ def save_price_history(data: dict) -> None:
         )
         session.add(new_history)
         session.commit()
+    if sell_price is None:
+        _save_unpriced_reason(data["asin"], data.get("unpriced_reason"), now)
+
+
+def _save_unpriced_reason(paid_asin: str, reason: Optional[str], at: str) -> None:
+    """価格が取れなかった理由を価格の記録と同じ時刻で残す。失敗しても価格の記録は止めない。"""
+    if reason not in UNPRICED_REASONS:
+        return
+    try:
+        UnpricedReason.__table__.create(bind=database_module.engine, checkfirst=True)
+        with get_session() as session:
+            session.merge(UnpricedReason(paid_asin=paid_asin, reason=reason, at=at))
+            session.commit()
+    except Exception:
+        logger.warning("価格が取れなかった理由を保存できませんでした（ASIN: %s）", paid_asin, exc_info=True)
+
+
+def get_unpriced_reasons() -> dict:
+    """
+    {paid_asin: {"reason", "at"}}。読み取り専用の経路（report.py）から呼ばれるので、
+    テーブルが未作成なら作らずに空の dict を返す（get_book_marks と同じ）。
+    """
+    with get_session() as session:
+        exists = session.exec(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name='unpriced_reasons'")
+        ).first()
+        if exists is None:
+            return {}
+        return {r.paid_asin: {"reason": r.reason, "at": r.at} for r in session.exec(select(UnpricedReason)).all()}
 
 
 def set_wanted(paid_asin: str, status: int) -> bool:

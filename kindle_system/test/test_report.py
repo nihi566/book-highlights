@@ -73,6 +73,7 @@ class BuildWishlistTest(unittest.TestCase):
                 "price_changed_at": None,
                 "price_low": None,
                 "price_history": [],
+                "price_reason": None,
             },
         )
 

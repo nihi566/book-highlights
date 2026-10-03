@@ -39,7 +39,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
 from src.book_kind import KINDS, classify_kind
-from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_all_price_points, get_book_marks, get_books, get_paid_price_points
+from src.models import UNPRICED_REASONS
+from src.repository import MARK_TAGS, UNKNOWN_TITLE, get_all_price_points, get_book_marks, get_books, get_paid_price_points, get_unpriced_reasons
 
 # book-highlights アプリが読む欲しい本のデータ（wishlist.json）の形式名と版
 WISHLIST_FILE_FORMAT = "kindle-wishlist"
@@ -97,6 +98,24 @@ def summarize_price_history(points: list, limit: int = MAX_PRICE_HISTORY_PER_BOO
     return {asin: rows[-limit:] for asin, rows in result.items()}
 
 
+def _price_reason(book: dict, price, is_ku: bool):
+    """
+    価格が null の理由。ku（読み放題）/ not_scraped（まだ取得していない）/ UNPRICED_REASONS（最新の取得で
+    価格が取れなかった理由）/ unknown（理由を残す前の取得など）。価格があれば None。
+    book["unpriced_reason"] = {"reason", "at"} は、最新の取得と同じ時刻のものだけ使う。
+    """
+    if price is not None:
+        return None
+    if is_ku:
+        return "ku"
+    if not book.get("timestamp"):
+        return "not_scraped"
+    recorded = book.get("unpriced_reason") or {}
+    if recorded.get("reason") in UNPRICED_REASONS and recorded.get("at") == str(book["timestamp"]):
+        return recorded["reason"]
+    return "unknown"
+
+
 def build_wishlist(books: list) -> dict:
     """
     欲しい本のデータ（book-highlights アプリが同じオリジンから fetch する wishlist.json）を組み立てる。
@@ -106,6 +125,7 @@ def build_wishlist(books: list) -> dict:
     コミットが増えるため）。最終取得日時は index.html と同じく各本の最新価格の timestamp の最大値。
     値動き（book["price_trend"] = summarize_price_changes の 1 件）は、今の価格がある本にだけ載せる。
     スクレイピングの履歴（book["price_history"] = summarize_price_history の 1 件）は全冊に載せる（無ければ空）。
+    価格が null の本には理由（price_reason。_price_reason）を載せる。
     """
     timestamps = [str(book["timestamp"]) for book in books if book.get("timestamp")]
     items = []
@@ -131,6 +151,7 @@ def build_wishlist(books: list) -> dict:
                 "price_changed_at": trend.get("changed_at"),
                 "price_low": trend.get("low"),
                 "price_history": book.get("price_history") or [],
+                "price_reason": _price_reason(book, price, is_ku),
             }
         )
     return {
@@ -237,6 +258,7 @@ def main(allow_shrink: bool = False) -> None:
     marks = get_book_marks()
     trends = summarize_price_changes(get_paid_price_points())
     histories = summarize_price_history(get_all_price_points())
+    unpriced = get_unpriced_reasons()
     publish_marks = os.environ.get("PUBLISH_MARKS", "").strip().lower() in ("1", "true", "yes")
     for book in books:
         mark = marks.get(book["asin"])
@@ -245,6 +267,7 @@ def main(allow_shrink: bool = False) -> None:
         book["mark"] = mark
         book["price_trend"] = trends.get(book["asin"])
         book["price_history"] = histories.get(book["asin"], [])
+        book["unpriced_reason"] = unpriced.get(book["asin"])
     wishlist_path = os.path.join(public_site_dir, "wishlist.json")
     reason = _shrink_error(len(books), _published_book_count(wishlist_path))
     if reason and not allow_shrink:
