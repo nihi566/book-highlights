@@ -27,7 +27,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0792VXR45",
@@ -53,7 +54,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0D7VJZTTV",
@@ -79,7 +81,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BRR4N7SM",
@@ -105,7 +108,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D53HVNQW",
@@ -131,7 +135,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B06XCC4V49",
@@ -157,7 +162,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B078XRMBSH",
@@ -183,7 +189,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01LYOODMJ",
@@ -209,7 +216,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0791XCYQG",
@@ -235,7 +243,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FK9RK698",
@@ -261,7 +270,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FWVQTKR9",
@@ -287,7 +297,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BN9XD2NQ",
@@ -313,7 +324,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09X9JVR7Q",
@@ -339,7 +351,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F5Z1XKXY",
@@ -365,7 +378,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C3L6NC76",
@@ -391,7 +405,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CVZQZSRW",
@@ -417,7 +432,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0856YMH7L",
@@ -443,7 +459,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09D35FS3N",
@@ -479,7 +496,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0HD56MRGJ",
@@ -505,7 +523,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07S1LG1Y1",
@@ -531,7 +550,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D4DBYJJ9",
@@ -557,7 +577,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BV22796K",
@@ -583,7 +604,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BJ1SGBG5",
@@ -609,7 +631,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00INUXZ8S",
@@ -635,7 +658,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C7BJLJXW",
@@ -661,7 +685,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08FZX8PYW",
@@ -687,7 +712,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B099582LR7",
@@ -713,7 +739,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07JJNHZ2K",
@@ -739,7 +766,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DGT2C21C",
@@ -765,7 +793,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DF2JFJTH",
@@ -806,7 +835,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00HK2XIWS",
@@ -832,7 +862,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FN2KWBBN",
@@ -858,7 +889,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09HZ38SFZ",
@@ -884,7 +916,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B74C3TNQ",
@@ -910,7 +943,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FK4CLP4Z",
@@ -936,7 +970,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00BANJ84A",
@@ -962,7 +997,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FGNVCY2J",
@@ -988,7 +1024,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DSZMRT5N",
@@ -1014,7 +1051,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BH41R9BB",
@@ -1040,7 +1078,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00R3MUVH0",
@@ -1066,7 +1105,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FGX4J839",
@@ -1092,7 +1132,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00ISQNWA8",
@@ -1118,7 +1159,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B075CYTKZ1",
@@ -1144,7 +1186,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B68JML6B",
@@ -1170,7 +1213,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DCF8Z3JJ",
@@ -1196,7 +1240,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0847JYVX3",
@@ -1222,7 +1267,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FK38VNPS",
@@ -1248,7 +1294,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FFHSC9Q7",
@@ -1274,7 +1321,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B071G76MBC",
@@ -1300,7 +1348,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07BDGXR21",
@@ -1326,7 +1375,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LUSURYU",
@@ -1352,7 +1402,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G4T1DXMG",
@@ -1378,7 +1429,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08HYWXSW1",
@@ -1404,7 +1456,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FCL29FSS",
@@ -1430,7 +1483,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B097NWRM1B",
@@ -1456,7 +1510,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00BLDN98K",
@@ -1482,7 +1537,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07KW272T3",
@@ -1508,7 +1564,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F9CSFXY6",
@@ -1534,7 +1591,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FH4WDNKP",
@@ -1570,7 +1628,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09YXZ6P96",
@@ -1596,7 +1655,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FFSHPWMN",
@@ -1622,7 +1682,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0847LR17S",
@@ -1648,7 +1709,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00AO5R6QC",
@@ -1674,7 +1736,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GHHYV2TN",
@@ -1700,7 +1763,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08212F2YN",
@@ -1726,7 +1790,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H2KZ2HSP",
@@ -1757,7 +1822,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B06ZZH149Y",
@@ -1783,7 +1849,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CW1NMM3P",
@@ -1809,7 +1876,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00M3OEPQ6",
@@ -1835,7 +1903,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09T94D62K",
@@ -1861,7 +1930,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H3KQ5TC8",
@@ -1887,7 +1957,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08TMQ4JDX",
@@ -1918,7 +1989,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B071J5W8G5",
@@ -1954,7 +2026,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FKFM1YHR",
@@ -1980,7 +2053,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DZ9YBDRJ",
@@ -2006,7 +2080,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0791CKFSH",
@@ -2032,7 +2107,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08BR1N9GK",
@@ -2058,7 +2134,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00D0WE7FE",
@@ -2084,7 +2161,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BLRJNHWT",
@@ -2110,7 +2188,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07YKCCXX8",
@@ -2136,7 +2215,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DSCKVHX2",
@@ -2162,7 +2242,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009DECQTC",
@@ -2188,7 +2269,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009CTUE8S",
@@ -2214,7 +2296,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0776MG6DS",
@@ -2240,7 +2323,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GF24TV3P",
@@ -2291,7 +2375,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GLNH1ZXQ",
@@ -2317,7 +2402,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C61HF7M4",
@@ -2343,7 +2429,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FVL5RQ7X",
@@ -2369,7 +2456,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GNQJVXMT",
@@ -2395,7 +2483,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009DEMPO8",
@@ -2421,7 +2510,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CVQCNN6W",
@@ -2447,7 +2537,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09MQ8WFN5",
@@ -2498,7 +2589,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0912V79BK",
@@ -2524,7 +2616,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B011QII326",
@@ -2550,7 +2643,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H4TK2WGV",
@@ -2576,7 +2670,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00MRRF3K6",
@@ -2602,7 +2697,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DZHCBBN7",
@@ -2628,7 +2724,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DSBG2B89",
@@ -2654,7 +2751,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01E3R0VX6",
@@ -2680,7 +2778,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB0CJU",
@@ -2706,7 +2805,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08R9KRKCF",
@@ -2732,7 +2832,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08MZMY9H1",
@@ -2758,7 +2859,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09J51BPW5",
@@ -2784,7 +2886,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07DHK21YP",
@@ -2810,7 +2913,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01H4OTCOY",
@@ -2836,7 +2940,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09DG3MH93",
@@ -2862,7 +2967,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GKVBSFH4",
@@ -2882,7 +2988,8 @@
    "price_changed_at": null,
    "price_low": null,
    "price_history": [],
-   "price_reason": "not_scraped"
+   "price_reason": "not_scraped",
+   "bookmeter_id": null
   },
   {
    "asin": "B00OKC24NK",
@@ -2908,7 +3015,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FJ1F861J",
@@ -2934,7 +3042,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB0F4M",
@@ -2960,7 +3069,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00HQ6O7LY",
@@ -2986,7 +3096,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D9NP4CZP",
@@ -3012,7 +3123,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08HM17HLF",
@@ -3038,7 +3150,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09MYRWSFB",
@@ -3064,7 +3177,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00K7YJTO2",
@@ -3090,7 +3204,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B5QMQJCD",
@@ -3116,7 +3231,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009ILGWS6",
@@ -3142,7 +3258,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01G3C4L58",
@@ -3168,7 +3285,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01CDY9WWM",
@@ -3194,7 +3312,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C5QMW1JY",
@@ -3220,7 +3339,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B015CETXTC",
@@ -3246,7 +3366,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07R294RH9",
@@ -3272,7 +3393,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00G36N4FI",
@@ -3298,7 +3420,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BQMD8YBG",
@@ -3324,7 +3447,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0CC57NR2L",
@@ -3350,7 +3474,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BNQ9C67N",
@@ -3376,7 +3501,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FNPVDMC3",
@@ -3402,7 +3528,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D5GRQFFG",
@@ -3428,7 +3555,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D3K1ZHMX",
@@ -3454,7 +3582,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00GRKD6XU",
@@ -3480,7 +3609,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CQJJ6F34",
@@ -3506,7 +3636,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B079TLW41L",
@@ -3532,7 +3663,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09MW1T5H5",
@@ -3558,7 +3690,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B008YOHIAY",
@@ -3584,7 +3717,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00M8RW57E",
@@ -3610,7 +3744,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FQ4HYKSL",
@@ -3636,7 +3771,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B4P47MK4",
@@ -3662,7 +3798,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F4QK7D15",
@@ -3688,7 +3825,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07FCHZYX6",
@@ -3714,7 +3852,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00PSE2X1W",
@@ -3755,7 +3894,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01EJJFW32",
@@ -3781,7 +3921,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08YJHR8X6",
@@ -3807,7 +3948,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DHFSK8WT",
@@ -3838,7 +3980,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CRTY1FFH",
@@ -3864,7 +4007,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00OCGT0HM",
@@ -3890,7 +4034,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CGVFL31D",
@@ -3916,7 +4061,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F5PBVRSL",
@@ -3942,7 +4088,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09MQ66HWR",
@@ -3968,7 +4115,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CKLFXV3B",
@@ -3994,7 +4142,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09B9GYB8F",
@@ -4020,7 +4169,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B56JWK2L",
@@ -4046,7 +4196,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CLKZKK7N",
@@ -4072,7 +4223,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B06WPBHFNN",
@@ -4098,7 +4250,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FWJRCSY8",
@@ -4124,7 +4277,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DY1FT1ZV",
@@ -4150,7 +4304,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09Y1GVNCH",
@@ -4176,7 +4331,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C1BXRRP7",
@@ -4202,7 +4358,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C337PM5C",
@@ -4228,7 +4385,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07GYMDBCM",
@@ -4270,7 +4428,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DL9FXDXJ",
@@ -4296,7 +4455,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07XTJTDZ8",
@@ -4322,7 +4482,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00NY5IZDM",
@@ -4348,7 +4509,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09BR55WDM",
@@ -4374,7 +4536,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FRZYBB4H",
@@ -4400,7 +4563,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B06XCYQ8Z1",
@@ -4426,7 +4590,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H7FLMYNY",
@@ -4452,7 +4617,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CHS5M8BJ",
@@ -4478,7 +4644,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D46VQ29N",
@@ -4504,7 +4671,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GZYFVZZ2",
@@ -4530,7 +4698,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B084SP5PLQ",
@@ -4556,7 +4725,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DSBT5GST",
@@ -4582,7 +4752,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09TW4D3LZ",
@@ -4608,7 +4779,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0746JCN8B",
@@ -4634,7 +4806,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009GXM2AS",
@@ -4660,7 +4833,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00978ZRYA",
@@ -4686,7 +4860,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G8CNMD58",
@@ -4712,7 +4887,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09BDVP5BV",
@@ -4738,7 +4914,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09PYXXCHS",
@@ -4764,7 +4941,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CW1FMS9B",
@@ -4790,7 +4968,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B42F256H",
@@ -4816,7 +4995,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00KR96M6K",
@@ -4842,7 +5022,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DVGMS5XC",
@@ -4868,7 +5049,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0811Y1942",
@@ -4894,7 +5076,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00CU8JRG8",
@@ -4920,7 +5103,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CMQ8B6PF",
@@ -4946,7 +5130,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B0D4Z4K8TV",
@@ -4972,7 +5157,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GTG81WC6",
@@ -4998,7 +5184,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00EQ25BBQ",
@@ -5024,7 +5211,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01E6HG8MQ",
@@ -5070,7 +5258,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CJXV9TDS",
@@ -5096,7 +5285,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07F6RZZ87",
@@ -5122,7 +5312,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0811YX2NG",
@@ -5148,7 +5339,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B082WXZVPC",
@@ -5174,7 +5366,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07KBVV97Y",
@@ -5200,7 +5393,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00DZJ5BR0",
@@ -5226,7 +5420,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00NF4HJ20",
@@ -5252,7 +5447,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0081M7Z20",
@@ -5278,7 +5474,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0081MAJDM",
@@ -5304,7 +5501,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0081M7XRM",
@@ -5330,7 +5528,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0140X3C70",
@@ -5356,7 +5555,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00ZTOJ210",
@@ -5382,7 +5582,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00QAEZGQ8",
@@ -5408,7 +5609,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GRSZQ6KT",
@@ -5434,7 +5636,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07P1QXSMB",
@@ -5460,7 +5663,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07KVTV42B",
@@ -5486,7 +5690,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H5Q3WRYC",
@@ -5522,7 +5727,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BM41FK38",
@@ -5548,7 +5754,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07YYY9JLV",
@@ -5574,7 +5781,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08616YJWF",
@@ -5600,7 +5808,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CQ2M9WX2",
@@ -5626,7 +5835,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B086WFG18W",
@@ -5652,7 +5862,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00D41LJVG",
@@ -5678,7 +5889,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07QCNCDC4",
@@ -5704,7 +5916,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BZ7113G8",
@@ -5730,7 +5943,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07V5HZFK8",
@@ -5756,7 +5970,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0BSVXMKVY",
@@ -5782,7 +5997,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B074FL4J8R",
@@ -5808,7 +6024,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B079GNVMMS",
@@ -5834,7 +6051,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00MVM2EPE",
@@ -5860,7 +6078,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00VPQGZMA",
@@ -5886,7 +6105,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08T5LLCJ5",
@@ -5912,7 +6132,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00I96CJWO",
@@ -5938,7 +6159,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00YGIKDWW",
@@ -5964,7 +6186,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00ARDNMEQ",
@@ -5990,7 +6213,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00QT9X6ZM",
@@ -6016,7 +6240,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01LZZCY1L",
@@ -6042,7 +6267,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07PQJNSJ1",
@@ -6068,7 +6294,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H6FDJFRR",
@@ -6099,7 +6326,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00IHR7ZVA",
@@ -6135,7 +6363,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B01FUBN6RW",
@@ -6166,7 +6395,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BWR5GHMP",
@@ -6192,7 +6422,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00UR6BL3C",
@@ -6218,7 +6449,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CYF4JLJD",
@@ -6244,7 +6476,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08Q368DRP",
@@ -6270,7 +6503,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B3RGCM4B",
@@ -6296,7 +6530,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09N3KHQVZ",
@@ -6322,7 +6557,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01ARO27OA",
@@ -6348,7 +6584,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B079JLW5YN",
@@ -6374,7 +6611,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00QT9XB2A",
@@ -6400,7 +6638,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0DT5FJ3WD",
@@ -6426,7 +6665,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09PY8DKQX",
@@ -6452,7 +6692,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DQ7ZHV53",
@@ -6478,7 +6719,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B62N6RRZ",
@@ -6504,7 +6746,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B06W9LCFFZ",
@@ -6530,7 +6773,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09TRYDVXK",
@@ -6556,7 +6800,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07B7K6X35",
@@ -6582,7 +6827,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B079JV98DB",
@@ -6608,7 +6854,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00ZR7Y73W",
@@ -6634,7 +6881,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CTHRGJ6T",
@@ -6660,7 +6908,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B089YQRC7M",
@@ -6686,7 +6935,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00NOTKR6G",
@@ -6712,7 +6962,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CF3XKGR4",
@@ -6738,7 +6989,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H7J4WM7W",
@@ -6764,7 +7016,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BC7SQSX2",
@@ -6790,7 +7043,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DTJRB5C6",
@@ -6816,7 +7070,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GGY819NL",
@@ -6842,7 +7097,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09CK58XVH",
@@ -6868,7 +7124,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B084MCBJS5",
@@ -6894,7 +7151,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DWFHK34F",
@@ -6930,7 +7188,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DT9DDPTZ",
@@ -6956,7 +7215,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FWB1JGCW",
@@ -6982,7 +7242,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00RF1QD0I",
@@ -7008,7 +7269,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08BZHHLLT",
@@ -7034,7 +7296,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B098NQ168P",
@@ -7060,7 +7323,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B098NQWT8H",
@@ -7086,7 +7350,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0777H5F2R",
@@ -7112,7 +7377,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DT5JBTWN",
@@ -7138,7 +7404,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07RXW66RD",
@@ -7164,7 +7431,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08YF7RZ6C",
@@ -7190,7 +7458,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00799WZ26",
@@ -7216,7 +7485,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0FGGG26LT",
@@ -7242,7 +7512,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D2KS97R4",
@@ -7268,7 +7539,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08P55YCT9",
@@ -7294,7 +7566,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09R1TQ3ND",
@@ -7320,7 +7593,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DJG9CXHZ",
@@ -7346,7 +7620,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009DBB9HU",
@@ -7377,7 +7652,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B075FQZTTV",
@@ -7408,7 +7684,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08BZGTQ7B",
@@ -7434,7 +7711,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CW1GBWNK",
@@ -7460,7 +7738,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07SWBY95Y",
@@ -7486,7 +7765,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00DOT4WV2",
@@ -7512,7 +7792,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00CU8JSBW",
@@ -7538,7 +7819,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08LPP4FGV",
@@ -7564,7 +7846,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08WCF4613",
@@ -7590,7 +7873,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CX8JT668",
@@ -7616,7 +7900,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08QMYGW4D",
@@ -7642,7 +7927,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BHW1MH9P",
@@ -7668,7 +7954,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB0A7E",
@@ -7694,7 +7981,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09XWRR91N",
@@ -7720,7 +8008,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B071D4NMLK",
@@ -7746,7 +8035,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DZLSRK41",
@@ -7772,7 +8062,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08CDGHX27",
@@ -7798,7 +8089,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CD78BN12",
@@ -7824,7 +8116,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0CNC4192B",
@@ -7850,7 +8143,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08M5NWSTN",
@@ -7876,7 +8170,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07R33HGCQ",
@@ -7902,7 +8197,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07S487MHQ",
@@ -7928,7 +8224,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00IR7P0SU",
@@ -7954,7 +8251,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01CSC57VO",
@@ -7980,7 +8278,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B0DXKCTZ74",
@@ -8006,7 +8305,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00SUT1ODK",
@@ -8032,7 +8332,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08T158BZ2",
@@ -8058,7 +8359,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09YR6C36Z",
@@ -8084,7 +8386,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H93ZV7TH",
@@ -8110,7 +8413,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08W27PPWS",
@@ -8136,7 +8440,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09R3L4N63",
@@ -8162,7 +8467,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B017GPG6XG",
@@ -8188,7 +8494,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CRV2XZ32",
@@ -8214,7 +8521,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01NBOPALL",
@@ -8240,7 +8548,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0811Y7CWX",
@@ -8266,7 +8575,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07KLQZHBP",
@@ -8292,7 +8602,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07HFWV2H4",
@@ -8318,7 +8629,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FHNFXHDH",
@@ -8344,7 +8656,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0GCWZKVFD",
@@ -8364,7 +8677,8 @@
    "price_changed_at": null,
    "price_low": null,
    "price_history": [],
-   "price_reason": "not_scraped"
+   "price_reason": "not_scraped",
+   "bookmeter_id": null
   },
   {
    "asin": "B0HLV8GS7Y",
@@ -8395,7 +8709,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FDFQ6V1L",
@@ -8421,7 +8736,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0928F1GD3",
@@ -8447,7 +8763,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CDKYTLV1",
@@ -8473,7 +8790,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B085XPPMFV",
@@ -8499,7 +8817,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B016O8V0HS",
@@ -8525,7 +8844,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB0KX8",
@@ -8551,7 +8871,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GWQNGRH9",
@@ -8577,7 +8898,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08L2XMQKX",
@@ -8603,7 +8925,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D14372BM",
@@ -8629,7 +8952,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DNLC3YK7",
@@ -8655,7 +8979,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09SGB361W",
@@ -8681,7 +9006,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B084G2XWSW",
@@ -8717,7 +9043,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009CU6WOC",
@@ -8743,7 +9070,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00CL6MTHS",
@@ -8769,7 +9097,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00DNMG8R6",
@@ -8795,7 +9124,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CVNBNWJK",
@@ -8821,7 +9151,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01H4OTCPI",
@@ -8847,7 +9178,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DHCD8WCG",
@@ -8888,7 +9220,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B06X6H7RPS",
@@ -8914,7 +9247,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009GXM53C",
@@ -8940,7 +9274,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BVVXW9NV",
@@ -8976,7 +9311,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B0DBH8P5W9",
@@ -9002,7 +9338,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CPJ1XC1T",
@@ -9028,7 +9365,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00QT9X8XM",
@@ -9054,7 +9392,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08Z79CLZF",
@@ -9080,7 +9419,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0FCY2SZ4W",
@@ -9106,7 +9446,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D14HJ2KD",
@@ -9132,7 +9473,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B081345JK2",
@@ -9158,7 +9500,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00N0XOL3G",
@@ -9184,7 +9527,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB03RG",
@@ -9210,7 +9554,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08C4YDVVY",
@@ -9236,7 +9581,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00Q7ZIXKG",
@@ -9262,7 +9608,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00F3TAF44",
@@ -9288,7 +9635,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CJF86LH3",
@@ -9314,7 +9662,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CP5TBLL2",
@@ -9340,7 +9689,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08Q8225DW",
@@ -9366,7 +9716,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LQ5J4DM",
@@ -9392,7 +9743,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D5CDRC9B",
@@ -9418,7 +9770,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DMNB6TSK",
@@ -9444,7 +9797,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0FQBP4927",
@@ -9470,7 +9824,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0986TC5Y7",
@@ -9496,7 +9851,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D55SY2CK",
@@ -9522,7 +9878,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FL6N4R7B",
@@ -9548,7 +9905,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00E35ZU62",
@@ -9574,7 +9932,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DDSWK5JF",
@@ -9600,7 +9959,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B016LUTNI2",
@@ -9652,7 +10012,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F4Q942QC",
@@ -9678,7 +10039,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D141S8S2",
@@ -9704,7 +10066,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00K9ZK7WC",
@@ -9730,7 +10093,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FJ2324Y3",
@@ -9756,7 +10120,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09MVPBGZM",
@@ -9792,7 +10157,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BW8Y54LP",
@@ -9823,7 +10189,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FRS1CZTV",
@@ -9849,7 +10216,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D4XCG9SV",
@@ -9875,7 +10243,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B082KBZ2KS",
@@ -9901,7 +10270,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B098SLY8C6",
@@ -9927,7 +10297,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CWKW8T5W",
@@ -9983,7 +10354,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00OKC21P6",
@@ -10009,7 +10381,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B016O8V20I",
@@ -10035,7 +10408,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08PBJZ87T",
@@ -10061,7 +10435,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08L851NWT",
@@ -10087,7 +10462,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FGX2ZFV3",
@@ -10113,7 +10489,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00H1F0232",
@@ -10139,7 +10516,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07VJLWS7G",
@@ -10165,7 +10543,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07HXKLFX5",
@@ -10191,7 +10570,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B012VRLPRG",
@@ -10217,7 +10597,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B071S824J8",
@@ -10243,7 +10624,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0G3WP4D6G",
@@ -10269,7 +10651,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01LYPSNS8",
@@ -10295,7 +10678,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DNLKS5TD",
@@ -10321,7 +10705,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07DR59Q2Z",
@@ -10357,7 +10742,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B076K6BZVK",
@@ -10383,7 +10769,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0FLJPJF43",
@@ -10409,7 +10796,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09RMWPZ5W",
@@ -10435,7 +10823,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CQS74Z2H",
@@ -10461,7 +10850,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BDDJH42F",
@@ -10487,7 +10877,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G5LYL3T9",
@@ -10513,7 +10904,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D8R8SQVT",
@@ -10539,7 +10931,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0982TD21V",
@@ -10565,7 +10958,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00HK6ZSL8",
@@ -10591,7 +10985,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FZFXG2LP",
@@ -10617,7 +11012,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B086JVQQK9",
@@ -10643,7 +11039,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08RS2VWPP",
@@ -10669,7 +11066,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DVY1JJCZ",
@@ -10695,7 +11093,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H25HPB1B",
@@ -10721,7 +11120,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09ZB8KZT2",
@@ -10747,7 +11147,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FC65D764",
@@ -10773,7 +11174,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07L82XV2Z",
@@ -10799,7 +11201,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H1LJS8X8",
@@ -10825,7 +11228,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FSMGDDDZ",
@@ -10851,7 +11255,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09RWD1TQ7",
@@ -10877,7 +11282,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B127QRJY",
@@ -10903,7 +11309,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08LDCHT6B",
@@ -10929,7 +11336,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00V9GXULK",
@@ -10955,7 +11363,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07H5HHGKS",
@@ -10981,7 +11390,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00YQUPO0Q",
@@ -11007,7 +11417,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07T1X1ZRN",
@@ -11033,7 +11444,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07D8RZR77",
@@ -11059,7 +11471,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FCL5695P",
@@ -11085,7 +11498,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01MU364ID",
@@ -11111,7 +11525,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07WSM9RWZ",
@@ -11137,7 +11552,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FGHN2F2W",
@@ -11193,7 +11609,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CM5Z5V2N",
@@ -11219,7 +11636,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08RB1R6HF",
@@ -11245,7 +11663,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C4T96LBG",
@@ -11271,7 +11690,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07BY26PHH",
@@ -11297,7 +11717,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FB3CT8VS",
@@ -11323,7 +11744,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0CLRL9SG3",
@@ -11349,7 +11771,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01N5Y9KDL",
@@ -11375,7 +11798,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00AKCUFXU",
@@ -11401,7 +11825,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00EAAQEZ6",
@@ -11427,7 +11852,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H7WDLWJM",
@@ -11453,7 +11879,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B071WR7XMH",
@@ -11479,7 +11906,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07MJ9XHRP",
@@ -11505,7 +11933,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DVF6FVCY",
@@ -11531,7 +11960,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07YDX2FQ9",
@@ -11557,7 +11987,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DM4LP1W2",
@@ -11583,7 +12014,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00KFB5DJC",
@@ -11609,7 +12041,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FSHN6Q8K",
@@ -11635,7 +12068,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08LY6F8QR",
@@ -11661,7 +12095,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GNYP57DR",
@@ -11692,7 +12127,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09JBQFZ8Z",
@@ -11718,7 +12154,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009FUWQ62",
@@ -11755,7 +12192,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00PSE2YU2",
@@ -11781,7 +12219,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07CDQVB43",
@@ -11807,7 +12246,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DPFVJCD4",
@@ -11833,7 +12273,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CBBJMTS7",
@@ -11869,7 +12310,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00F3WFFBE",
@@ -11895,7 +12337,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09LHRSCW9",
@@ -11921,7 +12364,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08BFPL3SB",
@@ -11947,7 +12391,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09DS3DQS9",
@@ -11973,7 +12418,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08HQPCHJZ",
@@ -11999,7 +12445,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B084C3P3N4",
@@ -12025,7 +12472,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00RF1QAXS",
@@ -12061,7 +12509,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0166OFC60",
@@ -12087,7 +12536,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01JL1FCQK",
@@ -12113,7 +12563,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07VQTWKTK",
@@ -12139,7 +12590,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00IF1MRKC",
@@ -12165,7 +12617,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07YWQ2T97",
@@ -12191,7 +12644,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08NVJSMGJ",
@@ -12237,7 +12691,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DF5SZXNQ",
@@ -12263,7 +12718,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CV9Y1VZ1",
@@ -12289,7 +12745,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D5H6HF6R",
@@ -12325,7 +12782,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C332BDV4",
@@ -12351,7 +12809,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07CDQLHC5",
@@ -12377,7 +12836,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LP43ZPM",
@@ -12403,7 +12863,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H25MTLVY",
@@ -12429,7 +12890,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F36BGSZL",
@@ -12455,7 +12917,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00WI084GM",
@@ -12481,7 +12944,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B016O8V0L4",
@@ -12507,7 +12971,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08Z79WWTW",
@@ -12533,7 +12998,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08R8KBZKZ",
@@ -12559,7 +13025,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09SG9YXFB",
@@ -12585,7 +13052,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07CRMPG3S",
@@ -12611,7 +13079,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CDG5CVNT",
@@ -12637,7 +13106,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01IGW5MQ0",
@@ -12663,7 +13133,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08JSL89JX",
@@ -12699,7 +13170,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00OSZ2X94",
@@ -12725,7 +13197,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B091T7S6SX",
@@ -12751,7 +13224,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00BB1ZU8E",
@@ -12777,7 +13251,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B088LS44TC",
@@ -12803,7 +13278,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0796MYZNM",
@@ -12829,7 +13305,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00DKX4C4Y",
@@ -12855,7 +13332,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GNRCCDJ4",
@@ -12881,7 +13359,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00G3RYD66",
@@ -12901,7 +13380,8 @@
    "price_changed_at": null,
    "price_low": null,
    "price_history": [],
-   "price_reason": "not_scraped"
+   "price_reason": "not_scraped",
+   "bookmeter_id": null
   },
   {
    "asin": "B01MTQN0ER",
@@ -12927,7 +13407,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GS7HPC69",
@@ -12983,7 +13464,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FCY37F49",
@@ -13045,7 +13527,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB0FN8",
@@ -13071,7 +13554,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09G35TPSZ",
@@ -13097,7 +13581,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB0N5S",
@@ -13123,7 +13608,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BTM32K3D",
@@ -13149,7 +13635,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DBH9MBN7",
@@ -13175,7 +13662,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00JR72G2W",
@@ -13201,7 +13689,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BPS5V1JL",
@@ -13232,7 +13721,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B0GGGD9HJY",
@@ -13268,7 +13758,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BT1CNF1C",
@@ -13294,7 +13785,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FFGQPMSX",
@@ -13320,7 +13812,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H1B849GT",
@@ -13346,7 +13839,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09T2MQ6GL",
@@ -13372,7 +13866,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07X23D9DG",
@@ -13398,7 +13893,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07TXTSD3G",
@@ -13424,7 +13920,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CZKZYBVG",
@@ -13450,7 +13947,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0B68VDCG3",
@@ -13476,7 +13974,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F181CSVC",
@@ -13502,7 +14001,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FBVWSGHQ",
@@ -13528,7 +14028,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F8N69VGJ",
@@ -13554,7 +14055,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GZ33Q6Q6",
@@ -13580,7 +14082,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CBLMWP91",
@@ -13606,7 +14109,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B09Q5X4V1G",
@@ -13632,7 +14136,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CVKS4YYJ",
@@ -13658,7 +14163,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07GZNP8WY",
@@ -13684,7 +14190,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CVL5Z91N",
@@ -13710,7 +14217,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07NRYMQ1N",
@@ -13736,7 +14244,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LWWON3A",
@@ -13762,7 +14271,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DW6FS3TC",
@@ -13788,7 +14298,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CVXFHF8L",
@@ -13814,7 +14325,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09MQ9KYKC",
@@ -13840,7 +14352,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DJS6Z5P1",
@@ -13866,7 +14379,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B1DBWG6T",
@@ -13892,7 +14406,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B072K1NH76",
@@ -13918,7 +14433,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07FZVHLSL",
@@ -13944,7 +14460,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07DH9M7X1",
@@ -13980,7 +14497,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009GPM8LE",
@@ -14006,7 +14524,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0GBRS7BH9",
@@ -14032,7 +14551,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FGXBQXDW",
@@ -14058,7 +14578,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C85LBP4J",
@@ -14084,7 +14605,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B2NVYWFH",
@@ -14110,7 +14632,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0BR3QSDPJ",
@@ -14136,7 +14659,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B012A47N44",
@@ -14162,7 +14686,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07MND83VM",
@@ -14188,7 +14713,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09WZZXK1S",
@@ -14214,7 +14740,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01N9SMHHO",
@@ -14240,7 +14767,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08HYS5SYX",
@@ -14266,7 +14794,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B009GPLZJ0",
@@ -14292,7 +14821,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01M8GUXYE",
@@ -14318,7 +14848,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08MZ9WTFS",
@@ -14344,7 +14875,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0F7463WFC",
@@ -14370,7 +14902,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F8LYL3HT",
@@ -14396,7 +14929,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08CZ74X43",
@@ -14422,7 +14956,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07TYF38B4",
@@ -14448,7 +14983,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B084MCY39S",
@@ -14474,7 +15010,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08P75PB4Z",
@@ -14500,7 +15037,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GYG4VRQC",
@@ -14526,7 +15064,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B074T7YFKJ",
@@ -14552,7 +15091,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B68KRTC9",
@@ -14578,7 +15118,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FRYDPH8C",
@@ -14604,7 +15145,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0936WWNBC",
@@ -14630,7 +15172,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07K9LXXZC",
@@ -14666,7 +15209,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07YWW854K",
@@ -14692,7 +15236,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07DFDVRSG",
@@ -14718,7 +15263,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009GPM4AY",
@@ -14744,7 +15290,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01DM1VR1Y",
@@ -14770,7 +15317,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B078XZ58RV",
@@ -14796,7 +15344,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B7N93K7Z",
@@ -14822,7 +15371,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00VUS6VYU",
@@ -14868,7 +15418,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CPXY6MNW",
@@ -14894,7 +15445,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DRC68N3V",
@@ -14936,7 +15488,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0F73PF32F",
@@ -14962,7 +15515,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0HB3K9BZL",
@@ -14988,7 +15542,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B5TJ86Z2",
@@ -15014,7 +15569,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01M11XTU6",
@@ -15040,7 +15596,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G5PGYPLM",
@@ -15066,7 +15623,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BXL7NHP1",
@@ -15092,7 +15650,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00PSE2ZM4",
@@ -15118,7 +15677,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00UTD8E1U",
@@ -15144,7 +15704,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CLC2QG34",
@@ -15175,7 +15736,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C27KGC8V",
@@ -15201,7 +15763,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09DKQWWK4",
@@ -15227,7 +15790,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00CL6N0GW",
@@ -15253,7 +15817,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09B9L6BT6",
@@ -15279,7 +15844,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BG277QNW",
@@ -15305,7 +15871,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B075G9QTBR",
@@ -15331,7 +15898,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00MB2SQQ0",
@@ -15357,7 +15925,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H93WLH6F",
@@ -15383,7 +15952,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08HLTB87J",
@@ -15409,7 +15979,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B08BJ2HXGL",
@@ -15435,7 +16006,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CLKZJWM3",
@@ -15461,7 +16033,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07XTJ32F1",
@@ -15487,7 +16060,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B084HB2MJH",
@@ -15513,7 +16087,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07MX3YR17",
@@ -15539,7 +16114,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09QM7F8PV",
@@ -15565,7 +16141,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DGFZMX7T",
@@ -15591,7 +16168,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00QT9XA58",
@@ -15617,7 +16195,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G7S8XC4X",
@@ -15643,7 +16222,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08DR9FMD7",
@@ -15685,7 +16265,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00U1BSI9I",
@@ -15711,7 +16292,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DXDRQY1K",
@@ -15737,7 +16319,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07413TYNY",
@@ -15763,7 +16346,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01M3XWO1W",
@@ -15789,7 +16373,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C69GXY12",
@@ -15815,7 +16400,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08L3JY5B2",
@@ -15841,7 +16427,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07HYSQYNL",
@@ -15867,7 +16454,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08SW1R984",
@@ -15893,7 +16481,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09NVKZNDF",
@@ -15919,7 +16508,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0722GRLQ5",
@@ -15945,7 +16535,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D8T3BK56",
@@ -15971,7 +16562,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0C6K24V6S",
@@ -15997,7 +16589,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0DHX1FVWN",
@@ -16023,7 +16616,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01MYFX3JG",
@@ -16049,7 +16643,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F5Q51647",
@@ -16075,7 +16670,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B087G4G3XQ",
@@ -16137,7 +16733,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H28J797V",
@@ -16173,7 +16770,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GBYWLPTT",
@@ -16199,7 +16797,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08BL3D3L2",
@@ -16225,7 +16824,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FGJ1ZY48",
@@ -16251,7 +16851,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H9RS9NYG",
@@ -16277,7 +16878,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09YR7L96J",
@@ -16303,7 +16905,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B1J7RR5D",
@@ -16329,7 +16932,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0BQ3MLFW2",
@@ -16355,7 +16959,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FXWT3XPG",
@@ -16391,7 +16996,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B086WFDMXL",
@@ -16417,7 +17023,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09NVKTTM5",
@@ -16443,7 +17050,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BQQQPDD9",
@@ -16469,7 +17077,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07KWS1ZXZ",
@@ -16495,7 +17104,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B082KFMK31",
@@ -16541,7 +17151,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F73SX45S",
@@ -16567,7 +17178,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01AJGODBQ",
@@ -16608,7 +17220,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08F1G3G1X",
@@ -16634,7 +17247,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09V2NRY8C",
@@ -16660,7 +17274,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09DNWY8LG",
@@ -16686,7 +17301,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F298XLC3",
@@ -16712,7 +17328,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09V1134H7",
@@ -16754,7 +17371,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GGX2HX43",
@@ -16780,7 +17398,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09XQZYKJH",
@@ -16826,7 +17445,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00ETKCWKS",
@@ -16852,7 +17472,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B073GSDBGT",
@@ -16878,7 +17499,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B009I7KO7U",
@@ -16904,7 +17526,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00YP68UJ8",
@@ -16930,7 +17553,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00M1I5BJY",
@@ -16956,7 +17580,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B01G1SIFIS",
@@ -17013,7 +17638,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00S0DUVHQ",
@@ -17039,7 +17665,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FLHSNNVL",
@@ -17065,7 +17692,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B09S35LH51",
@@ -17091,7 +17719,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GYR73L4N",
@@ -17117,7 +17746,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08W4X9KHX",
@@ -17143,7 +17773,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07227T5TG",
@@ -17169,7 +17800,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0814R77LM",
@@ -17205,7 +17837,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B074PPTVF3",
@@ -17231,7 +17864,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CXF3RWCJ",
@@ -17257,7 +17891,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08VJ463R7",
@@ -17283,7 +17918,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G5N8JP3K",
@@ -17309,7 +17945,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B087JPXJGW",
@@ -17335,7 +17972,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H8NV3G29",
@@ -17361,7 +17999,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09LQZNXKG",
@@ -17387,7 +18026,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07HWLLZWK",
@@ -17413,7 +18053,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CK8L5V9F",
@@ -17439,7 +18080,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08HYR1MTQ",
@@ -17465,7 +18107,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F8HJ1D1H",
@@ -17491,7 +18134,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B076Q2WHBN",
@@ -17517,7 +18161,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08MZQ55TL",
@@ -17543,7 +18188,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00I0QN5EY",
@@ -17569,7 +18215,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07MTVPVWD",
@@ -17595,7 +18242,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07JCZG71G",
@@ -17626,7 +18274,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B0F3NV2YC2",
@@ -17652,7 +18301,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BN44J3QY",
@@ -17678,7 +18328,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00GOL2S5Y",
@@ -17704,7 +18355,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CQ4NG67F",
@@ -17730,7 +18382,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00QT9XBHU",
@@ -17756,7 +18409,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B07P8L9Z7P",
@@ -17782,7 +18436,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DNF9MNHG",
@@ -17808,7 +18463,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FR949C5K",
@@ -17834,7 +18490,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B3XD5HJB",
@@ -17860,7 +18517,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B06XWWS3WY",
@@ -17891,7 +18549,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00OSZ2XDU",
@@ -17917,7 +18576,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08546KKFZ",
@@ -17958,7 +18618,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01M5IEAAL",
@@ -17984,7 +18645,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07DHJ46TQ",
@@ -18010,7 +18672,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0162P5QU0",
@@ -18036,7 +18699,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00BHAJRMY",
@@ -18062,7 +18726,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0763NM933",
@@ -18088,7 +18753,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FT1YJXNS",
@@ -18114,7 +18780,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08732KG5N",
@@ -18140,7 +18807,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07KP2BNZT",
@@ -18166,7 +18834,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DP23NFXV",
@@ -18192,7 +18861,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G11VV25M",
@@ -18218,7 +18888,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B081V55ZCP",
@@ -18244,7 +18915,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B096MGYWFJ",
@@ -18290,7 +18962,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B085VNN6FV",
@@ -18346,7 +19019,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00799TIR6",
@@ -18372,7 +19046,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CL93R18W",
@@ -18398,7 +19073,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B087J3NQLQ",
@@ -18424,7 +19100,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0794MQD8B",
@@ -18455,7 +19132,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01N6ZFLCO",
@@ -18491,7 +19169,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0B4CT2MFF",
@@ -18517,7 +19196,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00HULD5PY",
@@ -18543,7 +19223,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09S67KLYN",
@@ -18569,7 +19250,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00M18VMQU",
@@ -18595,7 +19277,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B075CJZ43B",
@@ -18621,7 +19304,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DWMN7SK9",
@@ -18647,7 +19331,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D145CCFS",
@@ -18673,7 +19358,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07RR35DL6",
@@ -18699,7 +19385,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00APR9G4O",
@@ -18725,7 +19412,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B00DKX4CH6",
@@ -18751,7 +19439,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B091CLWQLL",
@@ -18777,7 +19466,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B076BNBC2K",
@@ -18803,7 +19493,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FTZ6K1XT",
@@ -18829,7 +19520,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09P9WZNSL",
@@ -18860,7 +19552,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CNCJPZRJ",
@@ -18886,7 +19579,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CW1DVJ9V",
@@ -18912,7 +19606,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0CW96M9NB",
@@ -18938,7 +19633,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FFFLRWWJ",
@@ -18964,7 +19660,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B071KNYCVP",
@@ -18990,7 +19687,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GX2QJPW6",
@@ -19016,7 +19714,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00SQX9OAA",
@@ -19042,7 +19741,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B07KS1CY7G",
@@ -19068,7 +19768,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01BBW8ZHA",
@@ -19094,7 +19795,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08XJYRZTW",
@@ -19120,7 +19822,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00ICHRNQM",
@@ -19146,7 +19849,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01BWMRJWG",
@@ -19172,7 +19876,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07R45WHT9",
@@ -19198,7 +19903,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00RF1QCD6",
@@ -19224,7 +19930,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H627N8Z1",
@@ -19250,7 +19957,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00OKC23YK",
@@ -19276,7 +19984,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00GWBKTIO",
@@ -19328,7 +20037,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DVS2ZFNF",
@@ -19354,7 +20064,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07TZJX76N",
@@ -19380,7 +20091,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09RZXVV5D",
@@ -19406,7 +20118,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07MYSG4XZ",
@@ -19432,7 +20145,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CHF1QM5D",
@@ -19458,7 +20172,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08MF316MT",
@@ -19484,7 +20199,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B086DL58LX",
@@ -19510,7 +20226,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0G4R4KVHV",
@@ -19536,7 +20253,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07XT369XK",
@@ -19562,7 +20280,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0183IMPJY",
@@ -19588,7 +20307,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DK4BVN2W",
@@ -19614,7 +20334,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BV1YJQBY",
@@ -19640,7 +20361,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LITTJEK",
@@ -19666,7 +20388,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D93D7QL9",
@@ -19692,7 +20415,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GNM4TD3J",
@@ -19718,7 +20442,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GGX8XZTP",
@@ -19744,7 +20469,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B094V6TGQD",
@@ -19780,7 +20506,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B012VPZVSW",
@@ -19806,7 +20533,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B071P1GXNG",
@@ -19832,7 +20560,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01H1452AK",
@@ -19858,7 +20587,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0H5PYQV36",
@@ -19884,7 +20614,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B01I1E1VOK",
@@ -19910,7 +20641,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07B454T89",
@@ -19936,7 +20668,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07QTKHFCL",
@@ -19962,7 +20695,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B007WQQTQY",
@@ -19988,7 +20722,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BZRMX477",
@@ -20014,7 +20749,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07RXXVY46",
@@ -20040,7 +20776,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00SF0VAQK",
@@ -20066,7 +20803,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00799V39C",
@@ -20092,7 +20830,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BZ8DSL3K",
@@ -20118,7 +20857,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00H6XBGQG",
@@ -20144,7 +20884,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0BXS73JFB",
@@ -20170,7 +20911,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B094PYZ17L",
@@ -20196,7 +20938,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0CBB6JZCM",
@@ -20222,7 +20965,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F5GQM2YQ",
@@ -20248,7 +20992,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FSJ7JJJ9",
@@ -20274,7 +21019,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00QT9XB52",
@@ -20300,7 +21046,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DYD1WFHF",
@@ -20346,7 +21093,8 @@
      "ku": true
     }
    ],
-   "price_reason": "ku"
+   "price_reason": "ku",
+   "bookmeter_id": null
   },
   {
    "asin": "B0CSCG6FKK",
@@ -20382,7 +21130,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B0B28NMQRX",
@@ -20408,7 +21157,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0811Y5FFY",
@@ -20434,7 +21184,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B08W8GWLJB",
@@ -20460,7 +21211,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB2K2C",
@@ -20486,7 +21238,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00F2H38P0",
@@ -20512,7 +21265,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00LMB0AB0",
@@ -20538,7 +21292,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B081F59FJ4",
@@ -20564,7 +21319,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B00JQYYD86",
@@ -20590,7 +21346,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CTHRT48S",
@@ -20616,7 +21373,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0FHV9SZQQ",
@@ -20642,7 +21400,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0F6MVLVKM",
@@ -20668,7 +21427,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B09YR5YSC5",
@@ -20694,7 +21454,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07NDD617X",
@@ -20720,7 +21481,8 @@
      "ku": false
     }
    ],
-   "price_reason": "unknown"
+   "price_reason": "unknown",
+   "bookmeter_id": null
   },
   {
    "asin": "B0C89L3T3P",
@@ -20746,7 +21508,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DFV84F4B",
@@ -20772,7 +21535,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0GT41Y3G1",
@@ -20798,7 +21562,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0D7VSQ813",
@@ -20824,7 +21589,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B008V94C1U",
@@ -20850,7 +21616,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0BWRN23W4",
@@ -20876,7 +21643,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07JCPHG84",
@@ -20902,7 +21670,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0CW1L7CDC",
@@ -20928,7 +21697,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B07B3GFKCB",
@@ -20959,7 +21729,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   },
   {
    "asin": "B0DHX296HF",
@@ -20985,7 +21756,8 @@
      "ku": false
     }
    ],
-   "price_reason": null
+   "price_reason": null,
+   "bookmeter_id": null
   }
  ]
 }
