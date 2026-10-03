@@ -16,7 +16,7 @@ import { renderVault } from '../core/obsidian.js';
 import { createZip } from '../core/zip.js';
 import { createLlmClient } from '../core/analysis/llm.js';
 import { analyzeLibrary, recommendBooks, recommendationNote } from '../core/analysis/pipeline.js';
-import { followJob } from '../core/jobs.js';
+import { followJob, pcJobOutcome } from '../core/jobs.js';
 import { SAMPLE_BOOKS } from '../core/sample.js';
 import { safeFileName } from '../core/text.js';
 
@@ -223,7 +223,8 @@ async function runAnalysis(mode = 'analyze') {
   setJob({ running: true, where: 'pc', stage: 'embed', message: 'PC と同期しています', done: 0, total: 0, error: '' });
   try {
     await syncWithPc();
-    await companion.startAnalyze(mode);
+    const started = await companion.startAnalyze(mode);
+    pcJobStartedAt = started?.startedAt || null;
     await pollPcJob();
   } catch (e) {
     setJob({ running: false, stage: 'error', error: e.message, message: '' });
@@ -231,6 +232,8 @@ async function runAnalysis(mode = 'analyze') {
 }
 
 let followingPcJob = false;
+// 追っている PC の分析を始めた時刻（サーバが再起動して別のジョブ・初期状態に変わったことを見分ける）
+let pcJobStartedAt = null;
 
 /** PC の分析を最後まで追う。通信が途切れても再接続を続け、長く途切れたら「状況不明」にして確認ボタンを出す */
 async function pollPcJob() {
@@ -240,12 +243,18 @@ async function pollPcJob() {
     const result = await followJob({
       fetchJob: () => companion.job(),
       onUpdate: (u) => {
+        if (u.job?.running && u.job.startedAt && !pcJobStartedAt) pcJobStartedAt = u.job.startedAt;
         if (u.job) setJob({ ...u.job, where: 'pc', running: u.job.running, lost: false, reconnecting: 0 });
         else setJob({ where: 'pc', running: true, lost: false, reconnecting: u.reconnecting, message: `PC との通信が途切れました。再接続しています（${u.reconnecting}/${u.maxFailures - 1}）` });
       },
     });
     if (result.lost) return setJob({ running: false, lost: true, where: 'pc', error: '', message: '' });
-    if (result.error) return;
+    const outcome = pcJobOutcome(result, pcJobStartedAt);
+    pcJobStartedAt = null;
+    if (outcome === 'error') return;
+    if (outcome === 'interrupted') {
+      return setJob({ running: false, lost: false, where: 'pc', stage: 'interrupted', message: '', error: 'PC の分析が途中で止まりました（PC のサーバが再起動した可能性があります）。もう一度「分析し直す」か「おすすめを選び直す」を押してください。' });
+    }
     let analysis;
     try {
       analysis = await companion.analysis();
