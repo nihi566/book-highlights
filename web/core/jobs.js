@@ -26,3 +26,15 @@ export async function followJob({ fetchJob, onUpdate = () => {}, sleep = (ms) =>
     await sleep(interval);
   }
 }
+
+/**
+ * 終わった PC の分析ジョブを 'done' / 'error' / 'interrupted' に分ける。
+ * PC のサーバが途中で再起動すると、ジョブは初期状態（running:false, stage:''）に戻るので、
+ * stage が 'done' でないもの・自分が始めたのと別のジョブ（startedAt が違う）は「中断」とみなす。
+ */
+export function pcJobOutcome(job, startedAt) {
+  if (job.stage === 'error' || job.error) return 'error';
+  if (job.stage !== 'done') return 'interrupted';
+  if (startedAt && job.startedAt !== startedAt) return 'interrupted';
+  return 'done';
+}
