@@ -45,7 +45,7 @@ MARKS_FILE_FORMAT = "kindle-marks"
 MARKS_FILE_GLOB = "kindle-marks-*.json"
 
 # report.main() が PUBLIC_SITE_DIR に書き出し、publish() が公開するファイル。
-# 公開リポジトリの index.html は book-highlights の欲しい本の画面へ移動する静的ページなので触らない。
+# 公開先は book-highlights の web/wishlist-site/。この 2 つ以外は commit しない（他の作業中の変更を巻き込まない）。
 PUBLISHED_FILES = ["wishlist.json", "feed.xml"]
 
 

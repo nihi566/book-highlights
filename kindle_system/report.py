@@ -1,12 +1,11 @@
 """
 report.py
 ---------
-蔵書一覧（読みたい本 / 購入済み本 / 全部）を、GitHub Pages 公開用リポジトリ（kindle-wishlist-site）に
+蔵書一覧（読みたい本 / 購入済み本 / 全部）を、book-highlights の web/wishlist-site/（GitHub Pages で公開される）に
 データだけの wishlist.json として書き出すバッチスクリプト。画面は持たない。
 
 欲しい本の画面は book-highlights アプリ（https://nihi566.github.io/book-highlights/#/wishlist）にあり、
-同じオリジンからこの wishlist.json を fetch して表示する。見た目・操作を変えるときは book-highlights を直す。
-公開リポジトリの index.html はその画面へ移動する静的ページで、ここでは作らない（上書きしない）。
+同じ場所からこの wishlist.json を fetch して表示する。見た目・操作を変えるときは book-highlights の web/ を直す。
 
 画面ではタグ（読みたい / 購入済み / 読んだ。旧画面の「読みたくない」は廃止）・「見た」本の★評価・種別
 （マンガ / 本）をブラウザに保存でき、「見た・評価を書き出す」で JSON にして
@@ -294,6 +293,19 @@ def _require_env(name: str) -> str:
     return value
 
 
+def _inside_git_work_tree(path: str) -> bool:
+    """path 自身か親のどれかに .git（フォルダ、または worktree のファイル）があるか。
+    公開先は book-highlights の中の web/wishlist-site/ なので、リポジトリ直下に限らない。"""
+    current = os.path.abspath(path)
+    while True:
+        if os.path.exists(os.path.join(current, ".git")):
+            return True
+        parent = os.path.dirname(current)
+        if parent == current:
+            return False
+        current = parent
+
+
 def require_public_site_repo(public_site_dir: str) -> None:
     """書き込み先が存在する git リポジトリの作業ツリーでなければ、設定の誤りとして明示エラーで止める
     （run.py の publish() も git pull の前に呼ぶ。先に git を走らせると原因の分からない例外になるため）。"""
@@ -303,7 +315,7 @@ def require_public_site_repo(public_site_dir: str) -> None:
             file=sys.stderr,
         )
         sys.exit(1)
-    if not os.path.isdir(os.path.join(public_site_dir, ".git")):
+    if not _inside_git_work_tree(public_site_dir):
         print(
             f"エラー: PUBLIC_SITE_DIR（{public_site_dir}）は git リポジトリの作業ツリーではありません。",
             file=sys.stderr,

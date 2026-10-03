@@ -96,7 +96,7 @@ export const knowledge = {
         <a class="btn small" href="#/knowledge/isolated">見る</a>` : ''}`;
   },
   mount(root) {
-    // おすすめの本がすでに欲しい本（kindle-wishlist-site）に入っていれば印を付ける。読めなければ何もしない
+    // おすすめの本がすでに欲しい本（web/wishlist-site/wishlist.json）に入っていれば印を付ける。読めなければ何もしない
     const cards = [...root.querySelectorAll('.rec[data-title]')];
     if (!cards.length) return;
     loadWishlist()

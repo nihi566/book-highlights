@@ -399,6 +399,36 @@ class ShrinkGuardTest(unittest.TestCase):
         self.assertFalse(report.parse_args([]).allow_shrink)
 
 
+class RequirePublicSiteRepoTest(unittest.TestCase):
+    """require_public_site_repo()：公開先は git リポジトリの中のフォルダであればよい
+    （book-highlights に合体したので、公開先はリポジトリ直下ではなく web/wishlist-site/ になる）。"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="report_repo_check_test_")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_accepts_subfolder_of_repository(self):
+        os.makedirs(os.path.join(self.tmpdir, ".git"))
+        site = os.path.join(self.tmpdir, "web", "wishlist-site")
+        os.makedirs(site)
+        report.require_public_site_repo(site)  # 止まらない
+
+    def test_accepts_worktree_whose_git_is_a_file(self):
+        with open(os.path.join(self.tmpdir, ".git"), "w", encoding="utf-8") as f:
+            f.write("gitdir: somewhere\n")
+        report.require_public_site_repo(self.tmpdir)  # 止まらない
+
+    def test_stops_outside_repository(self):
+        with self.assertRaises(SystemExit):
+            report.require_public_site_repo(self.tmpdir)
+
+    def test_stops_when_folder_missing(self):
+        with self.assertRaises(SystemExit):
+            report.require_public_site_repo(os.path.join(self.tmpdir, "missing"))
+
+
 class HtmlGenerationRemovedTest(unittest.TestCase):
     """HTML を作る処理は book-highlights の JS に一本化したので、report.py に残さない（直す場所を 1 か所にする）。"""
 

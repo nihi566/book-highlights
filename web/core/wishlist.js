@@ -1,5 +1,5 @@
-// 欲しい本（kindle_system が kindle-wishlist-site に公開する wishlist.json）の読み込み・タグ・絞り込み。
-// タグ・★・種別は旧画面（kindle-wishlist-site の index.html）と同じ localStorage のキーに保存する。
+// 欲しい本（kindle_system が web/wishlist-site/ に書き出す wishlist.json）の読み込み・タグ・絞り込み。
+// タグ・★・種別は旧画面（旧 kindle-wishlist-site の index.html）と同じ localStorage のキーに保存する。
 // 2 つのサイトは同じオリジン（nihi566.github.io）なので、旧画面で付けたタグがそのまま読める。
 // 書き出しファイルも旧画面と同じ kindle-marks v1（PC の `python run.py import-marks` で取り込める）。
 
