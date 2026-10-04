@@ -78,13 +78,14 @@ class RunSyncInitDbTest(unittest.TestCase):
         finally:
             conn.close()
 
+    @patch("run._prepare_publish")
     @patch("run.publish")
     @patch("src.bookmeter_sync.save_price_history")
     @patch("src.bookmeter_sync.crawl_price_info", new_callable=AsyncMock)
     @patch("src.bookmeter_sync.resolve_title_to_paid_asin", new_callable=AsyncMock)
     @patch("src.bookmeter_sync.fetch_wish_books")
     def test_sync_bookmeter_adds_column_and_registers_books(
-        self, mock_fetch, mock_resolve, mock_crawl, mock_save_price, mock_publish
+        self, mock_fetch, mock_resolve, mock_crawl, mock_save_price, mock_publish, mock_prepare_publish
     ):
         mock_fetch.return_value = [{"title": "新しい本", "author": "著者", "bookmeter_id": "123"}]
         mock_resolve.return_value = "B0NEWBOOK1"

@@ -325,7 +325,17 @@ class PublishInvalidSiteDirTest(unittest.TestCase):
         mock_report_main.assert_not_called()
 
 
-class SyncCommandTest(unittest.TestCase):
+class _SkipPublishPreflightMixin:
+    """sync の開始時に走る公開の事前チェック（_prepare_publish）を差し替える。
+    実際の .env・公開先リポジトリを読みに行かないため。"""
+
+    def setUp(self):
+        patcher = patch("run._prepare_publish")
+        self.mock_prepare_publish = patcher.start()
+        self.addCleanup(patcher.stop)
+
+
+class SyncCommandTest(_SkipPublishPreflightMixin, unittest.TestCase):
     """sync サブコマンド: main.run_integration → sync_bookmeter_wishlist → publish()
     の順に1回ずつ呼ばれること、--workers/--limit/--start が main.py と同じ意味
     （--workers は1〜5にクランプ）で run_integration に渡ることを検証する。"""
@@ -434,7 +444,7 @@ class SyncCommandTest(unittest.TestCase):
         mock_publish.assert_not_called()
 
 
-class SyncCommandTargetTest(unittest.TestCase):
+class SyncCommandTargetTest(_SkipPublishPreflightMixin, unittest.TestCase):
     """--target による実行対象の絞り込み（kindle のみ / bookmeter のみ）を検証する。"""
 
     _EMPTY_SYNC_RESULT = {"total": 0, "registered": 0, "skipped": 0, "failed_titles": []}
@@ -766,7 +776,7 @@ class RecommendArgparseTest(unittest.TestCase):
                     parser.parse_args(argv)
 
 
-class SyncOnlyAsinsTest(unittest.TestCase):
+class SyncOnlyAsinsTest(_SkipPublishPreflightMixin, unittest.TestCase):
     """--asins で指定した本だけを Kindle クロールし直す（scraping-hub の失敗した本の再実行用）。"""
 
     @patch("run.os.path.exists", return_value=True)
@@ -811,6 +821,43 @@ class SyncOnlyAsinsTest(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit):
                 run.cmd_sync(args)
+
+
+class SyncPublishPreflightTest(unittest.TestCase):
+    """公開できない状態なら、長いクロールを始める前に止める（クロール後に公開で止まると全部やり直しになる）。"""
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    @patch("run._prepare_publish", side_effect=SystemExit(1))
+    def test_stops_before_crawl_when_publish_is_not_ready(
+        self, mock_prepare, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        with self.assertRaises(SystemExit):
+            run.cmd_sync(argparse.Namespace(workers=1, limit=0, start=1, target="both"))
+
+        mock_prepare.assert_called_once()
+        mock_run_integration.assert_not_called()
+        mock_sync.assert_not_called()
+        mock_publish.assert_not_called()
+
+    @patch("run.os.path.exists", return_value=True)
+    @patch("run.publish")
+    @patch("run.sync_bookmeter_wishlist", new_callable=AsyncMock)
+    @patch("run.main_module.run_integration", new_callable=AsyncMock)
+    @patch("run._prepare_publish")
+    def test_checks_publish_before_crawl(
+        self, mock_prepare, mock_run_integration, mock_sync, mock_publish, mock_exists
+    ):
+        mock_sync.return_value = {"total": 0, "registered": 0, "skipped": 0, "failed_titles": []}
+        manager = Mock()
+        manager.attach_mock(mock_prepare, "prepare_publish")
+        manager.attach_mock(mock_run_integration, "run_integration")
+
+        run.cmd_sync(argparse.Namespace(workers=1, limit=0, start=1, target="both"))
+
+        self.assertEqual([c[0] for c in manager.mock_calls][:2], ["prepare_publish", "run_integration"])
 
 
 if __name__ == "__main__":
