@@ -103,20 +103,11 @@ def ensure_safe_to_publish(public_site_dir: str, git_env: dict) -> None:
         sys.exit(1)
 
 
-def publish() -> None:
+def _prepare_publish() -> tuple:
     """
-    「読みたい本」を GitHub Pages 公開用リポジトリへ公開する。
-
-    書き出す前に git pull --rebase で公開用クローンを origin の最新に合わせる（失敗したら中断）。
-    以降は src/server.py の do_publish() と同じ判定順序（report生成 → git add →
-    git diff --cached --quiet による差分判定 → 差分ありのみ git commit →
-    push は常に試行）を、asyncio 非依存の subprocess.run で同期的に実装する
-    （run.py はサーバー無しの単発バッチ実行のため、do_publish() の非同期
-    サブプロセス実装をそのまま呼び出せない。server.py 自体は変更しない）。
-
-    PUBLIC_SITE_DIR / PUBLIC_SITE_URL が未設定の場合は明示エラーを表示して
-    終了する（report.main() の _require_env() は同じ検証を行うが、ここで
-    先に確認することで git コマンドが一切呼ばれないことを保証する）。
+    公開に必要な設定と公開先の状態を確かめ、(公開先フォルダ, 公開URL, git 用の環境変数) を返す。
+    公開できなければ git を何も変えずに終了コード 1 で止める。
+    sync はクロールの前にもこれを呼ぶ（長いクロールの後で公開だけ止まると全部やり直しになるため）。
     """
     _load_env_file(os.path.join(BASE_DIR, ".env"))
 
@@ -140,6 +131,25 @@ def publish() -> None:
     # 下の rebase --abort や autostash が他の人の作業を壊さないよう、git を変える前に確かめる
     # （これを通れば、autostash が退避するのは公開する 2 ファイルだけになる）
     ensure_safe_to_publish(public_site_dir, git_env)
+    return public_site_dir, public_site_url, git_env
+
+
+def publish() -> None:
+    """
+    「読みたい本」を GitHub Pages 公開用リポジトリへ公開する。
+
+    書き出す前に git pull --rebase で公開用クローンを origin の最新に合わせる（失敗したら中断）。
+    以降は src/server.py の do_publish() と同じ判定順序（report生成 → git add →
+    git diff --cached --quiet による差分判定 → 差分ありのみ git commit →
+    push は常に試行）を、asyncio 非依存の subprocess.run で同期的に実装する
+    （run.py はサーバー無しの単発バッチ実行のため、do_publish() の非同期
+    サブプロセス実装をそのまま呼び出せない。server.py 自体は変更しない）。
+
+    PUBLIC_SITE_DIR / PUBLIC_SITE_URL が未設定の場合は明示エラーを表示して
+    終了する（report.main() の _require_env() は同じ検証を行うが、ここで
+    先に確認することで git コマンドが一切呼ばれないことを保証する）。
+    """
+    public_site_dir, public_site_url, git_env = _prepare_publish()
 
     def _run_git(args: list) -> int:
         result = subprocess.run(
@@ -212,7 +222,10 @@ async def _run_sync(
     docstring参照）。CLIバッチにはSSE/画面が無く標準出力が唯一の通知経路
     のため、src/server.py の do_bookmeter_sync() と同様に progress_cb=print
     を接続し、スキップ一覧を明示する（無音のまま公開してしまうことを防ぐ）。
+
+    公開できない状態（設定漏れ・公開先が main 以外・作業中の変更あり）なら、クロールを始める前に止める。
     """
+    _prepare_publish()
     if target in ("kindle", "both"):
         await main_module.run_integration(
             xml_path=xml_path, limit=limit, start=start, workers=workers, only_asins=only_asins
