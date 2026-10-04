@@ -32,8 +32,9 @@ export const importView = {
             <li>PC で <span class="code">bh serve</span> を起動しておきます。</li>
             <li>Chrome / Edge で <span class="code">chrome://extensions</span> を開き、「デベロッパー モード」をオン →「パッケージ化されていない拡張機能を読み込む」でリポジトリの <span class="code">extension</span> フォルダを選びます。</li>
             <li>開いた設定画面に出るコマンド（<span class="code">bh config origin chrome-extension://…</span>）を PC で実行し、bh serve を再起動します。</li>
-            <li>同じブラウザで <a href="https://read.amazon.co.jp/notebook" target="_blank" rel="noopener">read.amazon.co.jp/notebook</a> にログインしておきます。</li>
+            <li>同じブラウザで <a href="https://read.amazon.co.jp/notebook" target="_blank" rel="noopener">read.amazon.co.jp/notebook</a> にログインしておきます。ログインしたらこのタブは閉じてかまいません。</li>
           </ol>
+          <p class="help">ノートブックを開いたままにする必要はありません。Chrome が起動していて Amazon にログインしたままなら、裏側で確認します。ログインが切れると、拡張機能の状態欄とこの画面の Kindle 欄（ホームの先頭にも）に「Amazon のログインが切れています」と出ます。そのときだけノートブックを開いてログインし直してください。</p>
           <p class="help">Amazon のパスワードや Cookie は保存しません。ブラウザを閉じている間と、線がノートブックに反映されるまでの数分は届きません。</p>
         </details>
         <details>

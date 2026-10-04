@@ -86,7 +86,7 @@ tailscale serve --bg 8787   # https://<PC名>.<tailnet>.ts.net で PC に届く�
 
 | 読み方 | 方法 |
 | --- | --- |
-| Kindle アプリ（自動） | PC の Chrome / Edge に **拡張機能**（`extension/`）を入れると、ノートブックを 15 分ごとに確認して新しい線だけを `bh serve` に送る。手順は [docs/setup.md](docs/setup.md) の 5.5 |
+| Kindle アプリ（自動） | PC の Chrome / Edge に **拡張機能**（`extension/`）を入れると、ノートブックを 15 分ごとに確認して新しい線だけを `bh serve` に送る。ノートブックのタブは開いておかなくてよい（Chrome が起動していて Amazon にログインしたままなら動く。ログインが切れると拡張機能と Web アプリに表示されるので、そのときだけログインし直す）。手順は [docs/setup.md](docs/setup.md) の 5.5 |
 | Kindle アプリ（手動） | PC のブラウザで **ブックマークレット**（取り込み画面からドラッグして登録）を read.amazon.co.jp/notebook で実行 → 全冊まとめて「アプリに送る」か JSON で保存 |
 | Kindle 端末 | USB でつなぎ `documents/My Clippings.txt` を取り込む |
 | Kindle アプリ（1 冊ずつ） | ノートブック → エクスポート でメールした HTML を取り込む |
