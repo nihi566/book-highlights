@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>移転しました - bookshelf</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://nihi566.github.io/bookshelf/">
+<script>
+function newPath(p) {
+  var re = /^\/book-highlights(?=\/|$)/;
+  return re.test(p) ? p.replace(re, '/bookshelf') : '/bookshelf/';
+}
+if (typeof location !== 'undefined' && typeof module === 'undefined') {
+  location.replace(newPath(location.pathname) + location.search + location.hash);
+}
+if (typeof module !== 'undefined') module.exports = { newPath: newPath };
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=https://nihi566.github.io/bookshelf/"></noscript>
+</head>
+<body>
+<p>このページは <a href="https://nihi566.github.io/bookshelf/">https://nihi566.github.io/bookshelf/</a> へ移転しました。自動で移動しない場合はリンクを開いてください。</p>
+</body>
+</html>
